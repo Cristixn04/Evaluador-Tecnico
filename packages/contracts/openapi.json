@@ -2,8 +2,8 @@
   "openapi": "3.1.0",
   "info": {
     "title": "Evaluador Técnico de Candidatos API",
-    "version": "0.1.0",
-    "description": "Contrato OpenAPI v0 entre FastAPI (Samuel) y Next.js (Cristian)"
+    "version": "0.2.0",
+    "description": "Contrato OpenAPI desacoplado entre FastAPI (Samuel) y Next.js (Cristian) con Privacidad por Diseño (PII aislada de la sesión de evaluación)."
   },
   "paths": {
     "/auth/login": {
@@ -88,6 +88,38 @@
         }
       }
     },
+    "/vacancies/{id}/invitations": {
+      "post": {
+        "summary": "Generar invitación para un candidato (Gestiona PII y emite enlace anónimo)",
+        "description": "El reclutador asocia el candidato, pero se genera un identificador anónimo (masked_candidate_id) y token efímero para la sala de evaluación.",
+        "operationId": "createCandidateInvitation",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInvitationRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Invitación generada con URL de acceso anónima",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InvitationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/problems": {
       "get": {
         "summary": "Listar problemas técnicos filtrados por habilidad y nivel",
@@ -112,30 +144,24 @@
         }
       }
     },
-    "/interviews": {
-      "post": {
-        "summary": "Crear sesión de entrevista para un candidato (genera link único)",
-        "operationId": "createInterview",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CreateInterviewRequest"
-              }
-            }
-          }
-        },
+    "/sessions/verify": {
+      "get": {
+        "summary": "Verificar token de acceso del candidato e inicializar sala anónima",
+        "description": "Permite al candidato entrar a la sala. Devuelve información de la vacante y problema SIN incluir ningún dato de identidad personal (cero PII).",
+        "operationId": "verifyCandidateSession",
         "responses": {
-          "201": {
-            "description": "Entrevista creada con token y enlace de acceso",
+          "200": {
+            "description": "Sesión anónima verificada",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/InterviewSession"
+                  "$ref": "#/components/schemas/AnonymousCandidateSession"
                 }
               }
             }
+          },
+          "401": {
+            "description": "Token inválido o expirado"
           }
         }
       }
@@ -173,14 +199,14 @@
     },
     "/interviews/{id}/evaluation": {
       "get": {
-        "summary": "Obtener la evaluación y rúbrica defendible de una entrevista",
+        "summary": "Obtener la evaluación y rúbrica defendible de una entrevista (Ciega a PII)",
         "operationId": "getEvaluation",
         "parameters": [
           { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
         ],
         "responses": {
           "200": {
-            "description": "Evaluación con evidencias y radar de competencias",
+            "description": "Evaluación con evidencias citadas y radar de competencias",
             "content": {
               "application/json": {
                 "schema": {
@@ -265,6 +291,41 @@
           "focus_areas": { "type": "array", "items": { "type": "string" } }
         }
       },
+      "CreateInvitationRequest": {
+        "type": "object",
+        "required": ["candidate_name", "candidate_email"],
+        "properties": {
+          "candidate_name": { "type": "string" },
+          "candidate_email": { "type": "string", "format": "email" },
+          "candidate_phone": { "type": "string" }
+        }
+      },
+      "InvitationResponse": {
+        "type": "object",
+        "required": ["invitation_id", "masked_candidate_id", "access_url", "access_token", "expires_at"],
+        "properties": {
+          "invitation_id": { "type": "string" },
+          "masked_candidate_id": { "type": "string", "example": "CAND-7F2A" },
+          "access_url": { "type": "string" },
+          "access_token": { "type": "string" },
+          "expires_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "AnonymousCandidateSession": {
+        "type": "object",
+        "required": ["session_id", "masked_candidate_id", "vacancy_title", "current_phase", "status", "problem"],
+        "properties": {
+          "session_id": { "type": "string" },
+          "masked_candidate_id": { "type": "string", "example": "CAND-7F2A" },
+          "vacancy_title": { "type": "string" },
+          "current_phase": {
+            "type": "string",
+            "enum": ["INTRO", "PROBLEM", "CLARIFY", "DESIGN", "CODING", "PROBE", "WRAPUP", "EVALUATE"]
+          },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "evaluated"] },
+          "problem": { "$ref": "#/components/schemas/ProblemSummary" }
+        }
+      },
       "ProblemSummary": {
         "type": "object",
         "required": ["id", "title", "difficulty", "language", "scenario_preview"],
@@ -275,26 +336,6 @@
           "language": { "type": "string" },
           "scenario_preview": { "type": "string" },
           "tags": { "type": "array", "items": { "type": "string" } }
-        }
-      },
-      "CreateInterviewRequest": {
-        "type": "object",
-        "required": ["vacancy_id", "candidate_email", "candidate_name"],
-        "properties": {
-          "vacancy_id": { "type": "string" },
-          "candidate_email": { "type": "string", "format": "email" },
-          "candidate_name": { "type": "string" }
-        }
-      },
-      "InterviewSession": {
-        "type": "object",
-        "required": ["id", "access_url", "access_token", "status", "expires_at"],
-        "properties": {
-          "id": { "type": "string" },
-          "access_url": { "type": "string" },
-          "access_token": { "type": "string" },
-          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "evaluated"] },
-          "expires_at": { "type": "string", "format": "date-time" }
         }
       },
       "RunCodeRequest": {
@@ -309,7 +350,7 @@
         "type": "object",
         "required": ["status", "tests_passed", "total_tests"],
         "properties": {
-          "status": { "type": "string", "enum": ["success", "test_failure", "compile_error", "timeout"] },
+          "status": { "type": "string", "enum": ["success", "test_failure", "compile_error", "timeout", "runtime_error"] },
           "stdout": { "type": "string" },
           "stderr": { "type": "string" },
           "execution_time_ms": { "type": "number" },
@@ -330,9 +371,10 @@
       },
       "EvaluationReport": {
         "type": "object",
-        "required": ["id", "overall_score", "recommendation", "competencies", "evidence", "needs_human_review"],
+        "required": ["id", "masked_candidate_id", "overall_score", "recommendation", "competencies", "evidence", "needs_human_review"],
         "properties": {
           "id": { "type": "string" },
+          "masked_candidate_id": { "type": "string", "example": "CAND-7F2A" },
           "overall_score": { "type": "number" },
           "recommendation": { "type": "string", "enum": ["hire", "borderline", "reject"] },
           "needs_human_review": { "type": "boolean" },
@@ -362,10 +404,10 @@
       },
       "InterviewSummary": {
         "type": "object",
-        "required": ["id", "candidate_masked_id", "vacancy_title", "status", "created_at"],
+        "required": ["id", "masked_candidate_id", "vacancy_title", "status", "created_at"],
         "properties": {
           "id": { "type": "string" },
-          "candidate_masked_id": { "type": "string" },
+          "masked_candidate_id": { "type": "string", "example": "CAND-7F2A" },
           "vacancy_title": { "type": "string" },
           "status": { "type": "string" },
           "overall_score": { "type": "number" },

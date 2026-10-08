@@ -55,6 +55,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vacancies/{id}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Generar invitación para un candidato (Gestiona PII y emite enlace anónimo)
+         * @description El reclutador asocia el candidato, pero se genera un identificador anónimo (masked_candidate_id) y token efímero para la sala de evaluación.
+         */
+        post: operations["createCandidateInvitation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/problems": {
         parameters: {
             query?: never;
@@ -72,17 +92,20 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/interviews": {
+    "/sessions/verify": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /**
+         * Verificar token de acceso del candidato e inicializar sala anónima
+         * @description Permite al candidato entrar a la sala. Devuelve información de la vacante y problema SIN incluir ningún dato de identidad personal (cero PII).
+         */
+        get: operations["verifyCandidateSession"];
         put?: never;
-        /** Crear sesión de entrevista para un candidato (genera link único) */
-        post: operations["createInterview"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -113,7 +136,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Obtener la evaluación y rúbrica defendible de una entrevista */
+        /** Obtener la evaluación y rúbrica defendible de una entrevista (Ciega a PII) */
         get: operations["getEvaluation"];
         put?: never;
         post?: never;
@@ -177,6 +200,32 @@ export interface components {
             primary_language: string;
             focus_areas?: string[];
         };
+        CreateInvitationRequest: {
+            candidate_name: string;
+            /** Format: email */
+            candidate_email: string;
+            candidate_phone?: string;
+        };
+        InvitationResponse: {
+            invitation_id: string;
+            /** @example CAND-7F2A */
+            masked_candidate_id: string;
+            access_url: string;
+            access_token: string;
+            /** Format: date-time */
+            expires_at: string;
+        };
+        AnonymousCandidateSession: {
+            session_id: string;
+            /** @example CAND-7F2A */
+            masked_candidate_id: string;
+            vacancy_title: string;
+            /** @enum {string} */
+            current_phase: "INTRO" | "PROBLEM" | "CLARIFY" | "DESIGN" | "CODING" | "PROBE" | "WRAPUP" | "EVALUATE";
+            /** @enum {string} */
+            status: "pending" | "in_progress" | "completed" | "evaluated";
+            problem: components["schemas"]["ProblemSummary"];
+        };
         ProblemSummary: {
             id: string;
             title: string;
@@ -186,21 +235,6 @@ export interface components {
             scenario_preview: string;
             tags?: string[];
         };
-        CreateInterviewRequest: {
-            vacancy_id: string;
-            /** Format: email */
-            candidate_email: string;
-            candidate_name: string;
-        };
-        InterviewSession: {
-            id: string;
-            access_url: string;
-            access_token: string;
-            /** @enum {string} */
-            status: "pending" | "in_progress" | "completed" | "evaluated";
-            /** Format: date-time */
-            expires_at: string;
-        };
         RunCodeRequest: {
             code: string;
             /** @enum {string} */
@@ -208,7 +242,7 @@ export interface components {
         };
         RunCodeResponse: {
             /** @enum {string} */
-            status: "success" | "test_failure" | "compile_error" | "timeout";
+            status: "success" | "test_failure" | "compile_error" | "timeout" | "runtime_error";
             stdout?: string;
             stderr?: string;
             execution_time_ms?: number;
@@ -222,6 +256,8 @@ export interface components {
         };
         EvaluationReport: {
             id: string;
+            /** @example CAND-7F2A */
+            masked_candidate_id: string;
             overall_score: number;
             /** @enum {string} */
             recommendation: "hire" | "borderline" | "reject";
@@ -243,7 +279,8 @@ export interface components {
         };
         InterviewSummary: {
             id: string;
-            candidate_masked_id: string;
+            /** @example CAND-7F2A */
+            masked_candidate_id: string;
             vacancy_title: string;
             status: string;
             overall_score?: number;
@@ -330,6 +367,32 @@ export interface operations {
             };
         };
     };
+    createCandidateInvitation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInvitationRequest"];
+            };
+        };
+        responses: {
+            /** @description Invitación generada con URL de acceso anónima */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InvitationResponse"];
+                };
+            };
+        };
+    };
     listProblems: {
         parameters: {
             query?: {
@@ -354,27 +417,30 @@ export interface operations {
             };
         };
     };
-    createInterview: {
+    verifyCandidateSession: {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreateInterviewRequest"];
-            };
-        };
+        requestBody?: never;
         responses: {
-            /** @description Entrevista creada con token y enlace de acceso */
-            201: {
+            /** @description Sesión anónima verificada */
+            200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["InterviewSession"];
+                    "application/json": components["schemas"]["AnonymousCandidateSession"];
                 };
+            };
+            /** @description Token inválido o expirado */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
@@ -415,7 +481,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Evaluación con evidencias y radar de competencias */
+            /** @description Evaluación con evidencias citadas y radar de competencias */
             200: {
                 headers: {
                     [name: string]: unknown;
