@@ -1,0 +1,22 @@
+{
+  "recommendations": [
+    // Frontend, React & TypeScript
+    "bradlc.vscode-tailwindcss",
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "yoavbls.pretty-ts-errors",
+    "formulahendry.auto-rename-tag",
+
+    // Contratos & API
+    "42Crunch.vscode-openapi",
+    "rangav.vscode-thunder-client",
+
+    // Git & Productividad Monorepo
+    "usernamehw.errorlens",
+    "vivaxy.vscode-conventional-commits",
+    "eamodio.gitlens",
+    "ms-azuretools.vscode-docker",
+    "redhat.vscode-yaml",
+    "ms-vscode.makefile-tools"
+  ]
+}

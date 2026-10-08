@@ -1,0 +1,14 @@
+{
+  "name": "@evaluador/contracts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contrato OpenAPI y tipos TypeScript generados para el Evaluador Técnico",
+  "main": "types.generated.ts",
+  "types": "types.generated.ts",
+  "scripts": {
+    "generate-types": "pnpm dlx openapi-typescript openapi.json -o types.generated.ts"
+  },
+  "devDependencies": {
+    "openapi-typescript": "^7.6.1"
+  }
+}

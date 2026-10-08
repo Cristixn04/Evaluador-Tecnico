@@ -1,0 +1,378 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Evaluador Técnico de Candidatos API",
+    "version": "0.1.0",
+    "description": "Contrato OpenAPI v0 entre FastAPI (Samuel) y Next.js (Cristian)"
+  },
+  "paths": {
+    "/auth/login": {
+      "post": {
+        "summary": "Iniciar sesión de reclutador o admin",
+        "operationId": "login",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token JWT generado",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthToken"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vacancies": {
+      "post": {
+        "summary": "Crear vacante a partir de descripción de texto",
+        "operationId": "createVacancy",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateVacancyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Vacante creada con perfil extraído",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Vacancy"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vacancies/{id}/profile": {
+      "get": {
+        "summary": "Obtener perfil estructurado y skills de una vacante",
+        "operationId": "getVacancyProfile",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Perfil extraído de la vacante",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VacancyProfile"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/problems": {
+      "get": {
+        "summary": "Listar problemas técnicos filtrados por habilidad y nivel",
+        "operationId": "listProblems",
+        "parameters": [
+          { "name": "skill", "in": "query", "schema": { "type": "string" } },
+          { "name": "level", "in": "query", "schema": { "type": "string" } },
+          { "name": "language", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de problemas técnicos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/ProblemSummary" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interviews": {
+      "post": {
+        "summary": "Crear sesión de entrevista para un candidato (genera link único)",
+        "operationId": "createInterview",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInterviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Entrevista creada con token y enlace de acceso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewSession"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interviews/{id}/run": {
+      "post": {
+        "summary": "Ejecutar código del candidato en el sandbox",
+        "operationId": "runCode",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RunCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de la ejecución",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunCodeResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interviews/{id}/evaluation": {
+      "get": {
+        "summary": "Obtener la evaluación y rúbrica defendible de una entrevista",
+        "operationId": "getEvaluation",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Evaluación con evidencias y radar de competencias",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EvaluationReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/organizations/{id}/interviews": {
+      "get": {
+        "summary": "Listar entrevistas de una organización para el panel de reclutamiento",
+        "operationId": "listOrganizationInterviews",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de entrevistas con estado y puntuaciones",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/InterviewSummary" }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "LoginRequest": {
+        "type": "object",
+        "required": ["email", "password"],
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string" }
+        }
+      },
+      "AuthToken": {
+        "type": "object",
+        "required": ["access_token", "token_type", "role", "organization_id"],
+        "properties": {
+          "access_token": { "type": "string" },
+          "token_type": { "type": "string", "example": "bearer" },
+          "role": { "type": "string", "enum": ["admin", "recruiter"] },
+          "organization_id": { "type": "string" }
+        }
+      },
+      "CreateVacancyRequest": {
+        "type": "object",
+        "required": ["title", "raw_description"],
+        "properties": {
+          "title": { "type": "string" },
+          "raw_description": { "type": "string" }
+        }
+      },
+      "Vacancy": {
+        "type": "object",
+        "required": ["id", "title", "role_category", "seniority", "created_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "role_category": { "type": "string" },
+          "seniority": { "type": "string", "enum": ["junior", "mid", "senior", "lead"] },
+          "profile": { "$ref": "#/components/schemas/VacancyProfile" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "VacancyProfile": {
+        "type": "object",
+        "required": ["required_skills", "preferred_skills", "primary_language"],
+        "properties": {
+          "required_skills": { "type": "array", "items": { "type": "string" } },
+          "preferred_skills": { "type": "array", "items": { "type": "string" } },
+          "primary_language": { "type": "string" },
+          "focus_areas": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "ProblemSummary": {
+        "type": "object",
+        "required": ["id", "title", "difficulty", "language", "scenario_preview"],
+        "properties": {
+          "id": { "type": "string" },
+          "title": { "type": "string" },
+          "difficulty": { "type": "string", "enum": ["junior", "mid", "senior"] },
+          "language": { "type": "string" },
+          "scenario_preview": { "type": "string" },
+          "tags": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "CreateInterviewRequest": {
+        "type": "object",
+        "required": ["vacancy_id", "candidate_email", "candidate_name"],
+        "properties": {
+          "vacancy_id": { "type": "string" },
+          "candidate_email": { "type": "string", "format": "email" },
+          "candidate_name": { "type": "string" }
+        }
+      },
+      "InterviewSession": {
+        "type": "object",
+        "required": ["id", "access_url", "access_token", "status", "expires_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "access_url": { "type": "string" },
+          "access_token": { "type": "string" },
+          "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "evaluated"] },
+          "expires_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "RunCodeRequest": {
+        "type": "object",
+        "required": ["code", "language"],
+        "properties": {
+          "code": { "type": "string" },
+          "language": { "type": "string", "enum": ["python", "javascript", "sql"] }
+        }
+      },
+      "RunCodeResponse": {
+        "type": "object",
+        "required": ["status", "tests_passed", "total_tests"],
+        "properties": {
+          "status": { "type": "string", "enum": ["success", "test_failure", "compile_error", "timeout"] },
+          "stdout": { "type": "string" },
+          "stderr": { "type": "string" },
+          "execution_time_ms": { "type": "number" },
+          "tests_passed": { "type": "integer" },
+          "total_tests": { "type": "integer" },
+          "details": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "test_name": { "type": "string" },
+                "passed": { "type": "boolean" },
+                "message": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "EvaluationReport": {
+        "type": "object",
+        "required": ["id", "overall_score", "recommendation", "competencies", "evidence", "needs_human_review"],
+        "properties": {
+          "id": { "type": "string" },
+          "overall_score": { "type": "number" },
+          "recommendation": { "type": "string", "enum": ["hire", "borderline", "reject"] },
+          "needs_human_review": { "type": "boolean" },
+          "discrepancy_note": { "type": "string" },
+          "competencies": {
+            "type": "object",
+            "additionalProperties": { "type": "number" }
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["competency", "score", "evidence_quote", "turn_id"],
+              "properties": {
+                "competency": { "type": "string" },
+                "score": { "type": "integer" },
+                "evidence_quote": { "type": "string" },
+                "turn_id": { "type": "string" },
+                "reasoning": { "type": "string" }
+              }
+            }
+          },
+          "strengths": { "type": "array", "items": { "type": "string" } },
+          "risks": { "type": "array", "items": { "type": "string" } },
+          "suggested_human_questions": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "InterviewSummary": {
+        "type": "object",
+        "required": ["id", "candidate_masked_id", "vacancy_title", "status", "created_at"],
+        "properties": {
+          "id": { "type": "string" },
+          "candidate_masked_id": { "type": "string" },
+          "vacancy_title": { "type": "string" },
+          "status": { "type": "string" },
+          "overall_score": { "type": "number" },
+          "recommendation": { "type": "string" },
+          "created_at": { "type": "string", "format": "date-time" }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: evaluador-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: evaluador
+      POSTGRES_PASSWORD: evaluador_password_dev
+      POSTGRES_DB: evaluador_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U evaluador -d evaluador_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evaluador_net
+
+  redis:
+    image: redis:7-alpine
+    container_name: evaluador-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evaluador_net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  evaluador_net:
+    driver: bridge
