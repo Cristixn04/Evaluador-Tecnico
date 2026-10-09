@@ -129,10 +129,11 @@ function InterviewContent() {
     };
   }, [hasConsented, socket, triggerImmediateSnapshot]);
 
-  // Manejar inicio de la entrevista tras aceptar consentimiento
+  // Manejar inicio de la entrevista tras aceptar consentimiento (Fase INTRO -> PROBLEM)
   const handleStartInterview = () => {
     setHasConsented(true);
-    socket.requestPhaseTransition("CLARIFY");
+    setActiveLeftTab("problem");
+    socket.requestPhaseTransition("PROBLEM");
   };
 
   // Manejar ejecución de pruebas

@@ -13,6 +13,7 @@ import {
   CheckCircle,
   HelpCircle,
   Cpu,
+  FileText,
 } from "lucide-react";
 
 interface InterviewHeaderProps {
@@ -24,11 +25,12 @@ interface InterviewHeaderProps {
 }
 
 const PHASES: Array<{ id: InterviewPhase; label: string; icon: any }> = [
-  { id: "CLARIFY", label: "1. Aclaración", icon: HelpCircle },
-  { id: "DESIGN", label: "2. Diseño", icon: Cpu },
-  { id: "CODING", label: "3. Código", icon: Code2 },
-  { id: "PROBE", label: "4. Sondeo", icon: Sparkles },
-  { id: "WRAPUP", label: "5. Cierre", icon: CheckCircle },
+  { id: "PROBLEM", label: "1. Enunciado", icon: FileText },
+  { id: "CLARIFY", label: "2. Aclaración", icon: HelpCircle },
+  { id: "DESIGN", label: "3. Diseño", icon: Cpu },
+  { id: "CODING", label: "4. Código", icon: Code2 },
+  { id: "PROBE", label: "5. Sondeo", icon: Sparkles },
+  { id: "WRAPUP", label: "6. Cierre", icon: CheckCircle },
 ];
 
 export function InterviewHeader({
@@ -48,6 +50,7 @@ export function InterviewHeader({
     switch (phase) {
       case "INTRO":
       case "PROBLEM":
+        return { label: "Hacer preguntas al evaluador", target: "CLARIFY" as InterviewPhase };
       case "CLARIFY":
         return { label: "Listo para diseñar", target: "DESIGN" as InterviewPhase };
       case "DESIGN":
