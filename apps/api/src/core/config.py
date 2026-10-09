@@ -9,7 +9,7 @@ class Settings(BaseSettings):
 
     # Base de Datos PostgreSQL
     DATABASE_URL: str = Field(
-        default="postgresql+asyncpg://evaluador:evaluador_password_dev@localhost:5432/evaluador_db",
+        default="postgresql+asyncpg://evaluador:evaluador_password_dev@localhost:5435/evaluador_db",
         description="URL asíncrona de conexión a PostgreSQL",
     )
 
