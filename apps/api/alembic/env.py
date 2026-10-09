@@ -8,7 +8,16 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from src.core.config import settings
 from src.db.base import Base
-from src.db.models import Interview, Problem, Snapshot, Turn, Vacancy
+from src.db.models import (
+    Interview,
+    Membership,
+    Organization,
+    Problem,
+    Snapshot,
+    Turn,
+    User,
+    Vacancy,
+)
 
 config = context.config
 config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
@@ -18,7 +27,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-_ = (Interview, Problem, Snapshot, Turn, Vacancy)
+_ = (Interview, Membership, Organization, Problem, Snapshot, Turn, User, Vacancy)
 
 
 def run_migrations_offline() -> None:

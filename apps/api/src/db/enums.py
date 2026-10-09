@@ -24,3 +24,8 @@ class InterviewStatus(StrEnum):
 class TurnSpeaker(StrEnum):
     CANDIDATE = "candidate"
     AGENT = "agent"
+
+
+class UserRole(StrEnum):
+    ADMIN = "admin"
+    RECRUITER = "recruiter"

@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
-from sqlalchemy import DateTime, Enum, String, Text, Uuid, func, text
+from sqlalchemy import DateTime, Enum, ForeignKey, String, Text, Uuid, func, text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,6 +12,7 @@ from src.db.base import Base
 from src.db.enums import Seniority
 
 if TYPE_CHECKING:
+    from src.db.models.auth import Organization
     from src.db.models.interview import Interview
 
 
@@ -23,6 +24,12 @@ class Vacancy(Base):
         primary_key=True,
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
+    )
+    organization_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("organizations.id", ondelete="RESTRICT"),
+        nullable=True,
+        index=True,
     )
     title: Mapped[str] = mapped_column(String(255), nullable=False)
     raw_description: Mapped[str] = mapped_column(Text, nullable=False)
@@ -45,4 +52,5 @@ class Vacancy(Base):
         server_default=func.now(),
     )
 
+    organization: Mapped[Organization | None] = relationship(back_populates="vacancies")
     interviews: Mapped[list[Interview]] = relationship(back_populates="vacancy")

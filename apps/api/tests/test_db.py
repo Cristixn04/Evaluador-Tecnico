@@ -21,7 +21,16 @@ def test_database_url_uses_asyncpg() -> None:
 
 def test_models_are_registered_in_metadata() -> None:
     tables = set(Base.metadata.tables)
-    assert tables == {"vacancies", "problems", "interviews", "turns", "snapshots"}
+    assert tables == {
+        "organizations",
+        "users",
+        "memberships",
+        "vacancies",
+        "problems",
+        "interviews",
+        "turns",
+        "snapshots",
+    }
 
 
 def test_get_db_is_async_generator() -> None:

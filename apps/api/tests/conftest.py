@@ -7,9 +7,18 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 from src.core.config import settings
 from src.db.base import Base
-from src.db.models import Interview, Problem, Snapshot, Turn, Vacancy
+from src.db.models import (
+    Interview,
+    Membership,
+    Organization,
+    Problem,
+    Snapshot,
+    Turn,
+    User,
+    Vacancy,
+)
 
-_ = (Interview, Problem, Snapshot, Turn, Vacancy)
+_ = (Interview, Membership, Organization, Problem, Snapshot, Turn, User, Vacancy)
 
 
 @pytest.fixture

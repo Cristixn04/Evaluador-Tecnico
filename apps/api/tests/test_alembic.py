@@ -19,10 +19,9 @@ def test_initial_migration_is_registered() -> None:
     config.set_main_option("script_location", str(API_ROOT / "alembic"))
     script = ScriptDirectory.from_config(config)
     revisions = list(script.walk_revisions())
-    assert len(revisions) == 1
-    revision = revisions[0]
-    assert revision.revision == "0001_initial_s02"
-    assert revision.down_revision is None
+    assert [item.revision for item in revisions] == ["0002_auth_s03", "0001_initial_s02"]
+    assert revisions[0].down_revision == "0001_initial_s02"
+    assert revisions[1].down_revision is None
 
 
 async def _public_tables(engine) -> set[str]:
@@ -77,12 +76,21 @@ async def test_alembic_upgrade_and_downgrade() -> None:
     engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
     try:
         tables = await _public_tables(engine)
-        assert tables == {"vacancies", "problems", "interviews", "turns", "snapshots"}
+        assert tables == {
+            "organizations",
+            "users",
+            "memberships",
+            "vacancies",
+            "problems",
+            "interviews",
+            "turns",
+            "snapshots",
+        }
         async with engine.connect() as connection:
             version = (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalar_one()
-            assert version == "0001_initial_s02"
+            assert version == "0002_auth_s03"
     finally:
         await engine.dispose()
 
