@@ -149,6 +149,15 @@
         "summary": "Verificar token de acceso del candidato e inicializar sala anónima",
         "description": "Permite al candidato entrar a la sala. Devuelve información de la vacante y problema SIN incluir ningún dato de identidad personal (cero PII).",
         "operationId": "verifyCandidateSession",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Token de invitación del candidato (también aceptado vía Authorization: Bearer <token>)",
+            "schema": { "type": "string" }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Sesión anónima verificada",
@@ -313,7 +322,16 @@
       },
       "AnonymousCandidateSession": {
         "type": "object",
-        "required": ["session_id", "masked_candidate_id", "vacancy_title", "current_phase", "status", "problem"],
+        "required": [
+          "session_id",
+          "masked_candidate_id",
+          "vacancy_title",
+          "current_phase",
+          "status",
+          "problem",
+          "ws_token",
+          "ws_url"
+        ],
         "properties": {
           "session_id": { "type": "string" },
           "masked_candidate_id": { "type": "string", "example": "CAND-7F2A" },
@@ -323,7 +341,15 @@
             "enum": ["INTRO", "PROBLEM", "CLARIFY", "DESIGN", "CODING", "PROBE", "WRAPUP", "EVALUATE"]
           },
           "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "evaluated"] },
-          "problem": { "$ref": "#/components/schemas/ProblemSummary" }
+          "problem": { "$ref": "#/components/schemas/ProblemSummary" },
+          "ws_token": {
+            "type": "string",
+            "description": "Token JWT de corta duración para autenticar la conexión WebSocket"
+          },
+          "ws_url": {
+            "type": "string",
+            "description": "URL del endpoint WebSocket para la sesión"
+          }
         }
       },
       "ProblemSummary": {

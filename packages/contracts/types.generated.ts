@@ -225,6 +225,10 @@ export interface components {
             /** @enum {string} */
             status: "pending" | "in_progress" | "completed" | "evaluated";
             problem: components["schemas"]["ProblemSummary"];
+            /** @description Token JWT de corta duración para autenticar la conexión WebSocket */
+            ws_token: string;
+            /** @description URL del endpoint WebSocket para la sesión */
+            ws_url: string;
         };
         ProblemSummary: {
             id: string;
@@ -419,7 +423,10 @@ export interface operations {
     };
     verifyCandidateSession: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Token de invitación del candidato (también aceptado vía Authorization: Bearer <token>) */
+                token?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;

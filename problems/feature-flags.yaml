@@ -1,0 +1,38 @@
+id: feature-flags
+title: Feature flags por porcentaje
+role: fullstack
+seniority: junior
+difficulty: junior
+tags:
+  - javascript
+  - feature-flags
+  - hashing
+languages:
+  - javascript
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Evalúa flags `{name, percentage}` para un `user_id`. Un flag está
+  activo si `hash(user_id + ":" + name) % 100 < percentage`, donde
+  `hash` es la suma de códigos UTF-16 de cada carácter. Entrada JSON
+  con `user_id` y `flags`. Salida JSON `name -> boolean` con claves
+  ordenadas.
+tests:
+  - id: always-on
+    input: '{"user_id":"u1","flags":[{"name":"beta","percentage":100}]}'
+    expected_output: '{"beta":true}'
+  - id: always-off
+    input: '{"user_id":"u1","flags":[{"name":"beta","percentage":0}]}'
+    expected_output: '{"beta":false}'
+  - id: two-flags
+    input: '{"user_id":"abc","flags":[{"name":"a","percentage":100},{"name":"b","percentage":0}]}'
+    expected_output: '{"a":true,"b":false}'
+boilerplate:
+  javascript: |
+    const fs = require("fs");
+    const payload = JSON.parse(fs.readFileSync(0, "utf8"));
+    function evaluate(payload) {
+      throw new Error("not implemented");
+    }
+    process.stdout.write(JSON.stringify(evaluate(payload)));

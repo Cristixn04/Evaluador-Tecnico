@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle2, Terminal, Shield, Cpu, Code2, ArrowRight } from "lucide-react";
+import { CheckCircle2, Terminal, Shield, Cpu, Code2, ArrowRight, Sparkles } from "lucide-react";
 
 export default function Home() {
   return (
@@ -15,14 +16,20 @@ export default function Home() {
             </div>
             <div>
               <span className="font-bold text-lg tracking-tight">Evaluador Técnico</span>
-              <span className="text-xs text-muted-foreground ml-2 font-mono">v0.0.1 (Sprint 0)</span>
+              <span className="text-xs text-muted-foreground ml-2 font-mono">v0.1.0 (Sprint 1)</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="gap-1.5 font-mono">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-              Sprint 0: Cimientos Activos
-            </Badge>
+            <Link href="/login">
+              <Button variant="outline" size="sm" className="text-xs">
+                Iniciar Sesión
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button size="sm" className="text-xs gap-1.5">
+                Panel Reclutador <ArrowRight className="h-3.5 w-3.5" />
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
@@ -38,15 +45,19 @@ export default function Home() {
             Evalúa el <span className="text-primary">razonamiento</span>, no solo la respuesta binaria.
           </h1>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Agente de IA que conduce la entrevista técnica inicial, plantea problemas reales, analiza la trayectoria de depuración y entrega un informe defendible y libre de sesgos.
+            Agente de IA que conduce la entrevista técnica inicial, plantea problemas reales, analiza la trayectoria de depuración y entrega un informe defendible y libre de sesgos para tus vacantes.
           </p>
           <div className="flex flex-wrap gap-4 pt-2">
-            <Button size="lg" className="gap-2">
-              Iniciar Sala de Prueba <ArrowRight className="h-4 w-4" />
-            </Button>
-            <Button variant="outline" size="lg">
-              Ver Contrato OpenAPI v0
-            </Button>
+            <Link href="/dashboard/vacancies/new">
+              <Button size="lg" className="gap-2">
+                <Sparkles className="h-4 w-4" /> Probar Parser de Vacantes con IA
+              </Button>
+            </Link>
+            <Link href="/dashboard">
+              <Button variant="outline" size="lg">
+                Ver Panel de Control
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -58,20 +69,20 @@ export default function Home() {
                 <Code2 className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg">Frontend & UX (Cristian)</CardTitle>
-              <CardDescription>Next.js 15 App Router + Tailwind + shadcn/ui</CardDescription>
+              <CardDescription>Sprint 1: Mocking con MSW y Vacantes</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2 text-foreground font-medium">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Estructura base y design system inicial</span>
+                <span>Mocking con MSW activado en navegador</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Tipos tipados vía `@evaluador/contracts`</span>
+                <span>Pantalla Crear Vacante con IA y chips</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Listo para Monaco Editor & WebSocket</span>
+                <span>Generador de invitaciones con PII aislada</span>
               </div>
             </CardContent>
           </Card>
@@ -82,20 +93,20 @@ export default function Home() {
                 <Cpu className="h-5 w-5" />
               </div>
               <CardTitle className="text-lg">Backend & IA (Samuel)</CardTitle>
-              <CardDescription>FastAPI + Pydantic v2 + Docker Compose</CardDescription>
+              <CardDescription>Sprint 1: FastAPI + Grok Gateway</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2 text-foreground font-medium">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Postgres 16 & Redis en `infra/docker-compose`</span>
+                <span>Esqueleto FastAPI y healthcheck</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Contrato OpenAPI v0 compartido</span>
+                <span>Modelos SQLAlchemy y contratos sincronizados</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>Listo para LLM Gateway (Grok)</span>
+                <span>LLM Gateway compatible con Grok / OpenAI</span>
               </div>
             </CardContent>
           </Card>
@@ -105,21 +116,21 @@ export default function Home() {
               <div className="h-10 w-10 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center mb-2">
                 <Shield className="h-5 w-5" />
               </div>
-              <CardTitle className="text-lg">Arquitectura Defendible</CardTitle>
-              <CardDescription>ADRs y Cumplimiento Normativo</CardDescription>
+              <CardTitle className="text-lg">Privacidad & Contratos</CardTitle>
+              <CardDescription>Capa de Contratos (@evaluador/contracts)</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm text-muted-foreground">
               <div className="flex items-center gap-2 text-foreground font-medium">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>ADR-0001: WebSocket Unificado</span>
+                <span>Protocolo WebSocket tipado</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>ADR-0002: Interacción Texto/Código vs Voz</span>
+                <span>PII segregada por diseño (Ley 1581)</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                <span>ADR-0004: Anti-Cheat Cognitivo y Sandbox</span>
+                <span>Desarrollo desacoplado con mocks</span>
               </div>
             </CardContent>
           </Card>
@@ -132,21 +143,21 @@ export default function Home() {
               <Terminal className="h-4 w-4" />
               <span>Orquestación de Comandos (Makefile)</span>
             </div>
-            <CardTitle className="text-base">Comandos Rápidos para el Monorepo</CardTitle>
+            <CardTitle className="text-base">Comandos Rápidos</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
               <div className="bg-background/80 p-3 rounded-md border border-border/40">
-                <span className="text-primary font-bold">make docker-up</span>
-                <p className="text-muted-foreground mt-1">Inicia PostgreSQL y Redis en Docker</p>
-              </div>
-              <div className="bg-background/80 p-3 rounded-md border border-border/40">
                 <span className="text-primary font-bold">make dev-web</span>
-                <p className="text-muted-foreground mt-1">Servidor Next.js en puerto 3000</p>
+                <p className="text-muted-foreground mt-1">Next.js en puerto 3000 con MSW activo</p>
               </div>
               <div className="bg-background/80 p-3 rounded-md border border-border/40">
-                <span className="text-primary font-bold">make update-contracts</span>
-                <p className="text-muted-foreground mt-1">Regenera tipos TypeScript desde OpenAPI</p>
+                <span className="text-primary font-bold">make dev-api</span>
+                <p className="text-muted-foreground mt-1">FastAPI en puerto 8000</p>
+              </div>
+              <div className="bg-background/80 p-3 rounded-md border border-border/40">
+                <span className="text-primary font-bold">make docker-up</span>
+                <p className="text-muted-foreground mt-1">PostgreSQL 16 y Redis 7</p>
               </div>
             </div>
           </CardContent>

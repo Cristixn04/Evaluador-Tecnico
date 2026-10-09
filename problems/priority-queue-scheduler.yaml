@@ -1,0 +1,40 @@
+id: priority-queue-scheduler
+title: Cola de prioridad
+role: backend
+seniority: junior
+difficulty: junior
+tags:
+  - python
+  - queues
+  - heap
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Procesa operaciones sobre una cola de prioridad (menor `priority` sale
+  primero; empate por orden de inserción). Ops: `push` con `{id, priority}`
+  y `pop`. Ignora `pop` si la cola está vacía. Devuelve `{"popped":[...]}`
+  con los ids extraídos en orden.
+tests:
+  - id: lower-priority-first
+    input: '{"ops":[{"op":"push","id":"a","priority":2},{"op":"push","id":"b","priority":1},{"op":"pop"},{"op":"pop"}]}'
+    expected_output: '{"popped":["b","a"]}'
+  - id: insertion-tie
+    input: '{"ops":[{"op":"push","id":"a","priority":1},{"op":"push","id":"b","priority":1},{"op":"pop"},{"op":"pop"}]}'
+    expected_output: '{"popped":["a","b"]}'
+  - id: pop-empty
+    input: '{"ops":[{"op":"pop"},{"op":"push","id":"a","priority":1},{"op":"pop"}]}'
+    expected_output: '{"popped":["a"]}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def schedule(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(schedule(payload), separators=(",", ":")))

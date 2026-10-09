@@ -1,0 +1,53 @@
+id: configurable-payroll
+title: Nómina configurable por reglas
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - python
+  - payroll
+  - rules
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Calcula el neto a pagar a partir de reglas **configurables** (no son
+  una interpretación legal). Cada empleado tiene `gross_cents`. Las
+  reglas llegan como lista de `{type, basis_points}` aplicadas en orden:
+
+  - `deduction`: resta `gross * basis_points / 10000`
+  - `bonus`: suma `gross * basis_points / 10000`
+
+  Usa aritmética entera (cents) y redondeo hacia abajo. Entrada JSON:
+
+  ```json
+  {
+    "gross_cents": 1000000,
+    "rules": [{"type": "deduction", "basis_points": 400}]
+  }
+  ```
+
+  Imprime `{"net_cents": <int>}`.
+tests:
+  - id: no-rules
+    input: '{"gross_cents":1000000,"rules":[]}'
+    expected_output: '{"net_cents":1000000}'
+  - id: single-deduction
+    input: '{"gross_cents":1000000,"rules":[{"type":"deduction","basis_points":400}]}'
+    expected_output: '{"net_cents":960000}'
+  - id: deduction-then-bonus
+    input: '{"gross_cents":200000,"rules":[{"type":"deduction","basis_points":1000},{"type":"bonus","basis_points":500}]}'
+    expected_output: '{"net_cents":190000}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def net_pay(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(net_pay(payload), separators=(",", ":")))

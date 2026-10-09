@@ -1,0 +1,43 @@
+id: sliding-window-rate-limiter
+title: Rate limiter de ventana deslizante
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - python
+  - rate-limit
+  - algorithms
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Implementa un rate limiter de ventana deslizante. Recibes `limit`,
+  `window_ms` y una lista de eventos `{client_id, ts_ms}` en orden
+  cronológico. Para cada evento imprime `true` si se acepta y `false`
+  si se rechaza (el cliente ya alcanzó `limit` solicitudes en la
+  ventana `[ts_ms - window_ms, ts_ms]`).
+
+  Entrada JSON; salida JSON `{"accepted":[true,false,...]}`.
+tests:
+  - id: under-limit
+    input: '{"limit":2,"window_ms":1000,"events":[{"client_id":"a","ts_ms":1},{"client_id":"a","ts_ms":2}]}'
+    expected_output: '{"accepted":[true,true]}'
+  - id: third-rejected
+    input: '{"limit":2,"window_ms":1000,"events":[{"client_id":"a","ts_ms":1},{"client_id":"a","ts_ms":2},{"client_id":"a","ts_ms":3}]}'
+    expected_output: '{"accepted":[true,true,false]}'
+  - id: window-slides
+    input: '{"limit":1,"window_ms":10,"events":[{"client_id":"a","ts_ms":0},{"client_id":"a","ts_ms":10}]}'
+    expected_output: '{"accepted":[true,true]}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def rate_limit(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(rate_limit(payload), separators=(",", ":")))

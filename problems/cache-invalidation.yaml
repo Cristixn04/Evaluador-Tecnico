@@ -1,0 +1,51 @@
+id: cache-invalidation
+title: Invalidación de caché por tags
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - python
+  - cache
+  - redis
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Simula una caché con entradas `{key, tags, value}`. Las operaciones
+  son `set` y `invalidate`. `invalidate` elimina todas las claves que
+  compartan al menos un tag. Procesa `ops` en orden y devuelve el mapa
+  restante `key -> value` ordenado por clave.
+
+  Entrada:
+
+  ```json
+  {
+    "ops": [
+      {"op": "set", "key": "u1", "tags": ["user"], "value": "A"},
+      {"op": "invalidate", "tags": ["user"]}
+    ]
+  }
+  ```
+tests:
+  - id: set-only
+    input: '{"ops":[{"op":"set","key":"a","tags":["t"],"value":"1"}]}'
+    expected_output: '{"a":"1"}'
+  - id: invalidate-tag
+    input: '{"ops":[{"op":"set","key":"a","tags":["user"],"value":"1"},{"op":"set","key":"b","tags":["order"],"value":"2"},{"op":"invalidate","tags":["user"]}]}'
+    expected_output: '{"b":"2"}'
+  - id: overlapping-tags
+    input: '{"ops":[{"op":"set","key":"a","tags":["x","y"],"value":"1"},{"op":"invalidate","tags":["y"]}]}'
+    expected_output: '{}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def apply_ops(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(apply_ops(payload), separators=(",", ":"), sort_keys=True))

@@ -1,0 +1,40 @@
+id: csv-bulk-processing
+title: Procesamiento masivo de CSV
+role: data
+seniority: junior
+difficulty: junior
+tags:
+  - python
+  - csv
+  - parsing
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Recibes un CSV con cabecera `sku,qty,price_cents`. Suma `qty * price_cents`
+  por `sku` e ignora filas con `qty` o `price_cents` no enteros. Entrada JSON
+  `{"csv": "sku,qty,price_cents\\na,2,100\\n..."}`. Salida JSON
+  `sku -> total_cents` ordenada por sku.
+tests:
+  - id: two-skus
+    input: '{"csv":"sku,qty,price_cents\na,2,100\nb,1,50"}'
+    expected_output: '{"a":200,"b":50}'
+  - id: skip-invalid
+    input: '{"csv":"sku,qty,price_cents\na,2,100\nb,x,50"}'
+    expected_output: '{"a":200}'
+  - id: aggregate-same-sku
+    input: '{"csv":"sku,qty,price_cents\na,1,10\na,2,10"}'
+    expected_output: '{"a":30}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def totals(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(totals(payload), separators=(",", ":"), sort_keys=True))
