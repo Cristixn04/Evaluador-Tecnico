@@ -1,0 +1,41 @@
+id: geospatial-search
+title: Búsqueda geoespacial por radio
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - python
+  - geo
+  - algorithms
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Dados un origen `{x,y}`, un `radius` y puntos `{id,x,y}`, devuelve los
+  `id` de puntos cuya distancia euclidiana al origen es `<= radius`,
+  ordenados por id. Distancia: sqrt((x-ox)^2 + (y-oy)^2). Compara con
+  `radius` usando distancia al cuadrado para evitar flotantes inestables
+  cuando sea posible (coordenadas enteras).
+tests:
+  - id: inside-and-outside
+    input: '{"origin":{"x":0,"y":0},"radius":5,"points":[{"id":"a","x":3,"y":4},{"id":"b","x":6,"y":0}]}'
+    expected_output: '{"ids":["a"]}'
+  - id: on-boundary
+    input: '{"origin":{"x":0,"y":0},"radius":5,"points":[{"id":"a","x":0,"y":5}]}'
+    expected_output: '{"ids":["a"]}'
+  - id: none
+    input: '{"origin":{"x":0,"y":0},"radius":1,"points":[{"id":"z","x":2,"y":2}]}'
+    expected_output: '{"ids":[]}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def nearby(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(nearby(payload), separators=(",", ":")))

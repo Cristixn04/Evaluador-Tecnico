@@ -1,0 +1,44 @@
+id: circuit-breaker
+title: Circuit breaker
+role: backend
+seniority: senior
+difficulty: senior
+tags:
+  - python
+  - resilience
+  - circuit-breaker
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Simula un circuit breaker con `failure_threshold` y `reset_after`.
+  Empieza `closed`. Cada evento es `success` o `failure`. En `closed`,
+  `failure_threshold` fallos consecutivos abren el circuito. En `open`,
+  las siguientes `reset_after` llamadas se rechazan (`rejected`) y luego
+  pasa a `half_open`. En `half_open`, un `success` cierra y un `failure`
+  vuelve a abrir (el siguiente ciclo espera otra vez `reset_after`
+  rechazos). Devuelve `{"results":[...]}` con `ok`, `fail` o `rejected`
+  por evento.
+tests:
+  - id: stays-closed
+    input: '{"failure_threshold":2,"reset_after":1,"events":["success","failure","success"]}'
+    expected_output: '{"results":["ok","fail","ok"]}'
+  - id: opens-and-rejects
+    input: '{"failure_threshold":2,"reset_after":1,"events":["failure","failure","success"]}'
+    expected_output: '{"results":["fail","fail","rejected"]}'
+  - id: half-open-success-closes
+    input: '{"failure_threshold":1,"reset_after":1,"events":["failure","success","success"]}'
+    expected_output: '{"results":["fail","rejected","ok"]}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def run(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(run(payload), separators=(",", ":")))

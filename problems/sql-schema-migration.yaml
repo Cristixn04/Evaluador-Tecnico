@@ -1,0 +1,34 @@
+id: sql-schema-migration
+title: Migración de esquema SQL
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - sql
+  - migrations
+  - postgresql
+languages:
+  - sql
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Dada la tabla `orders(id INT, status TEXT)`, escribe una consulta que
+  cuente pedidos por `status` y devuelva dos columnas: `status` y
+  `total`, ordenadas por `status` ascendente.
+
+  El harness ejecuta tu SQL contra un dataset de prueba. No uses DDL.
+tests:
+  - id: three-statuses
+    input: "INSERT INTO orders VALUES (1,'paid'),(2,'paid'),(3,'pending');"
+    expected_output: "paid,2\npending,1"
+  - id: single-row
+    input: "INSERT INTO orders VALUES (1,'failed');"
+    expected_output: "failed,1"
+boilerplate:
+  sql: |
+    -- Write a SELECT that returns status, total
+    SELECT status, COUNT(*) AS total
+    FROM orders
+    GROUP BY status
+    ORDER BY status;

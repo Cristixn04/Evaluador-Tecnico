@@ -1,0 +1,39 @@
+id: idempotent-webhook
+title: Webhook idempotente
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - python
+  - webhooks
+  - idempotency
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Procesa eventos `{event_id, amount_cents}` en orden. Si `event_id` ya
+  fue visto, ignóralo. Devuelve `{"applied": N, "total_cents": M}` donde
+  `N` es el número de eventos nuevos aplicados y `M` la suma de sus montos.
+tests:
+  - id: all-unique
+    input: '{"events":[{"event_id":"e1","amount_cents":10},{"event_id":"e2","amount_cents":20}]}'
+    expected_output: '{"applied":2,"total_cents":30}'
+  - id: duplicate-ignored
+    input: '{"events":[{"event_id":"e1","amount_cents":10},{"event_id":"e1","amount_cents":99}]}'
+    expected_output: '{"applied":1,"total_cents":10}'
+  - id: empty
+    input: '{"events":[]}'
+    expected_output: '{"applied":0,"total_cents":0}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def process(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(process(payload), separators=(",", ":")))
