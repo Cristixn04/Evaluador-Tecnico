@@ -150,9 +150,25 @@ export const handlers = [
     );
   }),
 
-  // 5. GET /sessions/verify (Candidato entra a la sala - Cero PII)
-  http.get("*/sessions/verify", async () => {
+  // 5. GET /sessions/verify (Candidato entra a la sala - Cero PII y autenticación de WS)
+  http.get("*/sessions/verify", async ({ request }) => {
     await delay(300);
+    const url = new URL(request.url);
+    const queryToken = url.searchParams.get("token");
+    const authHeader = request.headers.get("Authorization");
+    const bearerToken = authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null;
+    const token = queryToken || bearerToken;
+
+    if (!token || token === "invalid" || token === "expired") {
+      return HttpResponse.json(
+        { detail: "Token de invitación inválido o expirado" },
+        { status: 401 }
+      );
+    }
+
+    const shortLivedWsToken = `ws_jwt_${Math.random().toString(36).substring(2, 12)}`;
+    const wsUrl = `ws://localhost:8000/api/v1/interviews/sess-live-999/live`;
+
     return HttpResponse.json({
       session_id: "sess-live-999",
       masked_candidate_id: "CAND-7F2A",
@@ -168,6 +184,8 @@ export const handlers = [
           "Una pasarela de pagos colombiana experimenta discrepancias de redondeo y transacciones huérfanas en conciliaciones de lotes ACH. Diseña el algoritmo de conciliación.",
         tags: ["Fintech", "PSE", "Algoritmos", "Idempotencia"],
       },
+      ws_token: shortLivedWsToken,
+      ws_url: wsUrl,
     });
   }),
 ];

@@ -13,6 +13,7 @@ import { ProblemViewer } from "@/components/interview/problem-viewer";
 import { ChatPanel } from "@/components/interview/chat-panel";
 import { CodeEditor } from "@/components/interview/code-editor";
 import { TestConsole } from "@/components/interview/test-console";
+import { api } from "@/lib/api/client";
 import type { CodeLanguage } from "@evaluador/contracts";
 import {
   ShieldCheck,
@@ -23,23 +24,15 @@ import {
   ArrowRight,
   Loader2,
   CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
 
 function InterviewContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token") || "cand-demo-token-123";
-
-  // Datos de sesión (mock inicial si no hay backend activo)
-  const candidateMaskedId = "CAND-7F2A";
-  const problemData = {
-    id: "prob-pse-conciliacion",
-    title: "Conciliación de Pagos PSE y Liquidación Bancaria",
-    difficulty: "senior",
-    language: "python",
-    scenario_preview:
-      "Una pasarela de pagos fintech colombiana experimenta discrepancias de redondeo y transacciones huérfanas en conciliaciones de lotes ACH. Diseña el algoritmo de conciliación identificando registros exactamente conciliados, discrepancias de monto y registros huérfanos.",
-    tags: ["Fintech", "PSE", "ACH", "Algoritmos", "Idempotencia"],
-  };
+  const [sessionData, setSessionData] = useState<any>(null);
+  const [isVerifying, setIsVerifying] = useState(true);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
 
   const [hasConsented, setHasConsented] = useState(false);
   const [activeLeftTab, setActiveLeftTab] = useState<"chat" | "problem">("chat");
@@ -47,12 +40,49 @@ function InterviewContent() {
   const [language, setLanguage] = useState<CodeLanguage>("python");
   const [saveStatus, setSaveStatus] = useState<"saved" | "saving">("saved");
 
+  useEffect(() => {
+    async function verify() {
+      if (!token) {
+        setVerificationError("No se proporcionó ningún token en el enlace.");
+        setIsVerifying(false);
+        return;
+      }
+      try {
+        const data = await api.verifyCandidateSession(token);
+        setSessionData(data);
+        if (data.problem?.language) {
+          setLanguage(data.problem.language as CodeLanguage);
+        }
+      } catch (err: any) {
+        setVerificationError(
+          "El enlace de evaluación no es válido o ha expirado. Por favor solicita un nuevo enlace a tu reclutador."
+        );
+      } finally {
+        setIsVerifying(false);
+      }
+    }
+    verify();
+  }, [token]);
+
+  const candidateMaskedId = sessionData?.masked_candidate_id || "CAND-7F2A";
+  const problemData = sessionData?.problem || {
+    id: "prob-pse-conciliacion",
+    title: "Conciliación de Pagos PSE y Liquidación Bancaria",
+    difficulty: "senior",
+    language: "python",
+    scenario_preview:
+      "Una pasarela de pagos fintech colombiana experimenta discrepancias de redondeo y transacciones huérfanas en conciliaciones de lotes ACH. Diseña el algoritmo de conciliación.",
+    tags: ["Fintech", "PSE", "ACH", "Algoritmos", "Idempotencia"],
+  };
+
   const socket = useInterviewSocket({
-    interviewId: "sess-live-999",
+    interviewId: sessionData?.session_id || "sess-live-999",
     token,
     candidateMaskedId,
     problemTitle: problemData.title,
     initialPhase: "INTRO",
+    wsUrl: sessionData?.ws_url,
+    wsToken: sessionData?.ws_token,
   });
 
   // Hook de snapshots automáticos de la trayectoria
@@ -110,6 +140,46 @@ function InterviewContent() {
     triggerImmediateSnapshot("run");
     socket.runCode(code, language);
   };
+
+  // 0. Estado de carga durante verificación de token
+  if (isVerifying) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-background">
+        <div className="flex items-center gap-3 text-sm text-muted-foreground font-mono">
+          <Loader2 className="h-5 w-5 animate-spin text-primary" />
+          <span>Verificando enlace de evaluación y credenciales anónimas...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 0.1 Error de verificación (Token inválido o expirado)
+  if (verificationError) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-muted/20">
+        <div className="w-full max-w-md">
+          <Card className="border-destructive/40 shadow-xl">
+            <CardHeader className="text-center space-y-2">
+              <div className="h-10 w-10 rounded-full bg-destructive/10 text-destructive flex items-center justify-center mx-auto">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
+              <CardTitle className="text-lg">Enlace No Válido o Expirado</CardTitle>
+              <CardDescription className="text-xs">
+                {verificationError}
+              </CardDescription>
+            </CardHeader>
+            <CardFooter className="flex justify-center">
+              <Link href="/">
+                <Button variant="outline" size="sm">
+                  Volver al inicio
+                </Button>
+              </Link>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   // 1. Pantalla Inicial de Reglas y Consentimiento (Fase INTRO)
   if (!hasConsented) {
