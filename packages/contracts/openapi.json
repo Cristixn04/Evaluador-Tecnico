@@ -227,6 +227,27 @@
         }
       }
     },
+    "/interviews/{id}/trajectory": {
+      "get": {
+        "summary": "Obtener la trayectoria cronológica de código y depuración de la entrevista",
+        "operationId": "getInterviewTrajectory",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trayectoria cronológica para el reproductor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewTrajectory"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/organizations/{id}/interviews": {
       "get": {
         "summary": "Listar entrevistas de una organización para el panel de reclutamiento",
@@ -439,6 +460,33 @@
           "overall_score": { "type": "number" },
           "recommendation": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TrajectorySnapshot": {
+        "type": "object",
+        "required": ["timestamp_offset_seconds", "phase", "reason", "code", "language"],
+        "properties": {
+          "timestamp_offset_seconds": { "type": "number" },
+          "phase": { "type": "string" },
+          "reason": { "type": "string" },
+          "code": { "type": "string" },
+          "language": { "type": "string" },
+          "tests_passed": { "type": "integer" },
+          "total_tests": { "type": "integer" },
+          "execution_status": { "type": "string" },
+          "event_note": { "type": "string" }
+        }
+      },
+      "InterviewTrajectory": {
+        "type": "object",
+        "required": ["interview_id", "total_duration_seconds", "snapshots"],
+        "properties": {
+          "interview_id": { "type": "string" },
+          "total_duration_seconds": { "type": "number" },
+          "snapshots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TrajectorySnapshot" }
+          }
         }
       }
     }

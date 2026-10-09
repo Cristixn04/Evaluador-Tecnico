@@ -5,6 +5,10 @@ export type CreateVacancyRequest = components["schemas"]["CreateVacancyRequest"]
 export type InvitationResponse = components["schemas"]["InvitationResponse"];
 export type CreateInvitationRequest = components["schemas"]["CreateInvitationRequest"];
 export type AnonymousCandidateSession = components["schemas"]["AnonymousCandidateSession"];
+export type EvaluationReport = components["schemas"]["EvaluationReport"];
+export type InterviewSummary = components["schemas"]["InterviewSummary"];
+export type InterviewTrajectory = components["schemas"]["InterviewTrajectory"];
+export type TrajectorySnapshot = components["schemas"]["TrajectorySnapshot"];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -80,6 +84,33 @@ class ApiClient {
       },
     });
     if (!res.ok) throw new Error("Sesión inválida o expirada");
+    return res.json();
+  }
+
+  // 6. Obtener evaluación y reporte defendible de una entrevista
+  async getEvaluation(interviewId: string): Promise<EvaluationReport> {
+    const res = await fetch(`${API_BASE_URL}/interviews/${interviewId}/evaluation`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al obtener la evaluación de la entrevista");
+    return res.json();
+  }
+
+  // 7. Obtener la trayectoria cronológica de código para el reproductor
+  async getInterviewTrajectory(interviewId: string): Promise<InterviewTrajectory> {
+    const res = await fetch(`${API_BASE_URL}/interviews/${interviewId}/trajectory`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al obtener la trayectoria de la entrevista");
+    return res.json();
+  }
+
+  // 8. Listar entrevistas de una organización
+  async listOrganizationInterviews(organizationId: string): Promise<InterviewSummary[]> {
+    const res = await fetch(`${API_BASE_URL}/organizations/${organizationId}/interviews`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al listar las entrevistas");
     return res.json();
   }
 }

@@ -19,15 +19,20 @@ import {
 
 export default function DashboardOverviewPage() {
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
+  const [interviews, setInterviews] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const data = await api.getVacancies();
-        setVacancies(data);
+        const [vacanciesData, interviewsData] = await Promise.all([
+          api.getVacancies(),
+          api.listOrganizationInterviews("org-colombia-tech").catch(() => []),
+        ]);
+        setVacancies(vacanciesData);
+        setInterviews(interviewsData);
       } catch (err) {
-        console.error("Error loading vacancies", err);
+        console.error("Error loading dashboard data", err);
       } finally {
         setLoading(false);
       }
@@ -182,6 +187,94 @@ export default function DashboardOverviewPage() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+      </div>
+
+      {/* Evaluaciones Recientes e Informes Defendibles */}
+      <div className="space-y-4 pt-4 border-t border-border/40">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight flex items-center gap-2">
+              <FileCheck className="h-5 w-5 text-emerald-400" />
+              Últimas Evaluaciones e Informes Defendibles
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Candidatos evaluados con rúbrica ciega a PII, radar de competencias y trayectoria forense.
+            </p>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-sm text-muted-foreground p-8 text-center border rounded-xl border-dashed">
+            Cargando evaluaciones...
+          </div>
+        ) : interviews.length === 0 ? (
+          <Card className="border-dashed p-8 text-center">
+            <Users className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-50" />
+            <p className="text-sm text-muted-foreground">
+              Aún no hay entrevistas completadas para mostrar.
+            </p>
+          </Card>
+        ) : (
+          <div className="rounded-xl border border-border/70 overflow-hidden bg-card shadow-sm">
+            <div className="divide-y divide-border/60">
+              {interviews.map((interview) => {
+                const isHire = interview.recommendation === "hire";
+                const isBorderline = interview.recommendation === "borderline";
+
+                return (
+                  <div
+                    key={interview.id}
+                    className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-muted/40 transition-colors"
+                  >
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-cyan-950/80 border border-cyan-800/80 flex items-center justify-center font-mono font-bold text-xs text-cyan-300">
+                        {interview.overall_score ? interview.overall_score.toFixed(1) : "-"}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-semibold text-foreground">
+                            {interview.masked_candidate_id}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-semibold uppercase ${
+                              isHire
+                                ? "bg-emerald-950/80 text-emerald-300 border-emerald-700/80"
+                                : isBorderline
+                                ? "bg-amber-950/80 text-amber-300 border-amber-700/80"
+                                : "bg-slate-800 text-slate-300 border-slate-700"
+                            }`}
+                          >
+                            {isHire
+                              ? "Recomendado"
+                              : isBorderline
+                              ? "Dudoso"
+                              : interview.status === "in_progress"
+                              ? "En Progreso"
+                              : "No Recomendado"}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {interview.vacancy_title} ·{" "}
+                          {new Date(interview.created_at).toLocaleDateString("es-CO")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-end sm:self-auto">
+                      <Link href={`/interview/results/${interview.id}`}>
+                        <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+                          <span>Ver Informe Defendible</span>
+                          <ArrowRight className="h-3.5 w-3.5 text-primary" />
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         )}
       </div>

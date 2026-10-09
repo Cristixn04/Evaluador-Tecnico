@@ -146,6 +146,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/interviews/{id}/trajectory": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Obtener la trayectoria cronológica de código y depuración de la entrevista */
+        get: operations["getInterviewTrajectory"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations/{id}/interviews": {
         parameters: {
             query?: never;
@@ -291,6 +308,22 @@ export interface components {
             recommendation?: string;
             /** Format: date-time */
             created_at: string;
+        };
+        TrajectorySnapshot: {
+            timestamp_offset_seconds: number;
+            phase: string;
+            reason: string;
+            code: string;
+            language: string;
+            tests_passed?: number;
+            total_tests?: number;
+            execution_status?: string;
+            event_note?: string;
+        };
+        InterviewTrajectory: {
+            interview_id: string;
+            total_duration_seconds: number;
+            snapshots: components["schemas"]["TrajectorySnapshot"][];
         };
     };
     responses: never;
@@ -495,6 +528,28 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EvaluationReport"];
+                };
+            };
+        };
+    };
+    getInterviewTrajectory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Trayectoria cronológica para el reproductor */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InterviewTrajectory"];
                 };
             };
         };
