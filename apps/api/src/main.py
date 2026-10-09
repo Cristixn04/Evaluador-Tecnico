@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers.auth import router as auth_router
+from src.api.routers.vacancies import router as vacancies_router
 from src.core.config import settings
 
 app = FastAPI(
@@ -26,6 +27,7 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(vacancies_router)
 
 
 @app.get("/health", tags=["Health"])
