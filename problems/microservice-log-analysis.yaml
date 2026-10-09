@@ -1,0 +1,40 @@
+id: microservice-log-analysis
+title: Análisis de logs de microservicios
+role: backend
+seniority: junior
+difficulty: junior
+tags:
+  - python
+  - logging
+  - parsing
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Recibes líneas de log `LEVEL service message`. Cuenta cuántas líneas
+  hay por nivel (`ERROR`, `WARN`, `INFO`) e ignora niveles desconocidos.
+  Entrada: una línea JSON con `lines` (lista de strings). Salida JSON
+  con claves `error`, `warn`, `info` en minúsculas.
+tests:
+  - id: mixed-levels
+    input: '{"lines":["ERROR payments timeout","INFO auth ok","WARN cache stale","DEBUG skip"]}'
+    expected_output: '{"error":1,"warn":1,"info":1}'
+  - id: empty
+    input: '{"lines":[]}'
+    expected_output: '{"error":0,"warn":0,"info":0}'
+  - id: only-errors
+    input: '{"lines":["ERROR a","ERROR b"]}'
+    expected_output: '{"error":2,"warn":0,"info":0}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def count_levels(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(count_levels(payload), separators=(",", ":")))

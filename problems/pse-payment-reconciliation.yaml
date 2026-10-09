@@ -1,0 +1,55 @@
+id: pse-payment-reconciliation
+title: Conciliación de pagos PSE
+role: backend
+seniority: mid
+difficulty: mid
+tags:
+  - python
+  - payments
+  - reconciliation
+  - hashing
+languages:
+  - python
+limits:
+  timeout_ms: 2000
+  memory_mb: 128
+statement: |
+  Recibes dos listas de transacciones: un extracto de pasarela PSE y un
+  libro interno. Cada transacción tiene `reference`, `amount_cents` y
+  `status`. Debes devolver las referencias que aparecen en un lado y no
+  en el otro, o que coinciden en referencia pero difieren en monto o
+  estado.
+
+  La entrada es JSON por stdin:
+
+  ```json
+  {
+    "gateway": [{"reference": "PSE-1", "amount_cents": 1000, "status": "paid"}],
+    "ledger": [{"reference": "PSE-1", "amount_cents": 1000, "status": "paid"}]
+  }
+  ```
+
+  Imprime por stdout un JSON con `mismatches`: lista ordenada de
+  referencias. No asumas reglas bancarias colombianas; trata los campos
+  como datos configurables.
+tests:
+  - id: all-match
+    input: '{"gateway":[{"reference":"PSE-1","amount_cents":1000,"status":"paid"}],"ledger":[{"reference":"PSE-1","amount_cents":1000,"status":"paid"}]}'
+    expected_output: '{"mismatches":[]}'
+  - id: missing-in-ledger
+    input: '{"gateway":[{"reference":"PSE-2","amount_cents":2500,"status":"paid"}],"ledger":[]}'
+    expected_output: '{"mismatches":["PSE-2"]}'
+  - id: amount-differs
+    input: '{"gateway":[{"reference":"PSE-3","amount_cents":1000,"status":"paid"}],"ledger":[{"reference":"PSE-3","amount_cents":999,"status":"paid"}]}'
+    expected_output: '{"mismatches":["PSE-3"]}'
+boilerplate:
+  python: |
+    import json
+    import sys
+
+    def reconcile(payload: dict) -> dict:
+        raise NotImplementedError
+
+    if __name__ == "__main__":
+        payload = json.load(sys.stdin)
+        print(json.dumps(reconcile(payload), separators=(",", ":")))
