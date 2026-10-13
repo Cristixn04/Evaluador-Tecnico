@@ -15,8 +15,6 @@ import {
   Code2,
   Copy,
   Check,
-  FileCode,
-  Sparkles,
 } from "lucide-react";
 
 const Editor = dynamic(() => import("@monaco-editor/react"), { ssr: false });
@@ -104,7 +102,12 @@ export function TrajectoryPlayer({ trajectory }: TrajectoryPlayerProps) {
 
           {/* Fase */}
           <span className="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-xs text-purple-300 font-semibold font-mono">
-            {currentSnapshot?.phase}
+            Fase: {currentSnapshot?.phase}
+          </span>
+
+          {/* Motivo del Snapshot */}
+          <span className="px-2.5 py-1 rounded-md bg-slate-800/80 border border-slate-700/60 text-xs text-cyan-300 font-mono">
+            Motivo: {currentSnapshot?.reason}
           </span>
 
           {/* Resultado de Tests en este snapshot */}
@@ -128,14 +131,6 @@ export function TrajectoryPlayer({ trajectory }: TrajectoryPlayerProps) {
           )}
         </div>
       </div>
-
-      {/* Nota Explicativa del Momento */}
-      {currentSnapshot?.event_note && (
-        <div className="px-5 py-2.5 bg-cyan-950/30 border-b border-cyan-900/40 flex items-center gap-2.5 text-xs text-cyan-200">
-          <Sparkles className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
-          <span className="font-medium">{currentSnapshot.event_note}</span>
-        </div>
-      )}
 
       {/* Visor de Código (Monaco Editor en modo lectura) */}
       <div className="relative h-[380px] bg-[#1e1e1e]">
@@ -208,7 +203,7 @@ export function TrajectoryPlayer({ trajectory }: TrajectoryPlayerProps) {
                   setIsPlaying(false);
                 }}
                 className="group flex flex-col items-center focus:outline-none"
-                title={`Paso ${idx + 1}: ${snap.event_note || snap.phase}`}
+                title={`Paso ${idx + 1}: ${snap.phase} (${snap.reason})`}
               >
                 <div
                   className={`w-3 h-3 rounded-full transition-all border ${

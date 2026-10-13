@@ -15,7 +15,12 @@ export type InterviewPhase =
 
 export type CodeLanguage = "python" | "javascript" | "sql";
 
-export type SnapshotReason = "debounce" | "run" | "blur" | "phase_transition";
+export type SnapshotReason =
+  | "debounce"
+  | "run"
+  | "blur"
+  | "phase_transition"
+  | "legacy";
 
 export type IntegrityEventType =
   | "blur"
