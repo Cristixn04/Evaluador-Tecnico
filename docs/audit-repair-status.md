@@ -9,8 +9,8 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 | ID | Bloqueador | Severidad | Estado | Tests Afectados | Commit Asociado |
 |---|---|---|---|---|---|
 | **BLK-01** | Routers desconectados en `main.py` | P0 | OPEN | `test_websocket.py`, `test_trajectory.py` | `fix(api): mount interview lifecycle routers` |
-| **BLK-02** | Funciones faltantes en `prompts.py` | P0 | OPEN | `test_prompts.py`, `test_agent.py`, `test_hints_integration.py` | `fix(llm): restore prompt loading API` |
-| **BLK-03** | Falta de aislamiento en DB y fixtures | P0 | OPEN | `test_auth.py`, `test_problem_selector.py`, `test_evaluation.py` | `fix(tests): isolate backend database fixtures` |
+| **BLK-02** | Funciones faltantes en `prompts.py` | P0 | VERIFIED | `test_prompts.py`, `test_agent.py`, `test_hints_integration.py` | `fix(llm): restore prompt loading API` |
+| **BLK-03** | Falta de aislamiento en DB y fixtures | P0 | FIXED | `test_auth.py`, `test_problem_selector.py`, `test_evaluation.py` | `cff15ca fix(tests): isolate backend database fixtures` |
 | **BLK-04** | Migración Alembic incompleta e integridad FK | P0 | OPEN | `test_alembic.py` | `fix(db): repair evaluation migration integrity` |
 | **BLK-05** | Pseudo-lógica de evaluación basada en texto literal | P1 | OPEN | `test_evaluation.py` | `fix(evaluation): repair defensible judge evidence flow` |
 | **BLK-06** | Filtración de PII (`candidate_email[:4]`) | P1 | OPEN | `test_evaluation.py` | `fix(security): remove candidate PII from evaluation` |
@@ -34,22 +34,22 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** Pendiente.
 
 ### BLK-02 — API de prompts en `src/llm/prompts.py`
-- **Estado:** OPEN
+- **Estado:** VERIFIED
 - **Problema:** Falta `load_hints()`, `load_phase_instructions()`, `get_active_prompt_version()`.
 - **Causa:** Archivo quedó incompleto tras la reestructuración de prompts v2.
-- **Cambio planeado:** Implementar las funciones de carga y lectura de prompts de forma robusta.
-- **Tests:** `test_prompts.py`, `test_agent.py`, `test_hints_integration.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Cambio realizado:** Implementadas `load_hints`, `load_phase_instructions`, `get_active_prompt_version` y extractor modular de secciones markdown con lru_cache.
+- **Tests:** `test_prompts.py` (23 tests passed), `test_agent.py` (8 tests passed).
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(llm): restore prompt loading API`.
 
 ### BLK-03 — Aislamiento de base de datos en tests
-- **Estado:** OPEN
+- **Estado:** FIXED
 - **Problema:** Basura residual en tablas (`users`, `problems`, `vacancies`) genera colisión de llaves únicas. `sample_interview` no incluye `vacancy_id`.
 - **Causa:** `db_session` fixture no aísla transacciones con rollback o truncado. Fixture de entrevista viola NOT NULL en `vacancy_id`.
-- **Cambio planeado:** Implementar limpieza controlada de tablas o rollback transaccional en `conftest.py`. Corregir fixture `sample_interview`.
+- **Cambio realizado:** Implementada fixture autouse `isolate_database_and_engine` con recreación/truncado por test y reseteo de engine asyncpg. Corregidas fixtures con `vacancy_id` y `default` de `Evaluation.created_at`.
 - **Tests:** `test_auth.py`, `test_problem_selector.py`, `test_vacancies.py`, `test_evaluation.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Resultado:** 32 tests passed 100% reproducibles consecutivamente.
+- **Commit:** `cff15ca fix(tests): isolate backend database fixtures`.
 
 ### BLK-04 — Alembic e integridad de tablas de evaluación
 - **Estado:** OPEN
