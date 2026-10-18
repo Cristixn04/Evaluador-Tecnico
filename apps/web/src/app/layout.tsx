@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { MswProvider } from "@/components/providers/msw-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className="min-h-screen bg-background font-sans antialiased text-foreground">
-        {children}
+        <MswProvider>{children}</MswProvider>
       </body>
     </html>
   );
