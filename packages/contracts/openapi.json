@@ -35,6 +35,25 @@
       }
     },
     "/vacancies": {
+      "get": {
+        "summary": "Listar vacantes de la organización autenticada",
+        "operationId": "listVacancies",
+        "responses": {
+          "200": {
+            "description": "Lista de vacantes de la organización",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Vacancy"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Crear vacante a partir de descripción de texto",
         "operationId": "createVacancy",
@@ -149,6 +168,15 @@
         "summary": "Verificar token de acceso del candidato e inicializar sala anónima",
         "description": "Permite al candidato entrar a la sala. Devuelve información de la vacante y problema SIN incluir ningún dato de identidad personal (cero PII).",
         "operationId": "verifyCandidateSession",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": false,
+            "description": "Token de invitación del candidato (también aceptado vía Authorization: Bearer <token>)",
+            "schema": { "type": "string" }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Sesión anónima verificada",
@@ -211,6 +239,27 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/EvaluationReport"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/interviews/{id}/trajectory": {
+      "get": {
+        "summary": "Obtener la trayectoria cronológica de código y depuración de la entrevista",
+        "operationId": "getInterviewTrajectory",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trayectoria cronológica para el reproductor",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterviewTrajectory"
                 }
               }
             }
@@ -313,7 +362,16 @@
       },
       "AnonymousCandidateSession": {
         "type": "object",
-        "required": ["session_id", "masked_candidate_id", "vacancy_title", "current_phase", "status", "problem"],
+        "required": [
+          "session_id",
+          "masked_candidate_id",
+          "vacancy_title",
+          "current_phase",
+          "status",
+          "problem",
+          "ws_token",
+          "ws_url"
+        ],
         "properties": {
           "session_id": { "type": "string" },
           "masked_candidate_id": { "type": "string", "example": "CAND-7F2A" },
@@ -323,7 +381,15 @@
             "enum": ["INTRO", "PROBLEM", "CLARIFY", "DESIGN", "CODING", "PROBE", "WRAPUP", "EVALUATE"]
           },
           "status": { "type": "string", "enum": ["pending", "in_progress", "completed", "evaluated"] },
-          "problem": { "$ref": "#/components/schemas/ProblemSummary" }
+          "problem": { "$ref": "#/components/schemas/ProblemSummary" },
+          "ws_token": {
+            "type": "string",
+            "description": "Token JWT de corta duración para autenticar la conexión WebSocket"
+          },
+          "ws_url": {
+            "type": "string",
+            "description": "URL del endpoint WebSocket para la sesión"
+          }
         }
       },
       "ProblemSummary": {
@@ -413,6 +479,33 @@
           "overall_score": { "type": "number" },
           "recommendation": { "type": "string" },
           "created_at": { "type": "string", "format": "date-time" }
+        }
+      },
+      "TrajectorySnapshot": {
+        "type": "object",
+        "required": ["timestamp_offset_seconds", "phase", "reason", "code", "language"],
+        "properties": {
+          "timestamp_offset_seconds": { "type": "number" },
+          "phase": { "type": "string" },
+          "reason": { "type": "string" },
+          "code": { "type": "string" },
+          "language": { "type": "string" },
+          "tests_passed": { "type": "integer" },
+          "total_tests": { "type": "integer" },
+          "execution_status": { "type": "string" },
+          "event_note": { "type": "string" }
+        }
+      },
+      "InterviewTrajectory": {
+        "type": "object",
+        "required": ["interview_id", "total_duration_seconds", "snapshots"],
+        "properties": {
+          "interview_id": { "type": "string" },
+          "total_duration_seconds": { "type": "number" },
+          "snapshots": {
+            "type": "array",
+            "items": { "$ref": "#/components/schemas/TrajectorySnapshot" }
+          }
         }
       }
     }
