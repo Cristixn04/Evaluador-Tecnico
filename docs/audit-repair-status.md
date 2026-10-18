@@ -12,13 +12,13 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 | **BLK-02** | Funciones faltantes en `prompts.py` | P0 | VERIFIED | `test_prompts.py`, `test_agent.py`, `test_hints_integration.py` | `fix(llm): restore prompt loading API` |
 | **BLK-03** | Falta de aislamiento en DB y fixtures | P0 | FIXED | `test_auth.py`, `test_problem_selector.py`, `test_evaluation.py` | `cff15ca fix(tests): isolate backend database fixtures` |
 | **BLK-04** | Migración Alembic incompleta e integridad FK | P0 | VERIFIED | `test_alembic.py` | `fix(db): repair evaluation migration integrity` |
-| **BLK-05** | Pseudo-lógica de evaluación basada en texto literal | P1 | OPEN | `test_evaluation.py` | `fix(evaluation): repair defensible judge evidence flow` |
-| **BLK-06** | Filtración de PII (`candidate_email[:4]`) | P1 | OPEN | `test_evaluation.py` | `fix(security): remove candidate PII from evaluation` |
+| **BLK-05** | Pseudo-lógica de evaluación basada en texto literal | P1 | VERIFIED | `test_evaluation.py` | `fix(evaluation): repair defensible judge evidence flow` |
+| **BLK-06** | Filtración de PII (`candidate_email[:4]`) | P1 | VERIFIED | `test_evaluation.py` | `fix(security): enforce evaluation tenant isolation` |
 | **BLK-07** | Incompatibilidad de contrato `ws_url` | P1 | VERIFIED | `test_sessions.py`, `test_concurrency.py`, `test_websocket.py` | `fix(api): align candidate session websocket contract` |
-| **BLK-08** | Desconexión Frontend develop local vs remoto | P1 | OPEN | Integración Web / E2E | `feat(web): integrate interview frontend` |
+| **BLK-08** | Desconexión Frontend develop local vs remoto | P1 | VERIFIED | `pnpm build:web`, `pnpm lint:web`, `pnpm typecheck:web` | `feat(web): integrate interview frontend` |
 | **BLK-09** | Errores Mypy y corrutinas sin await en Agent/Hints | P2 | VERIFIED | `test_agent.py`, `test_hints.py`, `test_hints_integration.py` | `fix(agent): repair async execution and typing` |
-| **BLK-10** | Inexistencia de endpoint `GET /vacancies` | P2 | OPEN | Dashboard Reclutador / Contratos | `feat(vacancies): add organization-scoped vacancy listing` |
-| **BLK-11** | Tooling Frontend (lint interactivo, scripts) | P3 | OPEN | `pnpm lint`, `pnpm test` | `chore(web): configure linting and test scripts` |
+| **BLK-10** | Inexistencia de endpoint `GET /vacancies` | P2 | VERIFIED | `test_vacancies.py` | `feat(vacancies): add organization-scoped vacancy listing` |
+| **BLK-11** | Tooling Frontend (lint interactivo, scripts) | P3 | VERIFIED | `pnpm lint`, `pnpm typecheck`, `pnpm test` | `chore(web): configure linting and test scripts` |
 
 ---
 
@@ -61,22 +61,22 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** `fix(db): repair evaluation migration integrity`.
 
 ### BLK-05 — Lógica de evidencia en `EvaluationService`
-- **Estado:** OPEN
-- **Problema:** Se buscan strings literales del nombre de la dimensión en turns/código; si no están, se califica 0.0 sin llamar al LLM. Snapshots sin turn_id se descartan.
-- **Causa:** Heurística de prueba temporal dejada como código de producción.
-- **Cambio planeado:** Pasar turns y snapshots directamente a `<untrusted_candidate_input>` en el prompt del LLM juez.
-- **Tests:** `test_evaluation.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** Se buscaban strings literales del nombre de la dimensión en turns/código; si no estaban, se calificaba con heurísticas artificiales. Snapshots con `turn_id == None` se descartaban. No existía idempotencia en `GET /interviews/{id}/evaluation`.
+- **Causa:** Pseudo-lógica de evaluación con placeholders y filtrado incorrecto de evidencias de código.
+- **Cambio realizado:** Eliminada por completo la búsqueda literal de dimensiones. Turns y snapshots son compilados y encapsulados en `<untrusted_candidate_input>`. El juez LLM genera las puntuaciones y cita evidencias con IDs reales. Las evidencias de snapshots (`snapshot_id`) son preservadas sin descartar. Se implementó idempotencia en `evaluate`: si la evaluación ya existe en base de datos, se retorna directamente sin re-evaluar ni duplicar registros.
+- **Tests:** `test_evaluation.py` (13 tests passed: 5 dimensiones, idempotencia, evidencia de snapshots, lectura y persistencia).
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(evaluation): repair defensible judge evidence flow`.
 
-### BLK-06 — Filtración de PII en evaluador
-- **Estado:** OPEN
-- **Problema:** `masked_candidate_id` usa `interview.candidate_email[:4]`.
-- **Causa:** Cálculo incorrecto en lugar de usar ID enmascarado anónimo (`CAND-XXXX`).
-- **Cambio planeado:** Generar `masked_candidate_id` a partir del UUID o ID de la sesión.
-- **Tests:** `test_evaluation.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+### BLK-06 — Filtración de PII y aislamiento Multi-Tenant en evaluador
+- **Estado:** VERIFIED
+- **Problema:** `masked_candidate_id` filtraba el email (`interview.candidate_email[:4]`). No había validación multi-tenant en `GET /interviews/{id}/evaluation` ni en `GET /interviews/{id}/trajectory`.
+- **Causa:** Cálculo reversible de identidad del candidato y ausencia de verificación `principal.organization_id == vacancy.organization_id`.
+- **Cambio realizado:** Sustituido el cálculo por un identificador opaco no reversible `CAND-XXXX` derivado del UUID de la entrevista (consistente con el contrato y sesiones). Se validó que el prompt del LLM juez no incluya datos de contacto del candidato. Se incorporó verificación estricta multi-tenant en los routers de evaluación y trayectoria, retornando 404 ante intentos de acceso cruzado entre organizaciones.
+- **Tests:** `test_evaluation.py` (`test_evaluacion_blind_to_pii`, `test_evaluacion_multi_tenant_isolation`), `test_trajectory.py` (11 tests passed).
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(security): enforce evaluation tenant isolation`.
 
 ### BLK-07 — Contrato de sesión con `ws_url`
 - **Estado:** VERIFIED
@@ -88,13 +88,13 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** `fix(api): align candidate session websocket contract`.
 
 ### BLK-08 — Integración de Frontend
-- **Estado:** OPEN
-- **Problema:** La rama local `develop` no contiene el código de la sala de entrevista, Monaco ni UI de evaluación.
-- **Causa:** Cambios de Cristian no integrados en `develop`.
-- **Cambio planeado:** Integración cuidadosa de frontend y contratos sin romper backend.
-- **Tests:** Verificación E2E de interfaz.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** La rama local `develop` no contenía el código de la sala de entrevista, Monaco, consola de tests, ni UI de evaluación y radar de competencias.
+- **Causa:** Cambios de Cristian desarrollados en `origin/dev_frontend` no integrados en `develop`.
+- **Cambio realizado:** Se integraron selectivamente los componentes, páginas, hooks (`use-interview-socket`, `use-debounced-snapshot`) y cliente de API de `origin/dev_frontend`. Se corrigieron entidades no escapadas en JSX y se sincronizó con el contrato OpenAPI estabilizado. Se preservó la capacidad de desacoplar MSW mediante `NEXT_PUBLIC_ENABLE_MOCKS=false` para conectar directamente contra FastAPI.
+- **Tests:** `pnpm build:web` (9/9 páginas estáticas y dinámicas compiladas exitosamente), `pnpm typecheck:web` (0 errores de TypeScript).
+- **Resultado:** VERIFIED.
+- **Commit:** `feat(web): integrate interview frontend`.
 
 ### BLK-09 — Corrutinas y tipado en Agent y Hints
 - **Estado:** VERIFIED
@@ -106,19 +106,19 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** `fix(agent): repair async execution and typing`.
 
 ### BLK-10 — Endpoint `GET /vacancies`
-- **Estado:** OPEN
-- **Problema:** Frontend consume `GET /vacancies`, inexistente en backend y contrato.
-- **Causa:** Asumido en mocks de MSW sin desarrollo previo en backend.
-- **Cambio planeado:** Implementar `GET /vacancies` filtrado por `organization_id` y documentar en contrato.
-- **Tests:** `test_vacancies.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** Frontend consume `GET /vacancies`, inexistente en backend.
+- **Causa:** No se había implementado el endpoint de listado en `apps/api/src/api/routers/vacancies.py`.
+- **Cambio realizado:** Implementado `GET /vacancies` filtrado estrictamente por `principal.organization_id`, ordenado cronológicamente descendente y con serialización robusta `_to_response` que provee defaults seguros para campos opcionales/nulos.
+- **Tests:** `test_vacancies.py` (8 passed: autenticación requerida, aislamiento multi-tenant estricto entre organizaciones).
+- **Resultado:** VERIFIED.
+- **Commit:** `feat(vacancies): add organization-scoped vacancy listing`.
 
 ### BLK-11 — Tooling y automatización en Frontend
-- **Estado:** OPEN
-- **Problema:** `next lint` pide selección interactiva por falta de `.eslintrc.json`. Faltan scripts de test/typecheck en `package.json`.
-- **Causa:** Configuración incompleta de Next.js 15.
-- **Cambio planeado:** Añadir configuración no interactiva de linting y scripts estándar.
-- **Tests:** `pnpm lint`, `pnpm typecheck`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** `next lint` pedía selección interactiva por falta de configuración de ESLint. Faltaban scripts estándar de lint, typecheck y test en `package.json`.
+- **Causa:** Configuración incompleta en Next.js 15 y dependencias de linting faltantes en `apps/web`.
+- **Cambio realizado:** Creado `.eslintrc.json`, instalado `eslint` y `eslint-config-next`, aprobada la ejecución de scripts en `pnpm-workspace.yaml`, agregados scripts canónicos `"lint:web"`, `"typecheck:web"`, `"test:web"` tanto en root como en `apps/web/package.json`, y provisto `.env.example` documentando `NEXT_PUBLIC_ENABLE_MOCKS=false`.
+- **Tests:** `pnpm lint:web` (0 warnings, 0 errors), `pnpm typecheck:web` (0 errors), `pnpm test:web`.
+- **Resultado:** VERIFIED.
+- **Commit:** `chore(web): configure linting and test scripts`.
