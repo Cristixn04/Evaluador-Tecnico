@@ -26,6 +26,15 @@ def get_client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
 
 
+def _build_ws_url(request: Request, interview_id: str) -> str:
+    """Construct canonical WebSocket URL from incoming HTTP request."""
+    forwarded_proto = request.headers.get("x-forwarded-proto")
+    is_secure = forwarded_proto == "https" if forwarded_proto else request.url.scheme == "https"
+    ws_scheme = "wss" if is_secure else "ws"
+    host = request.headers.get("x-forwarded-host") or request.headers.get("host") or request.url.netloc
+    return f"{ws_scheme}://{host}/ws/interview/{interview_id}"
+
+
 @router.get("/verify", response_model=AnonymousCandidateSession)
 async def verify_candidate_session(
     request: Request,
@@ -99,6 +108,8 @@ async def verify_candidate_session(
     ws_token = ws_token_service.create_ws_token(interview_id=interview.id)
     await ws_token_service.store_ws_token(ws_token)
 
+    ws_url = _build_ws_url(request, str(interview.id))
+
     return AnonymousCandidateSession(
         session_id=str(interview.id),
         masked_candidate_id=masked_candidate_id,
@@ -107,4 +118,5 @@ async def verify_candidate_session(
         status=interview.status.value,
         problem=problem_summary,
         ws_token=ws_token,
+        ws_url=ws_url,
     )

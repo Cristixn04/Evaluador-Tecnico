@@ -29,6 +29,7 @@ class AnonymousCandidateSession(BaseModel):
     status: str
     problem: "ProblemSummary"
     ws_token: str
+    ws_url: str
 
 
 class ProblemSummary(BaseModel):

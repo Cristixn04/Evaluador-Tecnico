@@ -14,7 +14,7 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 | **BLK-04** | Migración Alembic incompleta e integridad FK | P0 | OPEN | `test_alembic.py` | `fix(db): repair evaluation migration integrity` |
 | **BLK-05** | Pseudo-lógica de evaluación basada en texto literal | P1 | OPEN | `test_evaluation.py` | `fix(evaluation): repair defensible judge evidence flow` |
 | **BLK-06** | Filtración de PII (`candidate_email[:4]`) | P1 | OPEN | `test_evaluation.py` | `fix(security): remove candidate PII from evaluation` |
-| **BLK-07** | Incompatibilidad de contrato `ws_url` | P1 | OPEN | `test_websocket.py`, endpoints sesiones | `fix(api): align candidate session websocket contract` |
+| **BLK-07** | Incompatibilidad de contrato `ws_url` | P1 | VERIFIED | `test_sessions.py`, `test_concurrency.py`, `test_websocket.py` | `fix(api): align candidate session websocket contract` |
 | **BLK-08** | Desconexión Frontend develop local vs remoto | P1 | OPEN | Integración Web / E2E | `feat(web): integrate interview frontend` |
 | **BLK-09** | Errores Mypy y corrutinas sin await en Agent/Hints | P2 | VERIFIED | `test_agent.py`, `test_hints.py`, `test_hints_integration.py` | `fix(agent): repair async execution and typing` |
 | **BLK-10** | Inexistencia de endpoint `GET /vacancies` | P2 | OPEN | Dashboard Reclutador / Contratos | `feat(vacancies): add organization-scoped vacancy listing` |
@@ -79,13 +79,13 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** Pendiente.
 
 ### BLK-07 — Contrato de sesión con `ws_url`
-- **Estado:** OPEN
-- **Problema:** `AnonymousCandidateSession` en backend no tiene `ws_url`, exigido por el contrato.
+- **Estado:** VERIFIED
+- **Problema:** `AnonymousCandidateSession` en backend no tenía `ws_url`, exigido por el frontend y contrato de sala en vivo.
 - **Causa:** Discrepancia entre `apps/api/src/api/schemas/invitations.py` y `packages/contracts/openapi.json`.
-- **Cambio planeado:** Agregar `ws_url` en schema backend y poblarlo dinámicamente en `src/api/routers/sessions.py`.
-- **Tests:** Endpoint `GET /sessions/verify`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Cambio realizado:** Añadido campo `ws_url` al schema `AnonymousCandidateSession` y función canónica `_build_ws_url(request, interview_id)` en `src/api/routers/sessions.py` que soporta proxies TLS (`x-forwarded-proto`), puertos y hosts dinámicos.
+- **Tests:** `test_sessions.py` (flujo HTTP completo POST invitación -> GET verify), `test_concurrency.py`, `test_websocket.py`.
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(api): align candidate session websocket contract`.
 
 ### BLK-08 — Integración de Frontend
 - **Estado:** OPEN
