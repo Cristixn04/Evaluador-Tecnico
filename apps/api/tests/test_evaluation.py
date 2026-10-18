@@ -4,19 +4,17 @@ Requires PostgreSQL evaluador_db running on port 5435.
 Uses mock_judge_llm fixture for deterministic LLM responses.
 """
 
-from datetime import datetime, timezone
+import json
+from datetime import UTC, datetime
 from http import HTTPStatus
 from unittest.mock import AsyncMock, MagicMock, patch
-import json
-
-from httpx import AsyncClient, ASGITransport
 
 import pytest
-
 from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
-from src.db.models.interview import Interview, Evaluation, Turn, Snapshot
-from src.llm.exceptions import LLMInvalidResponseError, LLMTimeoutError
+from src.db.models.interview import Interview, Snapshot, Turn
+from src.llm.exceptions import LLMTimeoutError
 from src.main import app
 
 
@@ -87,7 +85,7 @@ async def sample_interview(db_session):
         hint_reservation_token=None,
         candidate_email="test.candidate@example.com",
         candidate_name="Test Candidate",
-        expires_at=datetime.now(timezone.utc),
+        expires_at=datetime.now(UTC),
     )
     db_session.add(interview)
     await db_session.commit()
@@ -116,7 +114,7 @@ async def sample_interview_no_evidence(db_session):
         hint_reservation_token=None,
         candidate_email="test.candidate@example.com",
         candidate_name="Test Candidate",
-        expires_at=datetime.now(timezone.utc),
+        expires_at=datetime.now(UTC),
     )
     db_session.add(interview)
     await db_session.commit()
@@ -127,7 +125,6 @@ async def sample_interview_no_evidence(db_session):
 @pytest.fixture
 async def sample_turns(db_session, sample_interview):
     """Create turns associated with the interview."""
-    from src.db.models.interview import InterviewPhase
 
     turns = []
     dimension_names = [
@@ -152,7 +149,6 @@ async def sample_turns(db_session, sample_interview):
 @pytest.fixture
 async def sample_snapshots(db_session, sample_interview):
     """Create snapshots associated with the interview."""
-    from src.db.models.interview import Snapshot
 
     snapshots = []
     for i in range(3):
@@ -174,11 +170,9 @@ async def mock_get_llm_client(db_session, sample_turns, sample_snapshots):
     Provides mock LLM response with real UUIDs from persisted turns/snapshots,
     so that EvaluationEvidence.turn_id conversion to uuid.UUID works correctly.
     """
-    from src.llm.factory import create_llm_client
     
     # Build evaluation data with real UUIDs from persisted turns/snapshots
     turn_ids = [str(t.id) for t in sample_turns]
-    snapshot_ids = [str(s.id) for s in sample_snapshots]
     
     evaluation_data = {
         "competencies": {
@@ -222,13 +216,13 @@ async def mock_get_llm_client(db_session, sample_turns, sample_snapshots):
 
 async def test_evaluacion_valid_con_five_dimensions(db_session, mock_judge_llm, sample_interview, sample_turns, sample_snapshots):
     """Test 1: Evaluación válida con las cinco dimensiones autorizadas."""
-    from src.evaluation.service import EvaluationService
     import json
-    from unittest.mock import MagicMock, AsyncMock
+    from unittest.mock import AsyncMock, MagicMock
+
+    from src.evaluation.service import EvaluationService
 
     # Use real UUIDs from persisted turns for evidence references
     turn_ids = [str(t.id) for t in sample_turns]
-    snapshot_ids = [str(s.id) for s in sample_snapshots]
 
     # Construct evaluation data with real UUIDs referencing the persisted evidence
     evaluation_data = {
@@ -324,7 +318,6 @@ async def test_respuesta_llm_malformada_o_dimensiones_ausentes(db_session, sampl
 async def test_timeout_o_error_del_proveedor_llm(db_session, mock_judge_llm, sample_interview):
     """Test 8: Timeout o error del proveedor LLM."""
     from src.evaluation.service import EvaluationService
-    from src.llm.exceptions import LLMTimeoutError
 
     service = EvaluationService(db_session)
 
@@ -339,9 +332,10 @@ async def test_timeout_o_error_del_proveedor_llm(db_session, mock_judge_llm, sam
 
 async def test_persistencia_y_lectura_posterior(db_session, mock_judge_llm, sample_interview):
     """Test 9: Persistencia y lectura posterior."""
-    from src.evaluation.service import EvaluationService
     from sqlalchemy import select
+
     from src.db.models.interview import Evaluation as EvaluationModel
+    from src.evaluation.service import EvaluationService
 
     service = EvaluationService(db_session)
     report = await service.evaluate(sample_interview.id)
@@ -372,14 +366,12 @@ async def test_evidencia_insuficiente_y_needs_human_review(db_session, sample_in
 async def test_endpoint_get_conforme_al_contrato(db_session, mock_judge_llm, sample_interview):
     """Test 12: Endpoint GET conforme al contrato OpenAPI."""
     from httpx import AsyncClient
-    from starlette.testclient import TestClient as SyncTestClient
-    from src.core.auth import get_current_user, require_role
-    from src.core.security import create_access_token, decode_access_token
+
+    from src.core.security import create_access_token
     from src.db.enums import UserRole
-    from src.db.models import User
 
     # Seed a recruiter user and obtain JWT token
-    from src.db.models import Membership, Organization
+    from src.db.models import Membership, Organization, User
     org = Organization(name="Org A")
     db_session.add(org)
     await db_session.flush()
@@ -424,3 +416,128 @@ async def test_endpoint_get_conforme_al_contrato(db_session, mock_judge_llm, sam
         assert "turn_id" in ev, "Evidence missing turn_id (contract required)"
         assert isinstance(ev["score"], int), "Evidence score should be integer"
         assert 1 <= ev["score"] <= 5, "Evidence score should be 1-5"
+
+
+async def test_evaluacion_idempotencia(db_session, sample_interview):
+    """Test idempotencia: llamar a evaluate múltiples veces devuelve la misma evaluación."""
+    from sqlalchemy import func, select
+
+    from src.db.models.interview import Evaluation as EvaluationModel
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    report1 = await service.evaluate(sample_interview.id)
+    report2 = await service.evaluate(sample_interview.id)
+
+    assert report1.id == report2.id
+    assert report1.overall_score == report2.overall_score
+
+    # Verificar que solo existe 1 registro en la base de datos
+    result = await db_session.execute(
+        select(func.count(EvaluationModel.id)).where(EvaluationModel.interview_id == sample_interview.id)
+    )
+    count = result.scalar_one()
+    assert count == 1
+
+
+async def test_evaluacion_snapshot_evidence(db_session, sample_interview, sample_snapshots):
+    """Test: Evidencia citada desde snapshots (turn_id is None) no es descartada."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    snap_id = sample_snapshots[0].id
+
+    raw_eval = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "code_quality",
+                "score": 4,
+                "evidence_quote": "def solve(): return 42",
+                "snapshot_id": str(snap_id),
+                "reasoning": "Código limpio en snapshot",
+            }
+        ],
+        "discrepancy_note": None,
+    }
+
+    report = await service._validate_and_persist(raw_eval, sample_interview)
+    assert len(report.evidence) == 1
+    assert report.evidence[0].turn_id == str(snap_id)
+    assert report.evidence[0].competency == "code_quality"
+
+
+async def test_evaluacion_blind_to_pii(db_session, sample_interview):
+    """Test: La evaluación es ciega a PII, masked_candidate_id es opaco no reversible."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    report = await service.evaluate(sample_interview.id)
+
+    # Nunca debe contener el prefijo del email ("test")
+    assert not report.masked_candidate_id.startswith("TEST")
+    expected_masked = f"CAND-{sample_interview.id.hex[:4].upper()}"
+    assert report.masked_candidate_id == expected_masked
+
+    # El formato del prompt para el LLM no debe incluir el email ni nombre
+    context = await service._build_context(sample_interview)
+    prompt_evidence = service._format_evidence_for_llm(context)
+    assert sample_interview.candidate_email not in prompt_evidence
+    assert sample_interview.candidate_name not in prompt_evidence
+
+
+async def test_evaluacion_multi_tenant_isolation(db_session, sample_interview):
+    """Test: Un usuario de Org A no puede acceder a evaluaciones de Org B (404)."""
+    from src.core.security import create_access_token
+    from src.db.enums import UserRole
+    from src.db.models import Membership, Organization, User, Vacancy
+
+    # Org A (propietaria de la vacante)
+    org_a = Organization(name="Org Propietaria")
+    db_session.add(org_a)
+    await db_session.flush()
+
+    vacancy = await db_session.get(Vacancy, sample_interview.vacancy_id)
+    vacancy.organization_id = org_a.id
+    await db_session.commit()
+
+    # Org B (atacante o reclutador de otra empresa)
+    org_b = Organization(name="Org Invasora")
+    db_session.add(org_b)
+    await db_session.flush()
+
+    user_b = User(email="recruiter_b@example.com", hashed_password="$2b$12$KjK.", is_active=True)
+    db_session.add(user_b)
+    await db_session.flush()
+    membership_b = Membership(user_id=user_b.id, organization_id=org_b.id, role=UserRole.RECRUITER)
+    db_session.add(membership_b)
+    await db_session.commit()
+
+    token_b = create_access_token(
+        user_id=user_b.id,
+        organization_id=org_b.id,
+        role=UserRole.RECRUITER,
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as ac:
+        # Org B intentando ver evaluación de Org A
+        resp_eval = await ac.get(
+            f"/interviews/{sample_interview.id}/evaluation",
+            headers={"Authorization": f"Bearer {token_b}"},
+        )
+        assert resp_eval.status_code == HTTPStatus.NOT_FOUND
+
+        # Org B intentando ver trajectory de Org A
+        resp_traj = await ac.get(
+            f"/interviews/{sample_interview.id}/trajectory",
+            headers={"Authorization": f"Bearer {token_b}"},
+        )
+        assert resp_traj.status_code == HTTPStatus.NOT_FOUND
