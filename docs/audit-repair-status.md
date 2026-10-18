@@ -11,7 +11,7 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 | **BLK-01** | Routers desconectados en `main.py` | P0 | VERIFIED | `test_websocket.py`, `test_trajectory.py`, `test_concurrency.py` | `fix(api): mount interview lifecycle routers` |
 | **BLK-02** | Funciones faltantes en `prompts.py` | P0 | VERIFIED | `test_prompts.py`, `test_agent.py`, `test_hints_integration.py` | `fix(llm): restore prompt loading API` |
 | **BLK-03** | Falta de aislamiento en DB y fixtures | P0 | FIXED | `test_auth.py`, `test_problem_selector.py`, `test_evaluation.py` | `cff15ca fix(tests): isolate backend database fixtures` |
-| **BLK-04** | Migración Alembic incompleta e integridad FK | P0 | OPEN | `test_alembic.py` | `fix(db): repair evaluation migration integrity` |
+| **BLK-04** | Migración Alembic incompleta e integridad FK | P0 | VERIFIED | `test_alembic.py` | `fix(db): repair evaluation migration integrity` |
 | **BLK-05** | Pseudo-lógica de evaluación basada en texto literal | P1 | OPEN | `test_evaluation.py` | `fix(evaluation): repair defensible judge evidence flow` |
 | **BLK-06** | Filtración de PII (`candidate_email[:4]`) | P1 | OPEN | `test_evaluation.py` | `fix(security): remove candidate PII from evaluation` |
 | **BLK-07** | Incompatibilidad de contrato `ws_url` | P1 | VERIFIED | `test_sessions.py`, `test_concurrency.py`, `test_websocket.py` | `fix(api): align candidate session websocket contract` |
@@ -52,13 +52,13 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** `cff15ca fix(tests): isolate backend database fixtures`.
 
 ### BLK-04 — Alembic e integridad de tablas de evaluación
-- **Estado:** OPEN
-- **Problema:** Migración `adding_evaluation_tables.py` omite FKs y crea columna `uuid` espuria. `alembic_version` tiene 0 filas en la DB de dev.
-- **Causa:** Generación de migración manual o incompleta; bifurcación no sincronizada.
-- **Cambio planeado:** Corregir DDL de la migración para alinear con SQLAlchemy ORM y sincronizar `alembic_version`.
-- **Tests:** `test_alembic.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** Migración `adding_evaluation_tables.py` omitía FKs en cascada e índices, y creaba columna `uuid` espuria. `test_alembic.py` no validaba las nuevas tablas ni el grafo completo.
+- **Causa:** DDL incompleto y desactualización del conjunto esperado de tablas y revisiones en los tests.
+- **Cambio realizado:** Corregida migración `adding_evaluation_tables.py` agregando FKs a `interviews`, `evaluations`, `turns`, `snapshots`, eliminando columna `uuid` espuria e indexando llaves foráneas. Actualizado `test_alembic.py` para validar todo el grafo hasta el head `merge_evaluation_invitations` y las 12 tablas públicas resultantes tanto en upgrade como downgrade a base.
+- **Tests:** `test_alembic.py` (2 passed: registro de revisiones y upgrade/downgrade desde cero).
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(db): repair evaluation migration integrity`.
 
 ### BLK-05 — Lógica de evidencia en `EvaluationService`
 - **Estado:** OPEN
