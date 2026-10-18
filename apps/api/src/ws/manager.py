@@ -227,6 +227,7 @@ class MessageDispatcher:
 
         try:
             interview = await self._interview_service.transition_phase(interview, target_phase, reason=message.reason)
+            await self._interview_service._session.commit()
         except InterviewPhaseTransitionError as e:
             await self._manager.send_error(interview_id, "INVALID_TRANSITION", str(e))
             return

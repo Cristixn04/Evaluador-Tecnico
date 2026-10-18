@@ -248,11 +248,18 @@ class TestWebSocketMessages:
         assert msg["client_timestamp"] == 123456
         assert "server_timestamp" in msg
 
-    async def test_chat_message_persists_turn(self, connected_ws, db_session) -> None:
+    async def test_chat_message_persists_turn(self, connected_ws, db_session, monkeypatch) -> None:
         """Test that chat messages are persisted as turns."""
         from sqlalchemy import select
 
+        from src.agent.service import InterviewAgent
         from src.db.models import Turn
+
+        async def fake_stream_llm(self, client, messages):
+            yield "Hello"
+            yield " candidate!"
+
+        monkeypatch.setattr(InterviewAgent, "_stream_llm", fake_stream_llm)
 
         connected_ws.send_json({
             "type": "chat_message",

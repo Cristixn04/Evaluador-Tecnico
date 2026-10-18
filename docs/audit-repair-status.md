@@ -8,7 +8,7 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 
 | ID | Bloqueador | Severidad | Estado | Tests Afectados | Commit Asociado |
 |---|---|---|---|---|---|
-| **BLK-01** | Routers desconectados en `main.py` | P0 | OPEN | `test_websocket.py`, `test_trajectory.py` | `fix(api): mount interview lifecycle routers` |
+| **BLK-01** | Routers desconectados en `main.py` | P0 | VERIFIED | `test_websocket.py`, `test_trajectory.py`, `test_concurrency.py` | `fix(api): mount interview lifecycle routers` |
 | **BLK-02** | Funciones faltantes en `prompts.py` | P0 | VERIFIED | `test_prompts.py`, `test_agent.py`, `test_hints_integration.py` | `fix(llm): restore prompt loading API` |
 | **BLK-03** | Falta de aislamiento en DB y fixtures | P0 | FIXED | `test_auth.py`, `test_problem_selector.py`, `test_evaluation.py` | `cff15ca fix(tests): isolate backend database fixtures` |
 | **BLK-04** | Migración Alembic incompleta e integridad FK | P0 | OPEN | `test_alembic.py` | `fix(db): repair evaluation migration integrity` |
@@ -25,13 +25,13 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 ## Detalle por Bloqueador
 
 ### BLK-01 — Routers no montados en `main.py`
-- **Estado:** OPEN
-- **Problema:** `invitations`, `sessions`, `websocket` y `trajectory` no están incluidos en `apps/api/src/main.py`.
-- **Causa:** Omisión de `app.include_router` para los nuevos módulos.
-- **Cambio planeado:** Incluir routers con prefijos adecuados y dependencias.
-- **Tests:** `test_websocket.py`, `test_trajectory.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** `invitations`, `sessions`, `websocket` y `trajectory` no estaban incluidos en `apps/api/src/main.py`.
+- **Causa:** Omisión de `app.include_router` para los nuevos módulos en el punto de entrada de FastAPI.
+- **Cambio realizado:** Montados `invitations_router`, `sessions_router`, `websocket_router` y `trajectory_router` con sus prefijos canónicos. Corregido commit en transiciones de fase y sincronizados timestamps y commits en tests de trayectoria.
+- **Tests:** `test_websocket.py` (14 passed), `test_trajectory.py` (11 passed), `test_concurrency.py` (2 passed). Verificación exitosa de endpoints en `app.openapi()`.
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(api): mount interview lifecycle routers`.
 
 ### BLK-02 — API de prompts en `src/llm/prompts.py`
 - **Estado:** VERIFIED
