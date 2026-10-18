@@ -16,7 +16,7 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 | **BLK-06** | Filtración de PII (`candidate_email[:4]`) | P1 | OPEN | `test_evaluation.py` | `fix(security): remove candidate PII from evaluation` |
 | **BLK-07** | Incompatibilidad de contrato `ws_url` | P1 | OPEN | `test_websocket.py`, endpoints sesiones | `fix(api): align candidate session websocket contract` |
 | **BLK-08** | Desconexión Frontend develop local vs remoto | P1 | OPEN | Integración Web / E2E | `feat(web): integrate interview frontend` |
-| **BLK-09** | Errores Mypy y corrutinas sin await en Agent/Hints | P2 | OPEN | `test_agent.py`, `test_hints.py` | `fix(agent): repair async execution and typing` |
+| **BLK-09** | Errores Mypy y corrutinas sin await en Agent/Hints | P2 | VERIFIED | `test_agent.py`, `test_hints.py`, `test_hints_integration.py` | `fix(agent): repair async execution and typing` |
 | **BLK-10** | Inexistencia de endpoint `GET /vacancies` | P2 | OPEN | Dashboard Reclutador / Contratos | `feat(vacancies): add organization-scoped vacancy listing` |
 | **BLK-11** | Tooling Frontend (lint interactivo, scripts) | P3 | OPEN | `pnpm lint`, `pnpm test` | `chore(web): configure linting and test scripts` |
 
@@ -97,13 +97,13 @@ Documento vivo para registrar el diagnóstico, causas, cambios, validación y co
 - **Commit:** Pendiente.
 
 ### BLK-09 — Corrutinas y tipado en Agent y Hints
-- **Estado:** OPEN
-- **Problema:** Awaits faltantes en `src/agent/service.py`, `AsyncGenerator` awaitado en `src/hints/service.py`, `int` en lugar de `UUID`.
-- **Causa:** Desajustes de tipado e invocaciones asíncronas.
-- **Cambio planeado:** Corregir awaits, tipos y llamadas a `ConnectionManager`.
-- **Tests:** Mypy, `test_agent.py`, `test_hints.py`.
-- **Resultado:** Pendiente.
-- **Commit:** Pendiente.
+- **Estado:** VERIFIED
+- **Problema:** Awaits faltantes en `src/agent/service.py`, `AsyncGenerator` awaitado en `src/hints/service.py`, `int` en lugar de `UUID`, `selectinload` ausente en lazy relationships que causaban `MissingGreenlet`, y auto-deadlock en reserva de hint por sesión concurrente.
+- **Causa:** Desajustes de tipado, invocaciones asíncronas incorrectas e impedancia ORM async.
+- **Cambio realizado:** Tipado estricto `Role` / `UUID`, corrutinas debidamente awaitadas en `AgentService`, instanciación directa del cliente LLM en `hints/service.py`, eager loading con `selectinload` para `turns` y `snapshots`, resolución de deadlock mediante reutilización de sesión ORM y mitigación de syntax en interval SQL.
+- **Tests:** `test_agent.py` (8 passed), `test_hints.py` (20 passed), `test_hints_integration.py` (2 passed). Mypy y Ruff limpios (0 errores).
+- **Resultado:** VERIFIED.
+- **Commit:** `fix(agent): repair async execution and typing`.
 
 ### BLK-10 — Endpoint `GET /vacancies`
 - **Estado:** OPEN
