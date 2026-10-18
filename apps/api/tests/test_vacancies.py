@@ -145,7 +145,7 @@ async def test_create_vacancy_llm_timeout(db_session: AsyncSession) -> None:
             headers=_auth_header(user, org),
             json={"title": "Backend", "raw_description": DESCRIPTION},
         )
-    assert response.status_code == 201
+    assert response.status_code == 504
 
 
 @pytest.mark.asyncio
