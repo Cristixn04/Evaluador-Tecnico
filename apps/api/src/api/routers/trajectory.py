@@ -51,12 +51,15 @@ async def get_interview_trajectory(
         )
     interview, vacancy = row
 
-    if vacancy and vacancy.organization_id is not None:
-        if principal is None or principal.organization_id != vacancy.organization_id:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Interview not found",
-            )
+    if (
+        vacancy
+        and vacancy.organization_id is not None
+        and (principal is None or principal.organization_id != vacancy.organization_id)
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview not found",
+        )
 
     # Cargar snapshots ordenados por fecha de creación (cronológico)
     result = await session.execute(
