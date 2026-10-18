@@ -14,6 +14,7 @@ from src.db.models import Membership, User
 from src.db.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
+oauth2_optional_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 
 
 @dataclass(frozen=True, slots=True)
@@ -67,6 +68,18 @@ async def get_current_user(
         organization_id=membership.organization_id,
         role=membership.role,
     )
+
+
+async def get_optional_current_user(
+    token: str | None = Depends(oauth2_optional_scheme),
+    session: AsyncSession = Depends(get_db),
+) -> AuthenticatedPrincipal | None:
+    if not token:
+        return None
+    try:
+        return await get_current_user(token=token, session=session)
+    except HTTPException:
+        return None
 
 
 def require_role(*roles: UserRole) -> Callable[..., Awaitable[AuthenticatedPrincipal]]:

@@ -1,11 +1,13 @@
 from datetime import UTC
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.interview import InterviewTrajectory, TrajectorySnapshot
-from src.db.models import Interview, Snapshot
+from src.core.auth import AuthenticatedPrincipal, get_optional_current_user
+from src.db.models import Interview, Snapshot, Vacancy
 from src.db.session import get_db
 
 router = APIRouter(prefix="/interviews", tags=["Interview Trajectory"])
@@ -18,6 +20,7 @@ router = APIRouter(prefix="/interviews", tags=["Interview Trajectory"])
 )
 async def get_interview_trajectory(
     interview_id: str,
+    principal: AuthenticatedPrincipal | None = Depends(get_optional_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> InterviewTrajectory:
     """Obtener la trayectoria cronológica de una entrevista.
@@ -28,19 +31,32 @@ async def get_interview_trajectory(
 
     # Buscar la entrevista
     try:
-        interview_id_uuid = interview_id
-    except ValueError:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid interview ID format",
-        )
-
-    interview = await session.get(Interview, interview_id_uuid)
-    if not interview:
+        interview_id_uuid = UUID(interview_id)
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Interview not found",
         )
+
+    result_interview = await session.execute(
+        select(Interview, Vacancy)
+        .outerjoin(Vacancy, Interview.vacancy_id == Vacancy.id)
+        .where(Interview.id == interview_id_uuid)
+    )
+    row = result_interview.first()
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Interview not found",
+        )
+    interview, vacancy = row
+
+    if vacancy and vacancy.organization_id is not None:
+        if principal is None or principal.organization_id != vacancy.organization_id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Interview not found",
+            )
 
     # Cargar snapshots ordenados por fecha de creación (cronológico)
     result = await session.execute(
