@@ -41,6 +41,9 @@ class FakeLLM:
         assert self.content is not None
         return ChatCompletion(content=self.content, model="grok-4.6", usage=TokenUsage())
 
+    async def aclose(self) -> None:
+        pass
+
 
 async def _seed_member(
     session: AsyncSession,
@@ -246,3 +249,38 @@ async def test_list_vacancies_scoped_to_organization(db_session: AsyncSession) -
         data_b = res_b.json()
         assert len(data_b) == 1
         assert data_b[0]["title"] == "Secret Org B Vacancy"
+
+
+@pytest.mark.asyncio
+async def test_create_vacancy_with_mock_llm_setting(
+    db_session: AsyncSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from src.core.config import settings
+
+    monkeypatch.setattr(settings, "USE_MOCK_LLM", True)
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
+    app.dependency_overrides.pop(get_llm_client, None)
+
+    user, org = await _seed_member(
+        db_session, email="mock_e2e_recruiter@example.com", org_name="E2E Corp"
+    )
+    await db_session.commit()
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        response = await client.post(
+            "/vacancies",
+            headers=_auth_header(user, org),
+            json={"title": "E2E Python Engineer", "raw_description": DESCRIPTION},
+        )
+    assert response.status_code == 201
+    body = response.json()
+    assert body["title"] == "E2E Python Engineer"
+    assert body["role_category"] == "backend"
+    assert body["seniority"] == "mid"
+    assert body["profile"]["primary_language"] == "python"
+
+    stored = await db_session.get(Vacancy, UUID(body["id"]))
+    assert stored is not None
+    assert stored.organization_id == org.id

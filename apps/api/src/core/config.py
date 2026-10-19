@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Evaluador Técnico de Candidatos"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Entorno de ejecución (development, staging, production)",
+    )
 
     # Base de Datos PostgreSQL
     DATABASE_URL: str = Field(
@@ -20,6 +24,10 @@ class Settings(BaseSettings):
     )
 
     # LLM Gateway (Grok / OpenAI compatible)
+    USE_MOCK_LLM: bool = Field(
+        default=False,
+        description="Activa cliente LLM simulado para desarrollo y pruebas locales",
+    )
     LLM_API_KEY: str = Field(default="mock-llm-key", description="Clave API del proveedor LLM")
     LLM_BASE_URL: str = Field(
         default="https://api.reto.pltk.mx/v1",

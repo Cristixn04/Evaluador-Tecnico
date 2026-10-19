@@ -4,16 +4,20 @@ import httpx
 import pytest
 
 from src.core.config import Settings
+from src.db.enums import Seniority
 from src.llm.exceptions import (
     LLMAuthenticationError,
+    LLMConfigurationError,
     LLMInvalidResponseError,
     LLMProviderError,
     LLMRateLimitError,
     LLMTimeoutError,
 )
 from src.llm.factory import create_llm_client
+from src.llm.mock import MockLLMClient
 from src.llm.openai_compatible import OpenAICompatibleClient
 from src.llm.types import ChatMessage
+from src.vacancies.parser import VacancyParser
 
 
 def _completion_body(**overrides: object) -> dict[str, object]:
@@ -33,6 +37,7 @@ def test_factory_uses_settings_without_secrets_in_repr() -> None:
         LLM_MODEL="grok-4.6",
     )
     client = create_llm_client(config)
+    assert isinstance(client, OpenAICompatibleClient)
     assert client._model == "grok-4.6"
     assert "test-key" not in repr(client)
 
@@ -182,3 +187,88 @@ def test_errors_do_not_embed_api_keys() -> None:
         }
     )
     assert "sk-" not in dumped
+
+
+def test_factory_returns_openai_client_by_default() -> None:
+    config = Settings(
+        USE_MOCK_LLM=False,
+        LLM_API_KEY="test-key",
+        ENVIRONMENT="development",
+    )
+    client = create_llm_client(config)
+    assert isinstance(client, OpenAICompatibleClient)
+
+
+def test_factory_returns_mock_client_when_enabled() -> None:
+    config = Settings(
+        USE_MOCK_LLM=True,
+        ENVIRONMENT="development",
+    )
+    client = create_llm_client(config)
+    assert isinstance(client, MockLLMClient)
+
+
+@pytest.mark.parametrize("env_name", ["production", "prod", "PRODUCTION"])
+def test_factory_raises_in_production_when_mock_enabled(env_name: str) -> None:
+    config = Settings(
+        USE_MOCK_LLM=True,
+        ENVIRONMENT=env_name,
+        LLM_API_KEY="real-prod-key",
+    )
+    with pytest.raises(
+        LLMConfigurationError, match="Mock LLM client cannot be enabled in production"
+    ):
+        create_llm_client(config)
+
+
+@pytest.mark.parametrize("env_name", ["production", "prod"])
+def test_factory_raises_in_production_with_dummy_api_key(env_name: str) -> None:
+    config = Settings(
+        USE_MOCK_LLM=False,
+        ENVIRONMENT=env_name,
+        LLM_API_KEY="mock-llm-key",
+    )
+    with pytest.raises(
+        LLMConfigurationError, match="Real LLM API key must be configured in production"
+    ):
+        create_llm_client(config)
+
+
+def test_factory_allows_openai_client_in_production_with_real_key() -> None:
+    config = Settings(
+        USE_MOCK_LLM=False,
+        ENVIRONMENT="production",
+        LLM_API_KEY="sk-real-production-api-key-here",
+    )
+    client = create_llm_client(config)
+    assert isinstance(client, OpenAICompatibleClient)
+
+
+@pytest.mark.asyncio
+async def test_mock_llm_client_complete_returns_valid_completion() -> None:
+    client = MockLLMClient()
+    messages = [ChatMessage(role="user", content="hello")]
+    completion = await client.complete(messages)
+
+    assert completion.model == "mock-model"
+    assert completion.usage.total_tokens == 30
+    assert len(client.history) == 1
+    assert client.history[0] == messages
+
+    parsed = json.loads(completion.content)
+    assert parsed["role_category"] == "backend"
+    assert parsed["seniority"] == "mid"
+    assert parsed["primary_language"] == "python"
+
+
+@pytest.mark.asyncio
+async def test_mock_llm_client_can_be_parsed_by_vacancy_parser() -> None:
+    client = MockLLMClient()
+    parser = VacancyParser(client)
+    profile = await parser.parse("Buscamos desarrollador Backend Python con FastAPI y PostgreSQL.")
+
+    assert profile.role_category == "backend"
+    assert profile.seniority == Seniority.MID
+    assert profile.primary_language == "python"
+    assert "python" in profile.required_skills
+    assert "fastapi" in profile.required_skills

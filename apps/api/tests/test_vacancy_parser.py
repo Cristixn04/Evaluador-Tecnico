@@ -39,6 +39,9 @@ class FakeLLM:
         assert self.content is not None
         return ChatCompletion(content=self.content, model="grok-4.6", usage=TokenUsage())
 
+    async def aclose(self) -> None:
+        pass
+
 
 def test_prompt_is_versioned() -> None:
     prompt = load_prompt("vacancy_parser", "v1")
