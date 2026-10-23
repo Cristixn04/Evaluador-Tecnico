@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
 import pytest
@@ -267,9 +268,20 @@ class TestWebSocketMessages:
             "client_timestamp": 123456,
         })
 
-        # Should receive agent token stream
-        msg = connected_ws.receive_json()
-        assert msg["type"] in ("agent_token", "agent_turn_complete")
+        # Should receive agent token stream followed by agent_turn_complete
+        tokens = []
+        turn_complete = None
+        for _ in range(10):
+            msg = connected_ws.receive_json()
+            if msg["type"] == "agent_token":
+                tokens.append(msg["delta"])
+            elif msg["type"] == "agent_turn_complete":
+                turn_complete = msg
+                break
+
+        assert "".join(tokens) == "Hello candidate!"
+        assert turn_complete is not None
+        assert turn_complete["full_content"] == "Hello candidate!"
 
         # Close WebSocket to trigger session commit, then verify with fresh session
         connected_ws.close()
@@ -379,3 +391,170 @@ class TestWebSocketMessages:
 
         # Should not error - just accept silently
         # (Implementation logs but doesn't respond to integrity events)
+
+
+class TestMessageDispatcherChatStreaming:
+    """Test suite for agent streaming completion, error handling, and disconnects."""
+
+    @pytest.mark.asyncio
+    async def test_streaming_normal_emits_tokens_and_complete(self) -> None:
+        """Caso 1 — Normal streaming: emits agent_token chunks followed by agent_turn_complete."""
+        from src.api.schemas.websocket import ClientChatMessage
+        from src.ws.manager import MessageDispatcher
+
+        interview_id = uuid4()
+        sent_messages: list[dict] = []
+
+        manager = MagicMock()
+        manager.send = AsyncMock(side_effect=lambda _iid, msg: sent_messages.append(msg))
+
+        mock_session = AsyncMock()
+        mock_session.get.return_value = None
+
+        interview_service = MagicMock()
+        interview_service._session = mock_session
+
+        agent = MagicMock()
+
+        async def fake_stream(interview_id, user_message, **kwargs):
+            yield "Hello"
+            yield " world!"
+
+        agent.stream_response = fake_stream
+
+        dispatcher = MessageDispatcher(
+            manager=manager,
+            interview_service=interview_service,
+            agent=agent,
+            execution_service=MagicMock(),
+        )
+
+        chat_msg = ClientChatMessage(
+            type="chat_message",
+            content="Hola agente",
+            client_timestamp=1000,
+        )
+
+        await dispatcher._handle_chat(interview_id, chat_msg)
+
+        assert len(sent_messages) == 3
+
+        # Message 1: first token
+        assert sent_messages[0]["type"] == "agent_token"
+        assert sent_messages[0]["delta"] == "Hello"
+        turn_id = sent_messages[0]["turn_id"]
+        assert turn_id != ""
+
+        # Message 2: second token
+        assert sent_messages[1]["type"] == "agent_token"
+        assert sent_messages[1]["delta"] == " world!"
+        assert sent_messages[1]["turn_id"] == turn_id
+
+        # Message 3: turn complete
+        assert sent_messages[2]["type"] == "agent_turn_complete"
+        assert sent_messages[2]["turn_id"] == turn_id
+        assert sent_messages[2]["full_content"] == "Hello world!"
+        assert sent_messages[2]["suggested_transition"] is None
+
+        # Verify session commit was called
+        mock_session.commit.assert_awaited()
+
+    @pytest.mark.asyncio
+    async def test_streaming_error_emits_error_and_no_complete(self) -> None:
+        """Caso 2 — Agent error: emits AGENT_ERROR and does NOT emit agent_turn_complete."""
+        from src.api.schemas.websocket import ClientChatMessage
+        from src.ws.manager import MessageDispatcher
+
+        interview_id = uuid4()
+        sent_messages: list[dict] = []
+        errors: list[dict] = []
+
+        manager = MagicMock()
+        manager.send = AsyncMock(side_effect=lambda _iid, msg: sent_messages.append(msg))
+        manager.send_error = AsyncMock(
+            side_effect=lambda _iid, code, msg, **kwargs: errors.append({"code": code, "msg": msg})
+        )
+
+        mock_session = AsyncMock()
+        mock_session.get.return_value = None
+
+        interview_service = MagicMock()
+        interview_service._session = mock_session
+
+        agent = MagicMock()
+
+        async def failing_stream(interview_id, user_message, **kwargs):
+            yield "Partial"
+            raise RuntimeError("LLM gateway connection dropped")
+
+        agent.stream_response = failing_stream
+
+        dispatcher = MessageDispatcher(
+            manager=manager,
+            interview_service=interview_service,
+            agent=agent,
+            execution_service=MagicMock(),
+        )
+
+        chat_msg = ClientChatMessage(
+            type="chat_message",
+            content="Hola con error",
+            client_timestamp=1000,
+        )
+
+        await dispatcher._handle_chat(interview_id, chat_msg)
+
+        # Token was sent before the error
+        assert len(sent_messages) == 1
+        assert sent_messages[0]["type"] == "agent_token"
+        assert sent_messages[0]["delta"] == "Partial"
+
+        # Error was sent
+        assert len(errors) == 1
+        assert errors[0]["code"] == "AGENT_ERROR"
+        assert "LLM gateway connection dropped" in errors[0]["msg"]
+
+        # CRITICAL: agent_turn_complete was NOT emitted on error
+        assert not any(m.get("type") == "agent_turn_complete" for m in sent_messages)
+
+    @pytest.mark.asyncio
+    async def test_client_disconnect_during_stream_handled_gracefully(self) -> None:
+        """Caso 3 — Disconnect: if send returns False (disconnected), handles gracefully without crashing."""
+        from src.api.schemas.websocket import ClientChatMessage
+        from src.ws.manager import MessageDispatcher
+
+        interview_id = uuid4()
+
+        manager = MagicMock()
+        # Simulate send returning False when disconnected
+        manager.send = AsyncMock(return_value=False)
+
+        mock_session = AsyncMock()
+        mock_session.get.return_value = None
+
+        interview_service = MagicMock()
+        interview_service._session = mock_session
+
+        agent = MagicMock()
+
+        async def normal_stream(interview_id, user_message, **kwargs):
+            yield "Hi"
+
+        agent.stream_response = normal_stream
+
+        dispatcher = MessageDispatcher(
+            manager=manager,
+            interview_service=interview_service,
+            agent=agent,
+            execution_service=MagicMock(),
+        )
+
+        chat_msg = ClientChatMessage(
+            type="chat_message",
+            content="Test disconnect",
+            client_timestamp=1000,
+        )
+
+        # Should complete without throwing unhandled exceptions
+        await dispatcher._handle_chat(interview_id, chat_msg)
+        assert manager.send.await_count == 2  # token + complete

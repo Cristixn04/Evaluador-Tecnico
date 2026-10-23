@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from fastapi import WebSocket
 from pydantic import ValidationError
@@ -16,6 +16,7 @@ from src.api.schemas.websocket import (
     ClientRunCodeMessage,
     ClientWebSocketMessage,
     ServerAgentTokenMessage,
+    ServerAgentTurnCompleteMessage,
     ServerCodeExecutionResultMessage,
     ServerErrorMessage,
     ServerPhaseChangedMessage,
@@ -164,17 +165,28 @@ class MessageDispatcher:
 
         # Generate agent response
         try:
+            turn_id = str(uuid4())
+            full_response = ""
             async for delta in self._agent.stream_response(
                 interview_id=interview_id,
                 user_message=message.content,
             ):
+                full_response += delta
                 # Send streaming tokens
                 token_msg = ServerAgentTokenMessage(
                     type="agent_token",
-                    turn_id="",  # Will be filled by agent
+                    turn_id=turn_id,
                     delta=delta,
                 )
                 await self._manager.send(interview_id, token_msg.model_dump())
+
+            complete_msg = ServerAgentTurnCompleteMessage(
+                type="agent_turn_complete",
+                turn_id=turn_id,
+                full_content=full_response,
+            )
+            await self._manager.send(interview_id, complete_msg.model_dump())
+            await self._interview_service._session.commit()
         except Exception as e:  # noqa: BLE001
             await self._manager.send_error(interview_id, "AGENT_ERROR", f"Agent error: {e}")
 
