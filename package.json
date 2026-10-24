@@ -5,6 +5,9 @@
   "scripts": {
     "dev:web": "pnpm --filter @evaluador/web dev",
     "build:web": "pnpm --filter @evaluador/web build",
+    "lint:web": "pnpm --filter @evaluador/web lint",
+    "typecheck:web": "pnpm --filter @evaluador/web typecheck",
+    "test:web": "pnpm --filter @evaluador/web test",
     "contracts:generate": "pnpm --filter @evaluador/contracts generate-types"
   }
 }

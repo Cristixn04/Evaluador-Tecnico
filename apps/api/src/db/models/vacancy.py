@@ -14,6 +14,7 @@ from src.db.enums import Seniority
 if TYPE_CHECKING:
     from src.db.models.auth import Organization
     from src.db.models.interview import Interview
+    from src.db.models.invitation import Invitation
 
 
 class Vacancy(Base):
@@ -54,3 +55,4 @@ class Vacancy(Base):
 
     organization: Mapped[Organization | None] = relationship(back_populates="vacancies")
     interviews: Mapped[list[Interview]] = relationship(back_populates="vacancy")
+    invitations: Mapped[list[Invitation]] = relationship(back_populates="vacancy")

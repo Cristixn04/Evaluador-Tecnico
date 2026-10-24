@@ -30,6 +30,10 @@ def test_models_are_registered_in_metadata() -> None:
         "interviews",
         "turns",
         "snapshots",
+        "invitations",
+        "evaluations",
+        "evaluation_dimensions",
+        "evaluation_evidence",
     }
 
 
@@ -96,6 +100,7 @@ async def test_persist_vacancy_and_interview_graph(db_session: AsyncSession) -> 
                 content="Describe tu enfoque.",
             ),
             Snapshot(
+                reason="legacy",
                 interview_id=interview.id,
                 code="def solve():\n    return 1\n",
             ),

@@ -35,6 +35,25 @@
       }
     },
     "/vacancies": {
+      "get": {
+        "summary": "Listar vacantes de la organización autenticada",
+        "operationId": "listVacancies",
+        "responses": {
+          "200": {
+            "description": "Lista de vacantes de la organización",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Vacancy"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
       "post": {
         "summary": "Crear vacante a partir de descripción de texto",
         "operationId": "createVacancy",

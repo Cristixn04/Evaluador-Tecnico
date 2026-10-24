@@ -26,6 +26,43 @@ def database_url() -> str:
     return settings.DATABASE_URL
 
 
+@pytest.fixture(autouse=True)
+async def isolate_database_and_engine(database_url: str) -> AsyncGenerator[None, None]:
+    import src.db.session as db_session_module
+
+    if db_session_module._engine is not None:
+        await db_session_module._engine.dispose()
+    db_session_module._engine = None
+    db_session_module._async_session_maker = None
+
+    engine = create_async_engine(database_url, pool_pre_ping=True)
+    try:
+        async with engine.connect() as connection:
+            result = await connection.execute(text("SELECT current_database()"))
+            current_database = result.scalar_one()
+            if current_database == "evaluador_db":
+                await connection.run_sync(Base.metadata.create_all)
+                await connection.execute(
+                    text(
+                        "TRUNCATE TABLE organizations, users, memberships, vacancies, problems, "
+                        "interviews, turns, snapshots, invitations, evaluations, "
+                        "evaluation_dimensions, evaluation_evidence RESTART IDENTITY CASCADE;"
+                    )
+                )
+                await connection.commit()
+    except (OSError, OperationalError):
+        pass
+    finally:
+        await engine.dispose()
+
+    yield
+
+    if db_session_module._engine is not None:
+        await db_session_module._engine.dispose()
+    db_session_module._engine = None
+    db_session_module._async_session_maker = None
+
+
 @pytest.fixture
 async def db_session(database_url: str) -> AsyncGenerator[AsyncSession, None]:
     engine = create_async_engine(database_url, pool_pre_ping=True)
@@ -37,8 +74,6 @@ async def db_session(database_url: str) -> AsyncGenerator[AsyncSession, None]:
                 pytest.skip(
                     f"NO EJECUTADO — PostgreSQL no es evaluador_db (recibido: {current_database})"
                 )
-        async with engine.begin() as connection:
-            await connection.run_sync(Base.metadata.create_all)
         session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
         async with session_maker() as session:
             yield session
@@ -47,3 +82,4 @@ async def db_session(database_url: str) -> AsyncGenerator[AsyncSession, None]:
         pytest.skip(f"NO EJECUTADO — PostgreSQL no disponible: {exc}")
     finally:
         await engine.dispose()
+

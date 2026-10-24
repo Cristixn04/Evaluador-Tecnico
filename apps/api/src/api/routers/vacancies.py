@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.vacancies import CreateVacancyRequest, VacancyProfile, VacancyResponse
 from src.core.auth import AuthenticatedPrincipal, get_current_user
+from src.db.enums import Seniority
 from src.db.models import Vacancy
 from src.db.session import get_db
 from src.llm.exceptions import (
@@ -28,19 +29,34 @@ router = APIRouter(prefix="/vacancies", tags=["Vacancies"])
 
 
 def _to_response(vacancy: Vacancy) -> VacancyResponse:
-    if vacancy.role_category is None or vacancy.seniority is None or vacancy.profile is None:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Vacancy is missing parsed profile fields",
-        )
+    profile = (
+        VacancyProfile.model_validate(vacancy.profile)
+        if vacancy.profile
+        else VacancyProfile(required_skills=[], preferred_skills=[], primary_language="python")
+    )
     return VacancyResponse(
         id=str(vacancy.id),
         title=vacancy.title,
-        role_category=vacancy.role_category,
-        seniority=vacancy.seniority,
-        profile=VacancyProfile.model_validate(vacancy.profile),
+        role_category=vacancy.role_category or "Software Engineering",
+        seniority=vacancy.seniority or Seniority.MID,
+        profile=profile,
         created_at=vacancy.created_at,
     )
+
+
+@router.get("", response_model=list[VacancyResponse], summary="Listar vacantes de la organización")
+async def list_vacancies(
+    principal: AuthenticatedPrincipal = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> list[VacancyResponse]:
+    """Listar vacantes de la organización del usuario autenticado."""
+    result = await session.execute(
+        select(Vacancy)
+        .where(Vacancy.organization_id == principal.organization_id)
+        .order_by(Vacancy.created_at.desc())
+    )
+    vacancies = result.scalars().all()
+    return [_to_response(v) for v in vacancies]
 
 
 @router.post("", response_model=VacancyResponse, status_code=status.HTTP_201_CREATED)

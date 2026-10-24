@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.security import create_access_token, hash_password
 from src.db.enums import Seniority, UserRole
 from src.db.models import Membership, Organization, User, Vacancy
-from src.db.session import get_db
 from src.llm.exceptions import LLMTimeoutError
 from src.llm.factory import get_llm_client
 from src.llm.types import ChatCompletion, ChatMessage, TokenUsage
@@ -60,13 +59,10 @@ async def _seed_member(
 
 
 async def _client(db_session: AsyncSession, llm: FakeLLM) -> AsyncClient:
-    async def override_get_db():
-        yield db_session
-
+    # db_session fixture already overrides get_db
     async def override_llm():
         yield llm
 
-    app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_llm_client] = override_llm
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver")
 
@@ -79,30 +75,25 @@ def _auth_header(user: User, org: Organization) -> dict[str, str]:
 @pytest.mark.asyncio
 async def test_create_vacancy_requires_auth(db_session: AsyncSession) -> None:
     client = await _client(db_session, FakeLLM(json.dumps(VALID_PROFILE)))
-    try:
-        async with client:
-            response = await client.post(
-                "/vacancies",
-                json={"title": "Backend", "raw_description": DESCRIPTION},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/vacancies",
+            json={"title": "Backend", "raw_description": DESCRIPTION},
+        )
     assert response.status_code == 401
 
 
 @pytest.mark.asyncio
 async def test_create_vacancy_persists_profile(db_session: AsyncSession) -> None:
     user, org = await _seed_member(db_session, email="recruiter@example.com", org_name="Org A")
+    await db_session.commit()
     client = await _client(db_session, FakeLLM(json.dumps(VALID_PROFILE)))
-    try:
-        async with client:
-            response = await client.post(
-                "/vacancies",
-                headers=_auth_header(user, org),
-                json={"title": "Backend Python", "raw_description": DESCRIPTION},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/vacancies",
+            headers=_auth_header(user, org),
+            json={"title": "Backend Python", "raw_description": DESCRIPTION},
+        )
     assert response.status_code == 201
     body = response.json()
     assert body["title"] == "Backend Python"
@@ -118,48 +109,42 @@ async def test_create_vacancy_persists_profile(db_session: AsyncSession) -> None
 @pytest.mark.asyncio
 async def test_create_vacancy_rejects_empty_description(db_session: AsyncSession) -> None:
     user, org = await _seed_member(db_session, email="recruiter@example.com", org_name="Org A")
+    await db_session.commit()
     client = await _client(db_session, FakeLLM(json.dumps(VALID_PROFILE)))
-    try:
-        async with client:
-            response = await client.post(
-                "/vacancies",
-                headers=_auth_header(user, org),
-                json={"title": "Backend", "raw_description": "   "},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/vacancies",
+            headers=_auth_header(user, org),
+            json={"title": "Backend", "raw_description": "   "},
+        )
     assert response.status_code == 422
 
 
 @pytest.mark.asyncio
 async def test_create_vacancy_malformed_llm_response(db_session: AsyncSession) -> None:
     user, org = await _seed_member(db_session, email="recruiter@example.com", org_name="Org A")
+    await db_session.commit()
     client = await _client(db_session, FakeLLM("not-json"))
-    try:
-        async with client:
-            response = await client.post(
-                "/vacancies",
-                headers=_auth_header(user, org),
-                json={"title": "Backend", "raw_description": DESCRIPTION},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/vacancies",
+            headers=_auth_header(user, org),
+            json={"title": "Backend", "raw_description": DESCRIPTION},
+        )
     assert response.status_code == 502
 
 
 @pytest.mark.asyncio
 async def test_create_vacancy_llm_timeout(db_session: AsyncSession) -> None:
     user, org = await _seed_member(db_session, email="recruiter@example.com", org_name="Org A")
+    await db_session.commit()
     client = await _client(db_session, FakeLLM(error=LLMTimeoutError("LLM request timed out")))
-    try:
-        async with client:
-            response = await client.post(
-                "/vacancies",
-                headers=_auth_header(user, org),
-                json={"title": "Backend", "raw_description": DESCRIPTION},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/vacancies",
+            headers=_auth_header(user, org),
+            json={"title": "Backend", "raw_description": DESCRIPTION},
+        )
     assert response.status_code == 504
 
 
@@ -167,6 +152,7 @@ async def test_create_vacancy_llm_timeout(db_session: AsyncSession) -> None:
 async def test_get_profile_and_tenant_isolation(db_session: AsyncSession) -> None:
     owner, org_a = await _seed_member(db_session, email="a@example.com", org_name="Org A")
     stranger, org_b = await _seed_member(db_session, email="b@example.com", org_name="Org B")
+    await db_session.commit()
     vacancy = Vacancy(
         organization_id=org_a.id,
         title="Backend",
@@ -181,21 +167,82 @@ async def test_get_profile_and_tenant_isolation(db_session: AsyncSession) -> Non
         },
     )
     db_session.add(vacancy)
-    await db_session.flush()
+    await db_session.commit()
 
     client = await _client(db_session, FakeLLM(json.dumps(VALID_PROFILE)))
-    try:
-        async with client:
-            own = await client.get(
-                f"/vacancies/{vacancy.id}/profile",
-                headers=_auth_header(owner, org_a),
-            )
-            other = await client.get(
-                f"/vacancies/{vacancy.id}/profile",
-                headers=_auth_header(stranger, org_b),
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        own = await client.get(
+            f"/vacancies/{vacancy.id}/profile",
+            headers=_auth_header(owner, org_a),
+        )
+        other = await client.get(
+            f"/vacancies/{vacancy.id}/profile",
+            headers=_auth_header(stranger, org_b),
+        )
     assert own.status_code == 200
     assert own.json()["primary_language"] == "python"
     assert other.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_list_vacancies_requires_auth(db_session: AsyncSession) -> None:
+    client = await _client(db_session, FakeLLM())
+    async with client:
+        response = await client.get("/vacancies")
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_list_vacancies_scoped_to_organization(db_session: AsyncSession) -> None:
+    user_a, org_a = await _seed_member(db_session, email="org_a_recruiter@example.com", org_name="Org A Corp")
+    user_b, org_b = await _seed_member(db_session, email="org_b_recruiter@example.com", org_name="Org B Inc")
+    await db_session.commit()
+
+    # Vacancy 1 in Org A
+    v1 = Vacancy(
+        organization_id=org_a.id,
+        title="Senior Python Dev",
+        raw_description="Python role",
+        role_category="backend",
+        seniority=Seniority.SENIOR,
+        profile={"required_skills": ["python"], "preferred_skills": [], "primary_language": "python"},
+    )
+    # Vacancy 2 in Org A
+    v2 = Vacancy(
+        organization_id=org_a.id,
+        title="Junior Frontend Dev",
+        raw_description="React role",
+        role_category="frontend",
+        seniority=Seniority.JUNIOR,
+        profile={"required_skills": ["typescript"], "preferred_skills": [], "primary_language": "typescript"},
+    )
+    # Vacancy 3 in Org B (different org)
+    v3 = Vacancy(
+        organization_id=org_b.id,
+        title="Secret Org B Vacancy",
+        raw_description="Top secret role",
+        role_category="devops",
+        seniority=Seniority.LEAD,
+        profile={"required_skills": ["kubernetes"], "preferred_skills": [], "primary_language": "go"},
+    )
+    db_session.add_all([v1, v2, v3])
+    await db_session.commit()
+
+    client = await _client(db_session, FakeLLM())
+    async with client:
+        # Org A recruiter queries /vacancies
+        res_a = await client.get("/vacancies", headers=_auth_header(user_a, org_a))
+        assert res_a.status_code == 200
+        data_a = res_a.json()
+        assert len(data_a) == 2
+        titles_a = [v["title"] for v in data_a]
+        assert "Senior Python Dev" in titles_a
+        assert "Junior Frontend Dev" in titles_a
+        assert "Secret Org B Vacancy" not in titles_a
+
+        # Org B recruiter queries /vacancies
+        res_b = await client.get("/vacancies", headers=_auth_header(user_b, org_b))
+        assert res_b.status_code == 200
+        data_b = res_b.json()
+        assert len(data_b) == 1
+        assert data_b[0]["title"] == "Secret Org B Vacancy"

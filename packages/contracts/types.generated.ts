@@ -28,7 +28,8 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get?: never;
+        /** Listar vacantes de la organización autenticada */
+        get: operations["listVacancies"];
         put?: never;
         /** Crear vacante a partir de descripción de texto */
         post: operations["createVacancy"];
@@ -354,6 +355,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AuthToken"];
+                };
+            };
+        };
+    };
+    listVacancies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lista de vacantes de la organización */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Vacancy"][];
                 };
             };
         };

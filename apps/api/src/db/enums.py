@@ -21,6 +21,17 @@ class InterviewStatus(StrEnum):
     EVALUATED = "evaluated"
 
 
+class InterviewPhase(StrEnum):
+    INTRO = "INTRO"
+    PROBLEM = "PROBLEM"
+    CLARIFY = "CLARIFY"
+    DESIGN = "DESIGN"
+    CODING = "CODING"
+    PROBE = "PROBE"
+    WRAPUP = "WRAPUP"
+    EVALUATE = "EVALUATE"
+
+
 class TurnSpeaker(StrEnum):
     CANDIDATE = "candidate"
     AGENT = "agent"

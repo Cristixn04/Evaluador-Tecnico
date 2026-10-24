@@ -14,14 +14,28 @@ from src.core.config import settings
 API_ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_initial_migration_is_registered() -> None:
+async def test_initial_migration_is_registered() -> None:
     config = Config(str(API_ROOT / "alembic.ini"))
     config.set_main_option("script_location", str(API_ROOT / "alembic"))
     script = ScriptDirectory.from_config(config)
     revisions = list(script.walk_revisions())
-    assert [item.revision for item in revisions] == ["0002_auth_s03", "0001_initial_s02"]
-    assert revisions[0].down_revision == "0001_initial_s02"
-    assert revisions[1].down_revision is None
+    assert [item.revision for item in revisions] == [
+        "merge_evaluation_invitations",
+        "9e72f0a31071",
+        "adding_evaluation_tables",
+        "a5fe8eec0469",
+        "b217eca9217b",
+        "adding_trajectory_fields",
+        "9d55e0bb5769",
+        "02c74c24508e",
+        "8d9dc162d3fd",
+        "0005_access_token_null",
+        "0004_add_token_selector",
+        "0003_s09_invitation_phase",
+        "0002_auth_s03",
+        "0001_initial_s02",
+    ]
+    assert script.get_heads() == ["merge_evaluation_invitations"]
 
 
 async def _public_tables(engine) -> set[str]:
@@ -85,12 +99,16 @@ async def test_alembic_upgrade_and_downgrade() -> None:
             "interviews",
             "turns",
             "snapshots",
+            "invitations",
+            "evaluations",
+            "evaluation_dimensions",
+            "evaluation_evidence",
         }
         async with engine.connect() as connection:
             version = (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalar_one()
-            assert version == "0002_auth_s03"
+            assert version == "merge_evaluation_invitations"
     finally:
         await engine.dispose()
 
