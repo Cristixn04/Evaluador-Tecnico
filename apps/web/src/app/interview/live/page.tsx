@@ -35,6 +35,8 @@ function InterviewContent() {
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
   const [hasConsented, setHasConsented] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [telemetryPill, setTelemetryPill] = useState<string | null>(null);
   const [activeLeftTab, setActiveLeftTab] = useState<"chat" | "problem">("chat");
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState<CodeLanguage>("python");
@@ -98,33 +100,49 @@ function InterviewContent() {
     debounceMs: 3500,
   });
 
-  // Monitoreo ético de integridad (blur y pegado masivo)
+  // Monitoreo ético de integridad (blur, focus, pegado masivo y tab_switch bajo Ley 1581)
   useEffect(() => {
     if (!hasConsented) return;
 
     const handleBlur = () => {
       socket.sendIntegrityEvent("blur");
       triggerImmediateSnapshot("blur");
+      setTelemetryPill("Foco fuera de la ventana registrado");
+      setTimeout(() => setTelemetryPill(null), 3000);
     };
 
     const handleFocus = () => {
       socket.sendIntegrityEvent("focus");
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        socket.sendIntegrityEvent("tab_switch");
+        setTelemetryPill("Cambio de pestaña registrado");
+        setTimeout(() => setTelemetryPill(null), 3000);
+      }
+    };
+
     const handlePaste = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData("text") || "";
       if (text.length > 150) {
         socket.sendIntegrityEvent("paste_large", { pasted_length: text.length });
+        setTelemetryPill(`Pegado de código detectado (${text.length} caracteres)`);
+        setTimeout(() => setTelemetryPill(null), 3500);
+      } else if (text.length > 0) {
+        socket.sendIntegrityEvent("paste", { pasted_length: text.length });
       }
     };
 
     window.addEventListener("blur", handleBlur);
     window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("paste", handlePaste);
 
     return () => {
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("paste", handlePaste);
     };
   }, [hasConsented, socket, triggerImmediateSnapshot]);
@@ -246,10 +264,30 @@ function InterviewContent() {
                   <strong>Garantía de Equidad (Ley 1581):</strong> Tus datos personales (nombre, género, foto, universidad) no son visibles para el agente evaluador. La sesión es calificada con base exclusiva en evidencia técnica defendible.
                 </span>
               </div>
+
+              {/* Checkbox de Consentimiento Informado Explicito */}
+              <div className="pt-2 border-t border-border/60">
+                <label className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/60 transition-colors">
+                  <input
+                    type="checkbox"
+                    checked={consentAccepted}
+                    onChange={(e) => setConsentAccepted(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-700 text-primary focus:ring-primary cursor-pointer accent-primary shrink-0"
+                  />
+                  <span className="text-xs text-muted-foreground leading-relaxed">
+                    Autorizo expresamente el tratamiento de mis datos de desempeño y telemetría de sesión bajo la <strong>Ley Estatutaria 1581 de 2012 (Colombia)</strong> para fines de evaluación técnica ciega y generación de reporte auditable. Entiendo que puedo revocar este consentimiento o solicitar la supresión de mis datos en cualquier momento.
+                  </span>
+                </label>
+              </div>
             </CardContent>
 
             <CardFooter className="pt-2">
-              <Button size="lg" className="w-full gap-2 text-sm font-semibold" onClick={handleStartInterview}>
+              <Button
+                size="lg"
+                className="w-full gap-2 text-sm font-semibold"
+                onClick={handleStartInterview}
+                disabled={!consentAccepted}
+              >
                 <span>Entiendo las Reglas y Deseo Comenzar</span>
                 <ArrowRight className="h-4 w-4" />
               </Button>
@@ -271,6 +309,14 @@ function InterviewContent() {
         connectionStatus={socket.connectionStatus}
         onTransitionPhase={socket.requestPhaseTransition}
       />
+
+      {/* Notificación de Telemetría Ética */}
+      {telemetryPill && (
+        <div className="absolute top-16 right-6 z-50 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-cyan-800/80 text-xs text-cyan-300 font-mono flex items-center gap-2 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+          <span>{telemetryPill}</span>
+        </div>
+      )}
 
       {/* Main Split-Screen Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">

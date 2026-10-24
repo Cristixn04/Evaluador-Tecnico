@@ -291,7 +291,6 @@ export const handlers = [
           tests_passed: 0,
           total_tests: 4,
           execution_status: "test_failure",
-          event_note: "El candidato inicia la lectura del problema y plantea preguntas iniciales.",
         },
         {
           timestamp_offset_seconds: 480, // Minuto 8
@@ -310,7 +309,6 @@ def conciliar_lote_pse(transacciones_internas, archivo_ach):
           tests_passed: 0,
           total_tests: 4,
           execution_status: "test_failure",
-          event_note: "Estructura el boceto inicial y valida supuestos en el chat.",
         },
         {
           timestamp_offset_seconds: 960, // Minuto 16
@@ -341,7 +339,6 @@ def conciliar_lote_pse(transacciones_internas, archivo_ach):
           tests_passed: 1,
           total_tests: 4,
           execution_status: "test_failure",
-          event_note: "Primera ejecución de pruebas en Judge0: fallan 3 de 4 pruebas por precisión float y rendimiento.",
         },
         {
           timestamp_offset_seconds: 1350, // Minuto 22.5
@@ -379,7 +376,6 @@ def conciliar_lote_pse(transacciones_internas, archivo_ach):
           tests_passed: 3,
           total_tests: 4,
           execution_status: "test_failure",
-          event_note: "Refactorización matemática con Decimal e indexación hash. Solo falta caso borde de estados PENDIENTE.",
         },
         {
           timestamp_offset_seconds: 1720, // Minuto 28.6
@@ -438,7 +434,6 @@ def conciliar_lote_pse(
           tests_passed: 4,
           total_tests: 4,
           execution_status: "success",
-          event_note: "¡Suite completa en verde! 4/4 pruebas unitarias aprobadas en 42ms.",
         },
         {
           timestamp_offset_seconds: 2050, // Minuto 34.1
@@ -496,7 +491,6 @@ def conciliar_lote_pse(
           tests_passed: 4,
           total_tests: 4,
           execution_status: "success",
-          event_note: "Fase PROBE superada: El candidato justificó la complejidad temporal O(N+M) y la elección de ROUND_HALF_EVEN.",
         },
       ],
     });
