@@ -6,7 +6,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.invitations import CreateInvitationRequest, InvitationResponse
 from src.core.auth import AuthenticatedPrincipal, get_current_user
-from src.core.config import settings
 from src.db.models import Vacancy
 from src.db.session import get_db
 from src.invitations.service import InvitationService
@@ -18,9 +17,8 @@ def _masked_candidate_id(invitation_id: UUID) -> str:
     return f"CAND-{invitation_id.hex[:4].upper()}"
 
 
-def _access_url(invitation_id: UUID) -> str:
-    base = settings.API_V1_STR.replace("/api/v1", "")
-    return f"{base}/interview/{invitation_id}"
+def _access_url(access_token: str) -> str:
+    return f"/interview/live?token={access_token}"
 
 
 @router.post("/{vacancy_id}/invitations", response_model=InvitationResponse, status_code=status.HTTP_201_CREATED)
@@ -46,7 +44,7 @@ async def create_invitation(
     return InvitationResponse(
         invitation_id=str(invitation.id),
         masked_candidate_id=_masked_candidate_id(invitation.id),
-        access_url=_access_url(invitation.id),
+        access_url=_access_url(access_token),
         access_token=access_token,
         expires_at=invitation.expires_at,
     )

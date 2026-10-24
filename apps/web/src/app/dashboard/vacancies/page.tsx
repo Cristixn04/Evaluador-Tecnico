@@ -63,9 +63,18 @@ export default function VacanciesPage() {
     }
   };
 
+  const getCandidateAccessUrl = (invitation: InvitationResponse | null) => {
+    if (!invitation?.access_url) return "";
+    if (invitation.access_url.startsWith("http")) return invitation.access_url;
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+    return `${origin}${invitation.access_url.startsWith("/") ? "" : "/"}${invitation.access_url}`;
+  };
+
+  const candidateAccessUrl = getCandidateAccessUrl(generatedInvitation);
+
   const handleCopyLink = () => {
-    if (generatedInvitation?.access_url) {
-      navigator.clipboard.writeText(generatedInvitation.access_url);
+    if (candidateAccessUrl) {
+      navigator.clipboard.writeText(candidateAccessUrl);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     }
@@ -271,7 +280,7 @@ export default function VacanciesPage() {
                   <div className="flex items-center gap-2">
                     <Input
                       readOnly
-                      value={generatedInvitation.access_url}
+                      value={candidateAccessUrl}
                       className="font-mono text-xs bg-muted/30"
                     />
                     <Button
@@ -288,7 +297,7 @@ export default function VacanciesPage() {
 
                 <div className="pt-4 flex items-center justify-between">
                   <a
-                    href={generatedInvitation.access_url}
+                    href={candidateAccessUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"

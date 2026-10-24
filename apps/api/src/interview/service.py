@@ -53,7 +53,6 @@ class InterviewService:
         high concurrency.
         """
         selector = token[:16]
-        print(f"DEBUG get_or_create_from_invitation: token={token[:20]}..., selector={selector}")
 
         for attempt in range(self.MAX_CREATE_RETRIES):
             # Lock invitation row FIRST by selector, then verify token and create interview atomically
@@ -63,10 +62,8 @@ class InterviewService:
                 .with_for_update()
             )
             locked_invitation = result.scalar_one_or_none()
-            print(f"DEBUG: locked_invitation={locked_invitation.id if locked_invitation else None}")
 
             if locked_invitation is None:
-                print(f"DEBUG: No invitation found for selector {selector}, trying legacy fallback")
                 # No invitation with this selector - try legacy fallback (without lock)
                 # Legacy invitations don't have token_selector, so we can't lock them
                 # This is a rare case for old invitations
@@ -78,26 +75,21 @@ class InterviewService:
 
             # Verify token hash within the locked transaction
             if not verify_password(token, locked_invitation.token_hash):
-                print("DEBUG: Token hash verification failed")
                 raise InvitationNotFoundError("Invalid invitation token")
 
             # Re-validate invitation state after lock
             if locked_invitation.used_at is not None:
-                print("DEBUG: Invitation already used")
                 raise InvitationAlreadyUsedError("Invitation has already been used")
             if locked_invitation.expires_at < datetime.now(UTC):
-                print("DEBUG: Invitation expired")
                 raise InvitationExpiredError("Invitation has expired")
 
             # Fast path: interview already exists (check after lock)
             if locked_invitation.interview_id is not None:
-                print(f"DEBUG: Interview already exists: {locked_invitation.interview_id}")
                 interview = await self._session.get(Interview, locked_invitation.interview_id)
                 if interview is not None:
                     return interview
 
             # Create new interview
-            print("DEBUG: Creating new interview")
             interview = await self._create_interview(locked_invitation, problem_selector)
 
             try:
@@ -105,14 +97,11 @@ class InterviewService:
                 # DO NOT set used_at here - invitation remains reusable for reconnection (per DR-4)
                 locked_invitation.interview_id = interview.id
                 await self._session.commit()  # Commit -> UNIQUE constraint check
-                print(f"DEBUG: Interview created and committed: {interview.id}")
                 return interview
             except IntegrityError as e:
                 await self._session.rollback()
-                print(f"DEBUG: IntegrityError: {e}")
                 if "uq_invitations_interview_id" in str(e.orig):
                     # Race lost: another request created the interview -> retry
-                    print("DEBUG: Race lost, retrying...")
                     continue
                 raise
 

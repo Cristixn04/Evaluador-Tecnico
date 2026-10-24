@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.invitations import AnonymousCandidateSession, ProblemSummary
@@ -39,22 +39,26 @@ def _build_ws_url(request: Request, interview_id: str) -> str:
 async def verify_candidate_session(
     request: Request,
     authorization: str | None = Header(default=None, alias="Authorization"),
+    token: str | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
 ) -> AnonymousCandidateSession:
-    if not authorization or not authorization.startswith("Bearer "):
+    auth_token: str | None = None
+    if authorization and authorization.startswith("Bearer "):
+        auth_token = authorization[7:].strip()
+    elif token:
+        auth_token = token.strip()
+
+    if not auth_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing token",
         )
 
-    token = authorization[7:]  # Remove "Bearer " prefix
-
     # Rate limiting: 10 requests per 60 seconds per IP + selector
     get_rate_limiter()
-    token[:16]
     client_ip = get_client_ip(request)
     allowed, _remaining = await get_rate_limiter().check_limit_with_ip(
-        selector=token[:16],
+        selector=auth_token[:16],
         ip=client_ip,
         limit=10,
         window_seconds=60,
@@ -69,7 +73,7 @@ async def verify_candidate_session(
     interview_service = InterviewService(session)
 
     try:
-        interview = await interview_service.get_or_create_from_invitation(token)
+        interview = await interview_service.get_or_create_from_invitation(auth_token)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -98,7 +102,7 @@ async def verify_candidate_session(
     problem_summary = ProblemSummary(
         id=str(problem.id),
         title=problem.title,
-        difficulty=problem.difficulty.value,
+        difficulty=problem.difficulty.value if hasattr(problem.difficulty, "value") else str(problem.difficulty),
         language=problem.language,
         scenario_preview=problem.scenario_preview,
         tags=problem.tags,

@@ -29,7 +29,7 @@ import {
 
 function InterviewContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "cand-demo-token-123";
+  const token = searchParams.get("token") || "";
   const [sessionData, setSessionData] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationError, setVerificationError] = useState<string | null>(null);
