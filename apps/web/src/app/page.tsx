@@ -16,10 +16,15 @@ export default function Home() {
             </div>
             <div>
               <span className="font-bold text-lg tracking-tight">Evaluador Técnico</span>
-              <span className="text-xs text-muted-foreground ml-2 font-mono">v0.1.0 (Sprint 1)</span>
+              <span className="text-xs text-muted-foreground ml-2 font-mono">v1.0.0 (Release Freeze)</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/demo">
+              <Button variant="secondary" size="sm" className="text-xs gap-1.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20">
+                <Sparkles className="h-3.5 w-3.5" /> Modo Demo
+              </Button>
+            </Link>
             <Link href="/login">
               <Button variant="outline" size="sm" className="text-xs">
                 Iniciar Sesión
@@ -39,7 +44,7 @@ export default function Home() {
         {/* Hero Section */}
         <div className="space-y-4 max-w-3xl mb-12">
           <Badge variant="outline" className="border-primary/40 text-primary px-3 py-1 text-xs">
-            Inteligencia Artificial para Talento TI en Colombia
+            Inteligencia Artificial para Talento TI en Colombia • Ley 1581 Habeas Data
           </Badge>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-foreground">
             Evalúa el <span className="text-primary">razonamiento</span>, no solo la respuesta binaria.
@@ -48,13 +53,18 @@ export default function Home() {
             Agente de IA que conduce la entrevista técnica inicial, plantea problemas reales, analiza la trayectoria de depuración y entrega un informe defendible y libre de sesgos para tus vacantes.
           </p>
           <div className="flex flex-wrap gap-4 pt-2">
+            <Link href="/demo">
+              <Button size="lg" className="gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-medium shadow-md shadow-cyan-950">
+                <Sparkles className="h-4 w-4" /> Probar Modo Demo Interactivo
+              </Button>
+            </Link>
             <Link href="/dashboard/vacancies/new">
-              <Button size="lg" className="gap-2">
-                <Sparkles className="h-4 w-4" /> Probar Parser de Vacantes con IA
+              <Button variant="outline" size="lg" className="gap-2">
+                Parser de Vacantes con IA
               </Button>
             </Link>
             <Link href="/dashboard">
-              <Button variant="outline" size="lg">
+              <Button variant="ghost" size="lg">
                 Ver Panel de Control
               </Button>
             </Link>

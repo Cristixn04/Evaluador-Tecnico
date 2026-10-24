@@ -164,6 +164,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/interviews/{id}/report.pdf": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Descargar informe defendible en PDF (WeasyPrint con hash SHA-256) */
+        get: operations["getInterviewReportPdf"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/privacy/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Consultar política de privacidad y derechos Habeas Data Ley 1581 de 2012 */
+        get: operations["getPrivacyPolicy"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/privacy/consent/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revocar consentimiento informado de evaluación técnica */
+        post: operations["revokeConsent"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/privacy/candidates/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Supresión de datos del candidato (Ley 1581) */
+        delete: operations["deleteCandidateData"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/organizations/{id}/interviews": {
         parameters: {
             query?: never;
@@ -325,6 +393,26 @@ export interface components {
             interview_id: string;
             total_duration_seconds: number;
             snapshots: components["schemas"]["TrajectorySnapshot"][];
+        };
+        PrivacyPolicyResponse: {
+            regulatory_framework: string;
+            purpose: string;
+            rights: string[];
+            guarantees: Record<string, never>;
+        };
+        RevokeConsentRequest: {
+            invitation_token: string;
+            reason?: string;
+        };
+        RevokeConsentResponse: {
+            status: string;
+            message: string;
+            revoked_at: string;
+        };
+        DataDeletionResponse: {
+            status: string;
+            records_deleted: number;
+            message: string;
         };
     };
     responses: never;
@@ -571,6 +659,94 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["InterviewTrajectory"];
+                };
+            };
+        };
+    };
+    getInterviewReportPdf: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reporte binario en formato PDF */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/pdf": string;
+                };
+            };
+        };
+    };
+    getPrivacyPolicy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Política de tratamiento de datos personales */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PrivacyPolicyResponse"];
+                };
+            };
+        };
+    };
+    revokeConsent: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevokeConsentRequest"];
+            };
+        };
+        responses: {
+            /** @description Confirmación de revocatoria */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RevokeConsentResponse"];
+                };
+            };
+        };
+    };
+    deleteCandidateData: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Confirmación de supresión de datos */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataDeletionResponse"];
                 };
             };
         };

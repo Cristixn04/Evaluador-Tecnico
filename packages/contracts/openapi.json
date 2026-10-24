@@ -267,6 +267,95 @@
         }
       }
     },
+    "/interviews/{id}/report.pdf": {
+      "get": {
+        "summary": "Descargar informe defendible en PDF (WeasyPrint con hash SHA-256)",
+        "operationId": "getInterviewReportPdf",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reporte binario en formato PDF",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy/policy": {
+      "get": {
+        "summary": "Consultar política de privacidad y derechos Habeas Data Ley 1581 de 2012",
+        "operationId": "getPrivacyPolicy",
+        "responses": {
+          "200": {
+            "description": "Política de tratamiento de datos personales",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyPolicyResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy/consent/revoke": {
+      "post": {
+        "summary": "Revocar consentimiento informado de evaluación técnica",
+        "operationId": "revokeConsent",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RevokeConsentRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Confirmación de revocatoria",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RevokeConsentResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/privacy/candidates/{id}": {
+      "delete": {
+        "summary": "Supresión de datos del candidato (Ley 1581)",
+        "operationId": "deleteCandidateData",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmación de supresión de datos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DataDeletionResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/organizations/{id}/interviews": {
       "get": {
         "summary": "Listar entrevistas de una organización para el panel de reclutamiento",
@@ -508,6 +597,42 @@
             "type": "array",
             "items": { "$ref": "#/components/schemas/TrajectorySnapshot" }
           }
+        }
+      },
+      "PrivacyPolicyResponse": {
+        "type": "object",
+        "required": ["regulatory_framework", "purpose", "rights", "guarantees"],
+        "properties": {
+          "regulatory_framework": { "type": "string" },
+          "purpose": { "type": "string" },
+          "rights": { "type": "array", "items": { "type": "string" } },
+          "guarantees": { "type": "object" }
+        }
+      },
+      "RevokeConsentRequest": {
+        "type": "object",
+        "required": ["invitation_token"],
+        "properties": {
+          "invitation_token": { "type": "string" },
+          "reason": { "type": "string" }
+        }
+      },
+      "RevokeConsentResponse": {
+        "type": "object",
+        "required": ["status", "message", "revoked_at"],
+        "properties": {
+          "status": { "type": "string" },
+          "message": { "type": "string" },
+          "revoked_at": { "type": "string" }
+        }
+      },
+      "DataDeletionResponse": {
+        "type": "object",
+        "required": ["status", "records_deleted", "message"],
+        "properties": {
+          "status": { "type": "string" },
+          "records_deleted": { "type": "integer" },
+          "message": { "type": "string" }
         }
       }
     }

@@ -208,6 +208,16 @@ class InterviewAgent:
         if phase_instruction:
             prompt += f"\n\nFASE ACTUAL - {phase.value}:\n{phase_instruction}"
 
+        # Directiva de Anti-Cheat Cognitivo para fase PROBE
+        if phase == InterviewPhase.PROBE:
+            prompt += (
+                "\n\nDIRECTIVA ANTI-CHEAT COGNITIVO (FASE PROBE):\n"
+                "Formula preguntas reflexivas y profundas sobre el código escrito por el candidato. "
+                "Exige justificar la complejidad computacional temporal y espacial O(), "
+                "la razón de las estructuras de datos seleccionadas y cómo su implementación mitiga casos de borde. "
+                "Esto expone de forma ética e indiscutible si el candidato comprende su propio código o si fue copiado."
+            )
+
         # Append progressive hints context
         if hints_context:
             prompt += hints_context

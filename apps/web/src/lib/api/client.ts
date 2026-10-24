@@ -113,6 +113,43 @@ class ApiClient {
     if (!res.ok) throw new Error("Error al listar las entrevistas");
     return res.json();
   }
+
+  // 9. Descargar reporte defendible en PDF (WeasyPrint con hash SHA-256)
+  async downloadReportPdf(interviewId: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE_URL}/interviews/${interviewId}/report.pdf`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al generar el reporte en PDF");
+    return res.blob();
+  }
+
+  // 10. Consultar política de privacidad Ley 1581
+  async getPrivacyPolicy() {
+    const res = await fetch(`${API_BASE_URL}/privacy/policy`);
+    if (!res.ok) throw new Error("Error al obtener la política de privacidad");
+    return res.json();
+  }
+
+  // 11. Revocar consentimiento informado (Habeas Data)
+  async revokeConsent(invitationToken: string, reason?: string) {
+    const res = await fetch(`${API_BASE_URL}/privacy/consent/revoke`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invitation_token: invitationToken, reason }),
+    });
+    if (!res.ok) throw new Error("Error al revocar el consentimiento");
+    return res.json();
+  }
+
+  // 12. Supresión de datos de candidato (Derecho al olvido Ley 1581)
+  async deleteCandidateData(interviewId: string) {
+    const res = await fetch(`${API_BASE_URL}/privacy/candidates/${interviewId}`, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al suprimir los datos del candidato");
+    return res.json();
+  }
 }
 
 export const api = new ApiClient();

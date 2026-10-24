@@ -1,6 +1,6 @@
 [project]
 name = "evaluador-api"
-version = "0.1.0"
+version = "1.0.0"
 description = "Backend del Evaluador Técnico de Candidatos con FastAPI y motor de evaluación de IA"
 readme = "README.md"
 requires-python = ">=3.12"

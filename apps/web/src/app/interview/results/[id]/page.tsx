@@ -18,6 +18,8 @@ import {
   AlertCircle,
   XCircle,
   Printer,
+  Download,
+  Loader2,
   ChevronDown,
   ChevronUp,
   History,
@@ -38,6 +40,7 @@ export default function InterviewResultsPage() {
 
   const [selectedCompetency, setSelectedCompetency] = useState<string | null>(null);
   const [showTrajectory, setShowTrajectory] = useState(true);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -128,6 +131,26 @@ export default function InterviewResultsPage() {
   const recBadge = getRecommendationBadge(evaluation.recommendation);
   const RecIcon = recBadge.icon;
 
+  const handleDownloadPdf = async () => {
+    try {
+      setIsDownloadingPdf(true);
+      const blob = await api.downloadReportPdf(interviewId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `reporte-evaluacion-${evaluation.masked_candidate_id}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err) {
+      console.error("Error downloading PDF:", err);
+      window.print();
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -159,13 +182,31 @@ export default function InterviewResultsPage() {
 
           <div className="flex items-center gap-3">
             <Button
+              onClick={handleDownloadPdf}
+              disabled={isDownloadingPdf}
+              size="sm"
+              className="bg-cyan-600 hover:bg-cyan-500 text-white gap-1.5 shadow-md shadow-cyan-950/40"
+            >
+              {isDownloadingPdf ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <span>Generando PDF...</span>
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4" />
+                  <span>Descargar PDF (WeasyPrint)</span>
+                </>
+              )}
+            </Button>
+            <Button
               onClick={() => window.print()}
               variant="outline"
               size="sm"
               className="border-slate-800 bg-slate-900 hover:bg-slate-800 text-slate-300 gap-1.5"
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimir / Exportar</span>
+              <span>Imprimir</span>
             </Button>
           </div>
         </div>

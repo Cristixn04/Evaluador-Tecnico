@@ -19,6 +19,7 @@ class InterviewStatus(StrEnum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     EVALUATED = "evaluated"
+    CANCELLED = "cancelled"
 
 
 class InterviewPhase(StrEnum):

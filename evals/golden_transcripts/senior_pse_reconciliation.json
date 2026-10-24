@@ -1,0 +1,34 @@
+{
+  "scenario_id": "prob-pse-conciliacion",
+  "expected_level": "senior",
+  "expected_overall_score_range": [4.0, 5.0],
+  "expected_recommendation": "hire",
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "¡Hola! Bienvenido a la evaluación técnica. El objetivo es conciliar transacciones PSE con archivos bancarios ACH. ¿Tienes alguna pregunta antes de comenzar?"
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "¿Los montos pueden contener decimales flotantes y cuál es la precisión exigida? Además, ¿cómo manejamos las transacciones en estado PENDIENTE al corte del lote?"
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "Excelente pregunta. Usamos precisión a 2 decimales con redondeo bancario ROUND_HALF_EVEN. Las transacciones PENDIENTES no deben considerarse discrepancias sino trasladarse al siguiente ciclo."
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Entendido. Diseñaré una indexación por hash O(N+M) agrupando por (referencia, valor) y usando el módulo Decimal para evitar imprecisiones de coma flotante de IEEE 754."
+    }
+  ],
+  "final_code": "from decimal import Decimal, ROUND_HALF_EVEN\n\ndef conciliar_lote_pse(transacciones_internas, archivo_ach):\n    indice_ach = {}\n    for ach in archivo_ach:\n        clave = (ach['referencia'], Decimal(str(ach['monto'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_EVEN))\n        indice_ach[clave] = ach\n    \n    conciliadas, discrepancias = [], []\n    for tx in transacciones_internas:\n        if tx.get('estado') == 'PENDIENTE':\n            continue\n        clave = (tx['referencia'], Decimal(str(tx['monto'])).quantize(Decimal('0.01'), rounding=ROUND_HALF_EVEN))\n        if clave in indice_ach:\n            conciliadas.append(tx['id'])\n        else:\n            discrepancias.append(tx['id'])\n            \n    return {'conciliadas': conciliadas, 'discrepancias': discrepancias}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 4,
+    "total_tests": 4
+  }
+}

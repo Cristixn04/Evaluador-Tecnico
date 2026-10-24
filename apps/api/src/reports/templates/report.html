@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Informe Defendible de Evaluación Técnica - {{ report.masked_candidate_id }}</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 16mm 20mm 16mm;
+      @bottom-right {
+        content: "Página " counter(page) " de " counter(pages);
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        font-size: 8pt;
+        color: #64748b;
+      }
+      @bottom-left {
+        content: "Auditoría SHA-256: {{ audit_hash[:16] }}... | Ley 1581 de 2012";
+        font-family: monospace;
+        font-size: 7pt;
+        color: #94a3b8;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color: #0f172a;
+      background-color: #ffffff;
+      line-height: 1.45;
+      font-size: 9.5pt;
+      margin: 0;
+      padding: 0;
+    }
+
+    .header {
+      border-bottom: 2px solid #0284c7;
+      padding-bottom: 12px;
+      margin-bottom: 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+
+    .title-area h1 {
+      font-size: 18pt;
+      font-weight: 800;
+      color: #0f172a;
+      margin: 0 0 4px 0;
+      letter-spacing: -0.5px;
+    }
+
+    .title-area p {
+      font-size: 9pt;
+      color: #475569;
+      margin: 0;
+    }
+
+    .badge-area {
+      text-align: right;
+    }
+
+    .masked-id {
+      display: inline-block;
+      font-family: monospace;
+      font-size: 10pt;
+      font-weight: 700;
+      background: #f1f5f9;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      padding: 3px 8px;
+      color: #0f172a;
+    }
+
+    .score-card {
+      margin-top: 6px;
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .score-box {
+      background: #0284c7;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 14pt;
+      padding: 4px 10px;
+      border-radius: 4px;
+    }
+
+    .verdict-box {
+      font-weight: 700;
+      font-size: 9pt;
+      padding: 4px 8px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    .verdict-hire {
+      background: #ecfdf5;
+      color: #047857;
+      border-color: #a7f3d0;
+    }
+
+    .verdict-borderline {
+      background: #fffbeb;
+      color: #b45309;
+      border-color: #fde68a;
+    }
+
+    .verdict-no-hire {
+      background: #fef2f2;
+      color: #b91c1c;
+      border-color: #fecaca;
+    }
+
+    .section {
+      margin-bottom: 18px;
+      page-break-inside: avoid;
+    }
+
+    .section-title {
+      font-size: 11pt;
+      font-weight: 700;
+      color: #1e293b;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    table.dimensions-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+    }
+
+    table.dimensions-table th {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 6px 10px;
+      font-size: 8.5pt;
+      font-weight: 600;
+      text-align: left;
+      color: #475569;
+    }
+
+    table.dimensions-table td {
+      border: 1px solid #e2e8f0;
+      padding: 6px 10px;
+      font-size: 8.5pt;
+      vertical-align: top;
+    }
+
+    .dim-score {
+      font-weight: 700;
+      text-align: center;
+      color: #0369a1;
+      width: 60px;
+    }
+
+    .evidence-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid #0284c7;
+      padding: 8px 12px;
+      margin-bottom: 8px;
+      border-radius: 0 4px 4px 0;
+      page-break-inside: avoid;
+    }
+
+    .evidence-quote {
+      font-family: monospace;
+      font-size: 8pt;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      padding: 6px 8px;
+      border-radius: 3px;
+      color: #334155;
+      margin: 4px 0;
+    }
+
+    .evidence-meta {
+      font-size: 7.5pt;
+      color: #64748b;
+      margin-top: 4px;
+    }
+
+    .grid-2 {
+      display: flex;
+      gap: 12px;
+    }
+
+    .column {
+      flex: 1;
+    }
+
+    .bullet-box {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 4px;
+      padding: 8px 12px;
+      font-size: 8.5pt;
+    }
+
+    .bullet-box ul {
+      margin: 0;
+      padding-left: 18px;
+    }
+
+    .bullet-box li {
+      margin-bottom: 4px;
+    }
+
+    .code-container {
+      background: #0f172a;
+      color: #e2e8f0;
+      font-family: monospace;
+      font-size: 7.5pt;
+      line-height: 1.4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      word-break: break-all;
+      page-break-inside: avoid;
+    }
+
+    .audit-footer {
+      border-top: 1px dashed #cbd5e1;
+      padding-top: 10px;
+      margin-top: 20px;
+      font-size: 7.5pt;
+      color: #64748b;
+      display: flex;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="title-area">
+      <h1>Informe Técnico Defendible</h1>
+      <p>Evaluador Técnico de Candidatos · Asistido por IA y Auditoría Forense</p>
+      <p style="margin-top: 2px;"><strong>Vacante:</strong> {{ vacancy_title }}</p>
+    </div>
+    <div class="badge-area">
+      <div class="masked-id">{{ report.masked_candidate_id }}</div>
+      <div class="score-card">
+        <div class="score-box">{{ "%.1f"|format(report.overall_score) }} / 5.0</div>
+        {% set rec = report.recommendation|lower %}
+        <div class="verdict-box {% if 'hire' in rec and 'not' not in rec and 'no' not in rec %}verdict-hire{% elif 'borderline' in rec or 'dudoso' in rec %}verdict-borderline{% else %}verdict-no-hire{% endif %}">
+          {{ report.recommendation }}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fortalezas y Riesgos -->
+  <div class="section">
+    <div class="grid-2">
+      <div class="column">
+        <div class="section-title">Fortalezas Demostradas</div>
+        <div class="bullet-box" style="border-left: 3px solid #10b981;">
+          <ul>
+            {% for s in report.strengths %}
+            <li>{{ s }}</li>
+            {% else %}
+            <li>Cumplimiento satisfactorio de los requerimientos mínimos de la prueba.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+      <div class="column">
+        <div class="section-title">Puntos de Atención / Riesgos</div>
+        <div class="bullet-box" style="border-left: 3px solid #f59e0b;">
+          <ul>
+            {% for r in report.risks %}
+            <li>{{ r }}</li>
+            {% else %}
+            <li>No se identificaron riesgos críticos en la ejecución.</li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rúbrica de 5 Dimensiones -->
+  <div class="section">
+    <div class="section-title">Evaluación por Dimensiones Técnicas</div>
+    <table class="dimensions-table">
+      <thead>
+        <tr>
+          <th style="width: 25%;">Dimensión</th>
+          <th style="width: 15%; text-align: center;">Puntuación</th>
+          <th>Justificación del Evaluador</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for dim in dimensions or (report.dimensions if report.dimensions is defined else []) %}
+        <tr>
+          <td><strong>{{ dim.dimension|replace('_', ' ')|title }}</strong></td>
+          <td class="dim-score">{{ "%.1f"|format(dim.score) }} / 5.0</td>
+          <td>{{ dim.reasoning }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Evidencias Forenses Citadas -->
+  <div class="section">
+    <div class="section-title">Evidencias Forenses Verificables</div>
+    {% for ev in report.evidence %}
+    <div class="evidence-card">
+      <div style="font-weight: 600; font-size: 8.5pt; color: #1e293b;">
+        Dimensión: {{ ev.dimension|replace('_', ' ')|title }}
+      </div>
+      <div class="evidence-quote">"{{ ev.evidence_quote }}"</div>
+      <div class="evidence-meta">
+        <strong>Justificación:</strong> {{ ev.reasoning }}
+        {% if ev.turn_id %} · <em>Turno ID: {{ ev.turn_id }}</em>{% endif %}
+      </div>
+    </div>
+    {% else %}
+    <p style="font-size: 8pt; color: #64748b;">No se registraron evidencias textuales aisladas.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Preguntas Recomendadas para Entrevista Humana -->
+  {% if report.suggested_human_questions %}
+  <div class="section">
+    <div class="section-title">Preguntas Recomendadas para el Tech Lead (Fase Humana)</div>
+    <div class="bullet-box" style="border-left: 3px solid #6366f1;">
+      <ul>
+        {% for q in report.suggested_human_questions %}
+        <li><strong>{{ q }}</strong></li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Código Final Entregado -->
+  {% if final_code %}
+  <div class="section">
+    <div class="section-title">Solución de Código Final Entregada ({{ code_language|upper }})</div>
+    <div class="code-container">{{ final_code }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Pie de Auditoría y Ley 1581 -->
+  <div class="audit-footer">
+    <div>
+      <strong>Integridad & Ley 1581 de 2012:</strong> Evaluación ciega a sesgos demográficos (nombre, género, edad).<br>
+      Hash de integridad SHA-256: <code>{{ audit_hash }}</code>
+    </div>
+    <div style="text-align: right;">
+      Generado: {{ generated_at }} UTC<br>
+      Modelo: {{ model_used }}
+    </div>
+  </div>
+
+</body>
+</html>
