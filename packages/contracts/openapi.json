@@ -487,13 +487,15 @@
         "properties": {
           "timestamp_offset_seconds": { "type": "number" },
           "phase": { "type": "string" },
-          "reason": { "type": "string" },
+          "reason": {
+            "type": "string",
+            "enum": ["debounce", "run", "blur", "phase_transition", "legacy"]
+          },
           "code": { "type": "string" },
           "language": { "type": "string" },
           "tests_passed": { "type": "integer" },
           "total_tests": { "type": "integer" },
-          "execution_status": { "type": "string" },
-          "event_note": { "type": "string" }
+          "execution_status": { "type": "string" }
         }
       },
       "InterviewTrajectory": {

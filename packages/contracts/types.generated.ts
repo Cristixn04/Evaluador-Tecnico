@@ -313,13 +313,13 @@ export interface components {
         TrajectorySnapshot: {
             timestamp_offset_seconds: number;
             phase: string;
-            reason: string;
+            /** @enum {string} */
+            reason: "debounce" | "run" | "blur" | "phase_transition" | "legacy";
             code: string;
             language: string;
             tests_passed?: number;
             total_tests?: number;
             execution_status?: string;
-            event_note?: string;
         };
         InterviewTrajectory: {
             interview_id: string;

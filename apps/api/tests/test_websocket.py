@@ -1,18 +1,32 @@
+from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session
+from sqlalchemy.pool import NullPool
 from starlette.websockets import WebSocketDisconnect
 
+from src.core.config import settings
 from src.core.ws_tokens import ws_token_service
 from src.db.enums import InterviewPhase, InterviewStatus, Seniority
 from src.db.models import Interview, Vacancy
-from src.db.session import get_sync_engine
 from src.interview.service import InterviewService
 from src.invitations.service import InvitationService
 from src.main import app as fastapi_app
+
+
+@asynccontextmanager
+async def isolated_session():
+    engine = create_async_engine(settings.DATABASE_URL, poolclass=NullPool)
+    maker = async_sessionmaker(engine, expire_on_commit=False)
+    try:
+        async with maker() as session:
+            yield session
+    finally:
+        await engine.dispose()
 
 
 @pytest.fixture
@@ -274,11 +288,10 @@ class TestWebSocketMessages:
         # Close WebSocket to trigger session commit, then verify with fresh session
         connected_ws.close()
 
-        engine = get_sync_engine()
-        with Session(engine) as fresh_session:
-            turns = fresh_session.scalars(
+        async with isolated_session() as fresh_session:
+            turns = (await fresh_session.scalars(
                 select(Turn).where(Turn.speaker == "candidate")
-            ).all()
+            )).all()
             assert len(turns) >= 1
 
     async def test_code_snapshot_persists(self, connected_ws) -> None:
@@ -307,9 +320,8 @@ class TestWebSocketMessages:
         # Close WebSocket to trigger session commit
         connected_ws.close()
 
-        engine = get_sync_engine()
-        with Session(engine) as fresh_session:
-            snapshots = fresh_session.scalars(select(Snapshot)).all()
+        async with isolated_session() as fresh_session:
+            snapshots = (await fresh_session.scalars(select(Snapshot))).all()
             assert len(snapshots) >= 1
             assert "def solve" in snapshots[-1].code
 
@@ -347,12 +359,11 @@ class TestWebSocketMessages:
         # Close WebSocket to trigger session commit
         connected_ws.close()
 
-        # Verify persistence using a fresh sync session, querying by interview ID
-        engine = get_sync_engine()
-        with Session(engine) as fresh_session:
-            interview = fresh_session.get(Interview, interview.id)
-            assert interview is not None
-            assert interview.phase == InterviewPhase.PROBLEM
+        # Verify persistence using a fresh session, querying by interview ID
+        async with isolated_session() as fresh_session:
+            interview_obj = await fresh_session.get(Interview, interview.id)
+            assert interview_obj is not None
+            assert interview_obj.phase == InterviewPhase.PROBLEM
 
     async def test_request_phase_transition_invalid_skip_rejected(
         self, connected_ws
