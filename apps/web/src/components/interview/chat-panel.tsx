@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ChatMessage } from "@/lib/hooks/use-interview-socket";
 import { Send, Bot, User, Sparkles, CornerDownLeft } from "lucide-react";
+import { MarkdownRenderer } from "./markdown-renderer";
 
 interface ChatPanelProps {
   messages: ChatMessage[];
@@ -83,9 +84,13 @@ export function ChatPanel({
                     : "bg-primary text-primary-foreground font-normal"
                 }`}
               >
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                {isAgent ? (
+                  <MarkdownRenderer content={msg.content} />
+                ) : (
+                  <p className="whitespace-pre-wrap">{msg.content}</p>
+                )}
                 <span
-                  className={`text-[9px] block mt-1 ${
+                  className={`text-[9px] block mt-1.5 ${
                     isAgent ? "text-muted-foreground" : "text-primary-foreground/70"
                   }`}
                 >
