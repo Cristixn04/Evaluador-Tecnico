@@ -47,6 +47,17 @@ class ProblemSelector:
         stmt = self._filtered_statement(skills=skills, seniority=seniority, language=language)
         result = await self._session.scalars(stmt)
         matches = list(result.all())
+        if not matches:
+            count = await self._session.scalar(select(func.count(Problem.id)))
+            if count == 0:
+                from src.problems.loader import DEFAULT_CATALOG_DIR, ProblemLoader
+                specs = ProblemLoader(DEFAULT_CATALOG_DIR).load()
+                for spec in specs:
+                    self._session.add(spec_to_problem(spec))
+                await self._session.flush()
+                result = await self._session.scalars(stmt)
+                matches = list(result.all())
+
         preferred = _normalize_skills(preferred_skills or ())
         if not preferred:
             return matches
