@@ -14,7 +14,7 @@ import { ChatPanel } from "@/components/interview/chat-panel";
 import { CodeEditor } from "@/components/interview/code-editor";
 import { TestConsole } from "@/components/interview/test-console";
 import { api } from "@/lib/api/client";
-import type { CodeLanguage } from "@evaluador/contracts";
+import type { CodeLanguage, InterviewPhase } from "@evaluador/contracts";
 import {
   ShieldCheck,
   Sparkles,
@@ -55,6 +55,18 @@ function InterviewContent() {
         if (data.problem?.language) {
           setLanguage(data.problem.language as CodeLanguage);
         }
+        // Rehidratar consentimiento si fue otorgado previamente o la entrevista ya está en curso en el servidor
+        if (typeof window !== "undefined") {
+          const storedConsent = localStorage.getItem(`evaluador_consent_${token}`) === "true";
+          if (
+            (storedConsent || data.current_phase !== "INTRO") &&
+            data.status === "in_progress" &&
+            data.current_phase !== "INTRO"
+          ) {
+            setHasConsented(true);
+            localStorage.setItem(`evaluador_consent_${token}`, "true");
+          }
+        }
       } catch (err: any) {
         setVerificationError(
           "El enlace de evaluación no es válido o ha expirado. Por favor solicita un nuevo enlace a tu reclutador."
@@ -82,13 +94,13 @@ function InterviewContent() {
     token,
     candidateMaskedId,
     problemTitle: problemData.title,
-    initialPhase: "INTRO",
+    initialPhase: (sessionData?.current_phase as InterviewPhase) || "INTRO",
     wsUrl: sessionData?.ws_url,
     wsToken: sessionData?.ws_token,
   });
 
   // Hook de snapshots automáticos de la trayectoria
-  const { triggerImmediateSnapshot } = useDebouncedSnapshot({
+  const { triggerImmediateSnapshot, syncCurrentCode } = useDebouncedSnapshot({
     code,
     language,
     enabled: hasConsented,
@@ -149,14 +161,23 @@ function InterviewContent() {
 
   // Manejar inicio de la entrevista tras aceptar consentimiento (Fase INTRO -> PROBLEM)
   const handleStartInterview = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`evaluador_consent_${token}`, "true");
+    }
     setHasConsented(true);
     setActiveLeftTab("problem");
     socket.requestPhaseTransition("PROBLEM");
   };
 
+  // Manejar transición de fase con snapshot inmediato de trazabilidad
+  const handlePhaseTransition = (nextPhase: InterviewPhase) => {
+    triggerImmediateSnapshot("phase_transition");
+    socket.requestPhaseTransition(nextPhase);
+  };
+
   // Manejar ejecución de pruebas
   const handleRunTests = () => {
-    triggerImmediateSnapshot("run");
+    syncCurrentCode();
     socket.runCode(code, language);
   };
 
@@ -307,7 +328,8 @@ function InterviewContent() {
         candidateMaskedId={candidateMaskedId}
         timeRemainingSeconds={socket.timeRemaining}
         connectionStatus={socket.connectionStatus}
-        onTransitionPhase={socket.requestPhaseTransition}
+        onTransitionPhase={handlePhaseTransition}
+        availableTransitions={socket.availableTransitions}
       />
 
       {/* Notificación de Telemetría Ética */}

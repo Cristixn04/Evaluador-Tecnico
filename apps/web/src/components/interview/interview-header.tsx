@@ -22,6 +22,7 @@ interface InterviewHeaderProps {
   timeRemainingSeconds: number;
   connectionStatus: "connected" | "connecting" | "reconnecting" | "simulated";
   onTransitionPhase: (nextPhase: InterviewPhase) => void;
+  availableTransitions?: InterviewPhase[];
 }
 
 const PHASES: Array<{ id: InterviewPhase; label: string; icon: any }> = [
@@ -39,6 +40,7 @@ export function InterviewHeader({
   timeRemainingSeconds,
   connectionStatus,
   onTransitionPhase,
+  availableTransitions,
 }: InterviewHeaderProps) {
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -49,6 +51,7 @@ export function InterviewHeader({
   const getNextTransition = () => {
     switch (phase) {
       case "INTRO":
+        return { label: "Ver problema", target: "PROBLEM" as InterviewPhase };
       case "PROBLEM":
         return { label: "Hacer preguntas al evaluador", target: "CLARIFY" as InterviewPhase };
       case "CLARIFY":
@@ -59,6 +62,8 @@ export function InterviewHeader({
         return { label: "Pasar a preguntas de sondeo", target: "PROBE" as InterviewPhase };
       case "PROBE":
         return { label: "Finalizar prueba técnica", target: "WRAPUP" as InterviewPhase };
+      case "WRAPUP":
+        return null;
       default:
         return null;
     }
@@ -102,8 +107,26 @@ export function InterviewHeader({
       <div className="hidden lg:flex items-center gap-1 bg-muted/20 p-1 rounded-lg border border-border/40">
         {PHASES.map((p, idx) => {
           const isCurrent = phase === p.id;
-          const isPassed =
-            PHASES.findIndex((item) => item.id === phase) > idx;
+          const currentIdx = PHASES.findIndex((item) => item.id === phase);
+          const isPassed = currentIdx !== -1 && currentIdx > idx;
+          const isAvailable = availableTransitions
+            ? availableTransitions.includes(p.id)
+            : nextTransition?.target === p.id;
+
+          if (isAvailable && !isCurrent && !isPassed) {
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => onTransitionPhase(p.id)}
+                title={`Avanzar a ${p.label}`}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all text-primary hover:bg-primary/20 border border-primary/40 cursor-pointer shadow-sm hover:scale-[1.02]"
+              >
+                <p.icon className="h-3.5 w-3.5" />
+                <span>{p.label}</span>
+              </button>
+            );
+          }
 
           return (
             <div

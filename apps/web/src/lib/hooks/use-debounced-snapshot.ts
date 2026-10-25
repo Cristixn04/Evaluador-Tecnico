@@ -41,7 +41,7 @@ export function useDebouncedSnapshot({
     };
   }, [code, language, enabled, onSnapshot, debounceMs]);
 
-  // Función para forzar snapshot inmediato (al presionar ejecutar o blur)
+  // Función para forzar snapshot inmediato (al cambiar de fase o blur)
   const triggerImmediateSnapshot = (reason: SnapshotReason) => {
     if (timerRef.current) {
       clearTimeout(timerRef.current);
@@ -50,5 +50,13 @@ export function useDebouncedSnapshot({
     onSnapshot(code, language, reason);
   };
 
-  return { triggerImmediateSnapshot };
+  // Función para sincronizar estado de código y cancelar timer pendiente sin emitir snapshot redundante
+  const syncCurrentCode = () => {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current);
+    }
+    lastEmittedCodeRef.current = code;
+  };
+
+  return { triggerImmediateSnapshot, syncCurrentCode };
 }

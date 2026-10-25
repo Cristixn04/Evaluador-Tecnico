@@ -36,11 +36,18 @@ export function useInterviewSocket({
   wsToken,
 }: UseInterviewSocketProps) {
   const [phase, setPhase] = useState<InterviewPhase>(initialPhase);
+  const [availableTransitions, setAvailableTransitions] = useState<InterviewPhase[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<
     "connected" | "connecting" | "reconnecting" | "simulated"
-  >("simulated");
+  >(
+    process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true"
+      ? "simulated"
+      : wsUrl && wsToken
+        ? "connecting"
+        : "connecting"
+  );
   const [timeRemaining, setTimeRemaining] = useState(2700); // 45 minutos por defecto
   const [testResult, setTestResult] = useState<ServerCodeExecutionResultMessage | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
@@ -48,66 +55,134 @@ export function useInterviewSocket({
   const socketRef = useRef<WebSocket | null>(null);
   const currentStreamingTurnId = useRef<string | null>(null);
 
-  // Conexión WebSocket real con fallback suave a emulador
+  // Sincronizar fase inicial si se rehidrata desde la sesión del servidor
+  useEffect(() => {
+    if (initialPhase && initialPhase !== "INTRO") {
+      setPhase((prev) => (prev === "INTRO" ? initialPhase : prev));
+    }
+  }, [initialPhase]);
+
+  // Conexión WebSocket real con reconexión automática y fallback a emulador solo si mocks están activos
   useEffect(() => {
     if (!wsUrl || !wsToken) return;
 
     let ws: WebSocket | null = null;
-    try {
-      const fullUrl = `${wsUrl}?token=${encodeURIComponent(wsToken)}`;
-      setConnectionStatus("connecting");
-      ws = new WebSocket(fullUrl);
-      socketRef.current = ws;
+    let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    let isCleanedUp = false;
 
-      ws.onopen = () => {
-        setConnectionStatus("connected");
-      };
+    const connect = () => {
+      if (isCleanedUp) return;
+      try {
+        const fullUrl = `${wsUrl}?token=${encodeURIComponent(wsToken)}`;
+        setConnectionStatus("connecting");
+        ws = new WebSocket(fullUrl);
+        socketRef.current = ws;
 
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === "agent_token") {
-            setMessages((prev) => {
-              const last = prev[prev.length - 1];
-              if (last && last.id === data.turn_id) {
-                return [
-                  ...prev.slice(0, -1),
-                  { ...last, content: last.content + data.delta },
-                ];
-              } else {
-                return [
-                  ...prev,
-                  { id: data.turn_id, speaker: "agent", content: data.delta, timestamp: Date.now() },
-                ];
+        ws.onopen = () => {
+          setConnectionStatus("connected");
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+            if (data.type === "agent_token") {
+              setIsStreaming(true);
+              currentStreamingTurnId.current = data.turn_id;
+              setMessages((prev) => {
+                const last = prev[prev.length - 1];
+                if (last && last.id === data.turn_id) {
+                  return [
+                    ...prev.slice(0, -1),
+                    { ...last, content: last.content + data.delta },
+                  ];
+                } else {
+                  return [
+                    ...prev,
+                    { id: data.turn_id, speaker: "agent", content: data.delta, timestamp: Date.now() },
+                  ];
+                }
+              });
+            } else if (data.type === "agent_turn_complete") {
+              setIsStreaming(false);
+              currentStreamingTurnId.current = null;
+            } else if (data.type === "error") {
+              setIsStreaming(false);
+              currentStreamingTurnId.current = null;
+              const errorText =
+                data.message ||
+                (data.code ? `Error del evaluador (${data.code})` : "Error en el procesamiento del turno");
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: `turn-err-${Date.now()}`,
+                  speaker: "system",
+                  content: `Aviso del sistema: ${errorText}`,
+                  timestamp: Date.now(),
+                },
+              ]);
+            } else if (data.type === "phase_changed") {
+              const newPhase = data.current_phase as InterviewPhase;
+              setPhase(newPhase);
+              if (Array.isArray(data.available_transitions)) {
+                setAvailableTransitions(data.available_transitions as InterviewPhase[]);
               }
-            });
-          } else if (data.type === "agent_turn_complete") {
-            setIsStreaming(false);
-          } else if (data.type === "phase_changed") {
-            setPhase(data.current_phase);
-          } else if (data.type === "code_execution_result") {
-            setTestResult(data);
-            setIsRunningTests(false);
-          } else if (data.type === "session_tick") {
-            setTimeRemaining(data.time_remaining_seconds);
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: `turn-sys-${Date.now()}`,
+                  speaker: "system",
+                  content: `Fase confirmada: ${newPhase}.`,
+                  timestamp: Date.now(),
+                },
+              ]);
+            } else if (data.type === "code_execution_result") {
+              setTestResult(data);
+              setIsRunningTests(false);
+            } else if (data.type === "session_tick") {
+              setTimeRemaining(data.time_remaining_seconds);
+            }
+          } catch (e) {
+            console.error("Error parsing WS message", e);
           }
-        } catch (e) {
-          console.error("Error parsing WS message", e);
+        };
+
+        ws.onerror = () => {
+          setIsStreaming(false);
+          currentStreamingTurnId.current = null;
+          if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
+            setConnectionStatus("simulated");
+          } else {
+            setConnectionStatus("reconnecting");
+          }
+        };
+
+        ws.onclose = () => {
+          setIsStreaming(false);
+          currentStreamingTurnId.current = null;
+          if (isCleanedUp) return;
+          if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
+            setConnectionStatus("simulated");
+          } else {
+            setConnectionStatus("reconnecting");
+            reconnectTimeout = setTimeout(() => {
+              connect();
+            }, 2500);
+          }
+        };
+      } catch {
+        if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
+          setConnectionStatus("simulated");
+        } else {
+          setConnectionStatus("reconnecting");
         }
-      };
+      }
+    };
 
-      ws.onerror = () => {
-        setConnectionStatus("simulated");
-      };
-
-      ws.onclose = () => {
-        setConnectionStatus("simulated");
-      };
-    } catch {
-      setConnectionStatus("simulated");
-    }
+    connect();
 
     return () => {
+      isCleanedUp = true;
+      if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (ws) ws.close();
     };
   }, [wsUrl, wsToken]);
@@ -202,17 +277,30 @@ export function useInterviewSocket({
 
       // Si hay WebSocket real conectado, enviar trama
       if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
+        setIsStreaming(true);
         const payload: ClientWebSocketMessage = {
           type: "chat_message",
           content: text.trim(),
           client_timestamp: Date.now(),
         };
         socketRef.current.send(JSON.stringify(payload));
-      } else {
-        // Modo simulado interactivo
+      } else if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
+        // Modo simulado interactivo únicamente si mocks están explícitamente activados
         setTimeout(() => {
           emulateAgentResponse(text, phase);
         }, 500);
+      } else {
+        // En modo real sin conexión activa, no falsear respuesta del LLM
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `turn-err-${Date.now()}`,
+            speaker: "system",
+            content:
+              "Error de conexión: El socket con el evaluador no está abierto. Esperando reconexión...",
+            timestamp: Date.now(),
+          },
+        ]);
       }
     },
     [phase, emulateAgentResponse]
@@ -231,7 +319,7 @@ export function useInterviewSocket({
         };
         socketRef.current.send(JSON.stringify(payload));
       } else {
-        // En modo simulado, solo registramos en consola silenciosa
+        // En modo desconectado/simulado, solo registramos en consola silenciosa
         console.log(`[Trajectory Snapshot: ${reason}] ${code.length} chars`);
       }
     },
@@ -250,8 +338,8 @@ export function useInterviewSocket({
           language,
         };
         socketRef.current.send(JSON.stringify(payload));
-      } else {
-        // Emulación inmediata de ejecución de tests (Judge0 fallback)
+      } else if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
+        // Emulación inmediata de ejecución de tests (Judge0 fallback en modo mocks)
         setTimeout(() => {
           const hasSolution = code.includes("return") || code.includes("def ");
           const passed = hasSolution ? 4 : 2;
@@ -274,24 +362,26 @@ export function useInterviewSocket({
           });
           setIsRunningTests(false);
         }, 1200);
+      } else {
+        setIsRunningTests(false);
+        setTestResult({
+          type: "code_execution_result",
+          status: "test_failure",
+          stdout: "",
+          stderr: "Error: No hay conexión WebSocket activa para ejecutar pruebas en el sandbox.",
+          execution_time_ms: 0,
+          tests_passed: 0,
+          total_tests: 0,
+          test_details: [],
+        });
       }
     },
     []
   );
 
-  // 4. Solicitar cambio de fase
+  // 4. Solicitar cambio de fase (la actualización del estado se realiza únicamente al recibir phase_changed confirmado del servidor)
   const requestPhaseTransition = useCallback(
     (targetPhase: InterviewPhase) => {
-      setPhase(targetPhase);
-
-      const systemNotice: ChatMessage = {
-        id: `turn-sys-${Date.now()}`,
-        speaker: "system",
-        content: `Transición a fase: ${targetPhase}.`,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, systemNotice]);
-
       if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
         if (targetPhase !== "INTRO" && targetPhase !== "EVALUATE") {
           const payload: ClientWebSocketMessage = {
@@ -323,6 +413,7 @@ export function useInterviewSocket({
 
   return {
     phase,
+    availableTransitions,
     messages,
     isStreaming,
     connectionStatus,
