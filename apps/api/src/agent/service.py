@@ -8,6 +8,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.telemetry import tool_telemetry
 from src.db.enums import InterviewPhase, TurnSpeaker
 from src.db.models import Interview, Turn
 from src.interview.service import InterviewService
@@ -176,20 +177,31 @@ class InterviewAgent:
         if inactivity_seconds <= threshold:
             return False
 
-        # Entregar el siguiente hint
-        next_level = interview.hint_level + 1
-        interview.hint_level = next_level
-        interview.last_hint_at = datetime.now(UTC)
-
-        # Persistir el cambio
-        self._session.add(interview)
+        telemetry = tool_telemetry("adaptive_hint_generator", "deliver_hint")
+        telemetry.start(
+            phase=phase.value,
+            inactivity_sec=round(inactivity_seconds, 1),
+            current_level=interview.hint_level,
+        )
         try:
-            await self._session.flush()
-        except Exception:
-            await self._session.rollback()
-            raise
+            # Entregar el siguiente hint
+            next_level = interview.hint_level + 1
+            interview.hint_level = next_level
+            interview.last_hint_at = datetime.now(UTC)
 
-        return True
+            # Persistir el cambio
+            self._session.add(interview)
+            await self._session.flush()
+
+            telemetry.success(
+                hint_delivered=True,
+                new_level=next_level,
+            )
+            return True
+        except Exception as exc:
+            await self._session.rollback()
+            telemetry.error(exc)
+            raise
 
     def _build_system_prompt(
         self,
