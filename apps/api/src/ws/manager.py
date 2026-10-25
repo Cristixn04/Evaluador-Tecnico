@@ -216,7 +216,10 @@ class MessageDispatcher:
                 code=message.code,
                 language=message.language,
             )
-            exec_msg = ServerCodeExecutionResultMessage(**result)
+            await self._interview_service._session.commit()
+            payload = dict(result)
+            payload.setdefault("type", "code_execution_result")
+            exec_msg = ServerCodeExecutionResultMessage(**payload)
             await self._manager.send(interview_id, exec_msg.model_dump())
         except Exception as e:  # noqa: BLE001
             await self._manager.send_error(interview_id, "EXECUTION_ERROR", f"Code execution failed: {e}")

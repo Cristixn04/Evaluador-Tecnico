@@ -240,6 +240,43 @@ class TestWebSocketHandshake:
                     # Expected: first connection closed
                     pass
 
+    def test_reconnection_after_disconnect_succeeds(
+        self, app, interview_with_ws_token
+    ) -> None:
+        """Test that disconnecting and reconnecting with the same valid token succeeds (does not revoke token)."""
+        interview, ws_token = interview_with_ws_token
+        client = TestClient(app)
+
+        # First connection opens and disconnects normally
+        with client.websocket_connect(
+            f"/ws/interview/{interview.id}?token={ws_token}"
+        ) as ws1:
+            msg1 = ws1.receive_json()
+            assert msg1["type"] == "phase_changed"
+
+        # Subsequent reconnection must succeed and receive greeting phase_changed
+        with client.websocket_connect(
+            f"/ws/interview/{interview.id}?token={ws_token}"
+        ) as ws2:
+            msg2 = ws2.receive_json()
+            assert msg2["type"] == "phase_changed"
+
+    async def test_session_revocation_blocks_reconnect(
+        self, app, interview_with_ws_token
+    ) -> None:
+        """Test that explicit intentional session revocation prevents any reconnection."""
+        interview, ws_token = interview_with_ws_token
+
+        # Intentionally revoke all tokens for this interview session
+        await ws_token_service.revoke_all_for_session(interview.id)
+
+        client = TestClient(app)
+        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
+            f"/ws/interview/{interview.id}?token={ws_token}"
+        ):
+            pass
+        assert exc_info.value.code == 1008
+
 
 class TestWebSocketMessages:
     @pytest.fixture
@@ -334,6 +371,76 @@ class TestWebSocketMessages:
             snapshots = (await fresh_session.scalars(select(Snapshot))).all()
             assert len(snapshots) >= 1
             assert "def solve" in snapshots[-1].code
+
+    async def test_run_code_persists_snapshot_and_turn(
+        self, connected_ws, monkeypatch, interview_with_ws_token
+    ) -> None:
+        """Test that run_code executes code and persists snapshot with reason=run and candidate turn."""
+        from sqlalchemy import select
+
+        from src.db.enums import TurnSpeaker
+        from src.db.models import Snapshot, Turn
+        from src.execution.service import CodeExecutionService
+
+        interview, _ = interview_with_ws_token
+
+        async def fake_execute_code(self, interview_id, code, language):
+            snap = Snapshot(
+                interview_id=interview_id,
+                code=code,
+                phase="CODING",
+                language=language,
+                reason="run",
+                tests_passed=3,
+                total_tests=3,
+                execution_status="success",
+            )
+            turn = Turn(
+                interview_id=interview_id,
+                speaker=TurnSpeaker.CANDIDATE,
+                content=f"[Code execution]\n```{language}\n{code}\n```",
+            )
+            self._session.add(snap)
+            self._session.add(turn)
+            await self._session.flush()
+            return {
+                "status": "success",
+                "stdout": "All tests passed",
+                "stderr": "",
+                "execution_time_ms": 42,
+                "tests_passed": 3,
+                "total_tests": 3,
+                "test_details": [],
+            }
+
+        monkeypatch.setattr(CodeExecutionService, "execute_code", fake_execute_code)
+
+        connected_ws.send_json({
+            "type": "run_code",
+            "code": "def solve(): return 42",
+            "language": "python",
+        })
+
+        exec_msg = connected_ws.receive_json()
+        assert exec_msg["type"] == "code_execution_result"
+        assert exec_msg["status"] == "success"
+        assert exec_msg["tests_passed"] == 3
+
+        # Close WebSocket and verify database persistence
+        connected_ws.close()
+
+        async with isolated_session() as fresh_session:
+            snaps = (await fresh_session.scalars(
+                select(Snapshot).where(Snapshot.interview_id == interview.id, Snapshot.reason == "run")
+            )).all()
+            assert len(snaps) == 1
+            assert snaps[0].tests_passed == 3
+            assert snaps[0].execution_status == "success"
+
+            turns = (await fresh_session.scalars(
+                select(Turn).where(Turn.interview_id == interview.id, Turn.speaker == "candidate")
+            )).all()
+            assert any("[Code execution]" in t.content for t in turns)
 
     async def test_invalid_message_type_rejected(self, connected_ws) -> None:
         """Test that unknown message types are rejected."""
@@ -565,3 +672,219 @@ class TestMessageDispatcherChatStreaming:
         # Should complete without throwing unhandled exceptions
         await dispatcher._handle_chat(interview_id, chat_msg)
         assert manager.send.await_count == 2  # token + complete
+
+
+class TestWebSocketMultiTurnConversation:
+    """Verifies that the agent sustains consecutive conversational turns across phase transitions."""
+
+    def test_multiturn_conversation_across_phase_transitions(
+        self, app, interview_with_ws_token, monkeypatch
+    ) -> None:
+        """Candidate sends message 1 -> agent streams & persists.
+
+        Phase transitions to PROBLEM -> CLARIFY.
+        Candidate sends message 2 -> agent streams & persists second response.
+        Both agent turns are persisted in database and client lifecycle remains open throughout.
+        """
+        from sqlalchemy import select
+
+        from src.db.models import Turn
+        from src.llm.openai_compatible import OpenAICompatibleClient
+        from src.llm.types import ChatCompletion, TokenUsage
+
+        interview, ws_token = interview_with_ws_token
+        turn_counter = 0
+
+        async def fake_complete(self, messages, **kwargs):
+            nonlocal turn_counter
+            turn_counter += 1
+            return ChatCompletion(
+                content=f"Respuesta del agente {turn_counter}",
+                model="test-model",
+                usage=TokenUsage(),
+            )
+
+        monkeypatch.setattr(OpenAICompatibleClient, "complete", fake_complete)
+
+        client = TestClient(app)
+        with client.websocket_connect(
+            f"/ws/interview/{interview.id}?token={ws_token}"
+        ) as ws:
+            # 1. Initial phase
+            init_msg = ws.receive_json()
+            assert init_msg["type"] == "phase_changed"
+            assert init_msg["current_phase"] == "INTRO"
+
+            # 2. Transition to PROBLEM
+            ws.send_json({
+                "type": "request_phase_transition",
+                "target_phase": "PROBLEM",
+            })
+            p_msg1 = ws.receive_json()
+            assert p_msg1["type"] == "phase_changed"
+            assert p_msg1["current_phase"] == "PROBLEM"
+
+            # 3. Candidate Turn 1
+            ws.send_json({
+                "type": "chat_message",
+                "content": "¿Podrías presentarme el problema?",
+                "client_timestamp": 1001,
+            })
+
+            # Collect tokens for Turn 1
+            tokens_turn1 = []
+            turn1_complete = None
+            while True:
+                msg = ws.receive_json()
+                if msg["type"] == "agent_token":
+                    tokens_turn1.append(msg["delta"])
+                elif msg["type"] == "agent_turn_complete":
+                    turn1_complete = msg
+                    break
+
+            assert "".join(tokens_turn1) == "Respuesta del agente 1"
+            assert turn1_complete["full_content"] == "Respuesta del agente 1"
+
+            # 4. Transition to CLARIFY
+            ws.send_json({
+                "type": "request_phase_transition",
+                "target_phase": "CLARIFY",
+            })
+            p_msg2 = ws.receive_json()
+            assert p_msg2["type"] == "phase_changed"
+            assert p_msg2["current_phase"] == "CLARIFY"
+
+            # 5. Candidate Turn 2 (in same connection, after transition)
+            ws.send_json({
+                "type": "chat_message",
+                "content": "Para aclarar: ¿el formato de entrada es JSON?",
+                "client_timestamp": 1002,
+            })
+
+            # Collect tokens for Turn 2
+            tokens_turn2 = []
+            turn2_complete = None
+            while True:
+                msg = ws.receive_json()
+                if msg["type"] == "agent_token":
+                    tokens_turn2.append(msg["delta"])
+                elif msg["type"] == "agent_turn_complete":
+                    turn2_complete = msg
+                    break
+
+            assert "".join(tokens_turn2) == "Respuesta del agente 2"
+            assert turn2_complete["full_content"] == "Respuesta del agente 2"
+
+        # 6. Verify database persistence with fresh isolated session
+        import asyncio
+
+        async def verify_persistence():
+            async with isolated_session() as session:
+                turns = (await session.scalars(
+                    select(Turn)
+                    .where(Turn.interview_id == interview.id)
+                    .order_by(Turn.created_at.asc())
+                )).all()
+
+                agent_turns = [t for t in turns if t.speaker == "agent" and not t.content.startswith("Phase transitioned to")]
+                candidate_turns = [t for t in turns if t.speaker == "candidate"]
+
+                # Two distinct candidate turns
+                assert len(candidate_turns) == 2
+                assert candidate_turns[0].content == "¿Podrías presentarme el problema?"
+                assert candidate_turns[1].content == "Para aclarar: ¿el formato de entrada es JSON?"
+
+                # Two distinct conversational agent turns persisted!
+                assert len(agent_turns) == 2
+                assert agent_turns[0].content == "Respuesta del agente 1"
+                assert agent_turns[1].content == "Respuesta del agente 2"
+
+        asyncio.run(verify_persistence())
+
+    def test_multiturn_error_notifies_client_and_allows_subsequent_message(
+        self, app, interview_with_ws_token, monkeypatch
+    ) -> None:
+        """When an LLM error occurs in turn 1, client receives error notification without complete,
+
+        and subsequent message in turn 2 still succeeds and persists response.
+        """
+        from sqlalchemy import select
+
+        from src.db.models import Turn
+        from src.llm.openai_compatible import OpenAICompatibleClient
+        from src.llm.types import ChatCompletion, TokenUsage
+
+        interview, ws_token = interview_with_ws_token
+        call_count = 0
+
+        async def fake_complete_with_first_error(self, messages, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                raise RuntimeError("Temporary provider connection timeout")
+            return ChatCompletion(
+                content="Respuesta recuperada del turno 2",
+                model="test-model",
+                usage=TokenUsage(),
+            )
+
+        monkeypatch.setattr(OpenAICompatibleClient, "complete", fake_complete_with_first_error)
+
+        client = TestClient(app)
+        with client.websocket_connect(
+            f"/ws/interview/{interview.id}?token={ws_token}"
+        ) as ws:
+            # Consume initial phase_changed
+            ws.receive_json()
+
+            # Turn 1: Fails with AGENT_ERROR
+            ws.send_json({
+                "type": "chat_message",
+                "content": "Pregunta 1",
+                "client_timestamp": 1001,
+            })
+
+            err_msg = ws.receive_json()
+            assert err_msg["type"] == "error"
+            assert err_msg["code"] == "AGENT_ERROR"
+            assert "Temporary provider connection timeout" in err_msg["message"]
+
+            # Turn 2: Subsequent message sent in same connection succeeds
+            ws.send_json({
+                "type": "chat_message",
+                "content": "Pregunta 2 de reintento",
+                "client_timestamp": 1002,
+            })
+
+            tokens_turn2 = []
+            turn2_complete = None
+            while True:
+                msg = ws.receive_json()
+                if msg["type"] == "agent_token":
+                    tokens_turn2.append(msg["delta"])
+                elif msg["type"] == "agent_turn_complete":
+                    turn2_complete = msg
+                    break
+
+            assert "".join(tokens_turn2) == "Respuesta recuperada del turno 2"
+            assert turn2_complete["full_content"] == "Respuesta recuperada del turno 2"
+
+        # Verify DB: Candidate turns 1 and 2 exist, and agent turn 2 exists
+        import asyncio
+
+        async def verify_db():
+            async with isolated_session() as session:
+                turns = (await session.scalars(
+                    select(Turn)
+                    .where(Turn.interview_id == interview.id)
+                    .order_by(Turn.created_at.asc())
+                )).all()
+
+                agent_turns = [t for t in turns if t.speaker == "agent" and not t.content.startswith("Phase transitioned to")]
+                candidate_turns = [t for t in turns if t.speaker == "candidate"]
+
+                assert len(candidate_turns) == 2
+                assert len(agent_turns) == 1
+                assert agent_turns[0].content == "Respuesta recuperada del turno 2"
+
+        asyncio.run(verify_db())
