@@ -282,3 +282,114 @@ class TestInterviewAgent:
         # based on explicit client request
         added_turn = mock_session.add.call_args[0][0]
         assert "suggested" not in added_turn.content.lower() or True  # Behavior documented
+
+    @pytest.mark.asyncio
+    async def test_system_transitions_excluded_from_llm_history(
+        self, agent, mock_session, sample_interview, sample_vacancy, sample_problem
+    ):
+        """Test that system phase transitions are filtered out from LLM conversational history."""
+        from unittest.mock import MagicMock
+
+        from sqlalchemy import ScalarResult
+
+        t_sys1 = Turn(id=uuid4(), interview_id=sample_interview.id, speaker=TurnSpeaker.AGENT, content="Phase transitioned to PROBLEM")
+        t_cand1 = Turn(id=uuid4(), interview_id=sample_interview.id, speaker=TurnSpeaker.CANDIDATE, content="¿Cuál es el enunciado?")
+        t_agent1 = Turn(id=uuid4(), interview_id=sample_interview.id, speaker=TurnSpeaker.AGENT, content="El enunciado es...")
+        t_sys2 = Turn(id=uuid4(), interview_id=sample_interview.id, speaker=TurnSpeaker.AGENT, content="Phase transitioned to CLARIFY: candidate requested")
+
+        mock_result = MagicMock(spec=ScalarResult)
+        mock_result.all.return_value = [t_sys1, t_cand1, t_agent1, t_sys2]
+        mock_session.scalars.return_value = mock_result
+        mock_session.get = AsyncMock(side_effect=[sample_interview, sample_vacancy, sample_problem])
+
+        captured_messages = []
+
+        async def capture_complete(messages):
+            captured_messages.extend(messages)
+            return ChatCompletion(content="Respuesta", model="test", usage=TokenUsage())
+
+        agent._llm_client.complete = capture_complete
+
+        async for _ in agent.stream_response(
+            interview_id=sample_interview.id,
+            user_message="Tengo una duda de aclaración",
+        ):
+            pass
+
+        # Verify no system transitions were included as assistant messages
+        contents = [m.content for m in captured_messages]
+        for content in contents:
+            assert "Phase transitioned to" not in content
+
+        # Verify real conversation turns were included
+        assert "¿Cuál es el enunciado?" in contents
+        assert "El enunciado es..." in contents
+
+    @pytest.mark.asyncio
+    async def test_current_candidate_message_not_duplicated_in_context(
+        self, agent, mock_session, sample_interview, sample_vacancy, sample_problem
+    ):
+        """Test that the current candidate message already in turns is not replayed twice."""
+        from unittest.mock import MagicMock
+
+        from sqlalchemy import ScalarResult
+
+        cand_msg_text = "Mi mensaje de aclaración"
+        t_cand_current = Turn(
+            id=uuid4(),
+            interview_id=sample_interview.id,
+            speaker=TurnSpeaker.CANDIDATE,
+            content=cand_msg_text,
+        )
+
+        mock_result = MagicMock(spec=ScalarResult)
+        mock_result.all.return_value = [t_cand_current]
+        mock_session.scalars.return_value = mock_result
+        mock_session.get = AsyncMock(side_effect=[sample_interview, sample_vacancy, sample_problem])
+
+        captured_messages = []
+
+        async def capture_complete(messages):
+            captured_messages.extend(messages)
+            return ChatCompletion(content="Respuesta", model="test", usage=TokenUsage())
+
+        agent._llm_client.complete = capture_complete
+
+        async for _ in agent.stream_response(
+            interview_id=sample_interview.id,
+            user_message=cand_msg_text,
+        ):
+            pass
+
+        # Count occurrences of the candidate message
+        user_messages = [m for m in captured_messages if m.role == "user"]
+        # Exactly one user message should exist, wrapped in untrusted tags
+        assert len(user_messages) == 1
+        assert "<untrusted_candidate_input>" in user_messages[0].content
+        assert cand_msg_text in user_messages[0].content
+
+    @pytest.mark.asyncio
+    async def test_llm_client_lifecycle_and_aclose(
+        self, mock_session, mock_interview_service, mock_problem_selector
+    ):
+        """Test that InterviewAgent creates a persistent LLM client and cleans it up via aclose()."""
+        from src.llm.types import LLMClient
+
+        fake_client = AsyncMock(spec=LLMClient)
+        fake_client.aclose = AsyncMock()
+
+        with patch("src.agent.service.create_llm_client", return_value=fake_client):
+            agent = InterviewAgent(mock_session, mock_interview_service, mock_problem_selector)
+            client1 = await agent._get_llm_client()
+            client2 = await agent._get_llm_client()
+            # Must return the same persistent instance across turns
+            assert client1 is client2
+            assert client1 is fake_client
+
+            # Close agent
+            await agent.aclose()
+            fake_client.aclose.assert_awaited_once()
+
+            # Calling aclose again is safe (idempotent)
+            await agent.aclose()
+            assert fake_client.aclose.await_count == 1

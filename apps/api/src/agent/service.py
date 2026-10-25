@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.db.enums import InterviewPhase, TurnSpeaker
 from src.db.models import Interview, Turn
 from src.interview.service import InterviewService
-from src.llm.factory import get_llm_client
+from src.llm.factory import create_llm_client, get_llm_client  # noqa: F401
 from src.llm.prompts import load_hints, load_phase_instructions, load_prompt
 from src.llm.types import ChatMessage, LLMClient, Role
 from src.problems.selector import ProblemSelector
@@ -35,18 +35,28 @@ class InterviewAgent:
         interview_service: InterviewService,
         problem_selector: ProblemSelector,
         prompt_version: str = "v1",
+        llm_client: LLMClient | None = None,
     ) -> None:
         self._session = session
         self._interview_service = interview_service
         self._problem_selector = problem_selector
         self._prompt_version = prompt_version
-        self._llm_client: LLMClient | None = None
+        self._llm_client = llm_client
+        self._owns_llm_client = llm_client is None
         self._system_prompt_template = load_prompt("interview_agent", self._prompt_version)
 
     async def _get_llm_client(self) -> LLMClient:
         if self._llm_client is None:
-            self._llm_client = await get_llm_client().__anext__()
+            self._llm_client = create_llm_client()
+            self._owns_llm_client = True
         return self._llm_client
+
+    async def aclose(self) -> None:
+        """Cerrar recursos del cliente LLM de forma limpia e idempotente."""
+        if self._owns_llm_client and self._llm_client is not None:
+            client = self._llm_client
+            self._llm_client = None
+            await client.aclose()
 
     async def stream_response(
         self,
@@ -90,7 +100,20 @@ class InterviewAgent:
 
         messages = [ChatMessage(role="system", content=system_prompt)]
 
+        # Identificar si el turno más reciente en BD es el turno sin responder del candidato
+        unreplied_turn_id = None
+        if recent_turns and recent_turns[-1].speaker == TurnSpeaker.CANDIDATE:
+            unreplied_turn_id = recent_turns[-1].id
+
         for turn in recent_turns:
+            # Excluir avisos y transiciones internas del contexto conversacional del LLM
+            if turn.speaker == TurnSpeaker.AGENT and turn.content.startswith("Phase transitioned to "):
+                continue
+
+            # Evitar duplicar el mensaje del candidato que ya fue persistido por _handle_chat
+            if turn.id == unreplied_turn_id:
+                continue
+
             role: Role = "assistant" if turn.speaker == TurnSpeaker.AGENT else "user"
             messages.append(ChatMessage(role=role, content=turn.content))
 

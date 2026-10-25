@@ -40,7 +40,7 @@ async def isolate_database_and_engine(database_url: str) -> AsyncGenerator[None,
         async with engine.connect() as connection:
             result = await connection.execute(text("SELECT current_database()"))
             current_database = result.scalar_one()
-            if current_database == "evaluador_db":
+            if current_database in ("evaluador_db", "evaluador_test_db"):
                 await connection.run_sync(Base.metadata.create_all)
                 await connection.execute(
                     text(
@@ -70,9 +70,9 @@ async def db_session(database_url: str) -> AsyncGenerator[AsyncSession, None]:
         async with engine.connect() as connection:
             result = await connection.execute(text("SELECT current_database()"))
             current_database = result.scalar_one()
-            if current_database != "evaluador_db":
+            if current_database not in ("evaluador_db", "evaluador_test_db"):
                 pytest.skip(
-                    f"NO EJECUTADO — PostgreSQL no es evaluador_db (recibido: {current_database})"
+                    f"NO EJECUTADO — PostgreSQL no es evaluador_db o evaluador_test_db (recibido: {current_database})"
                 )
         session_maker = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
         async with session_maker() as session:

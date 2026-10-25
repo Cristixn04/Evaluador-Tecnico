@@ -93,5 +93,5 @@ async def websocket_interview(
         await connection_manager.send_error(interview_id, "INTERNAL_ERROR", f"Server error: {e}")
     finally:
         connection_manager.disconnect(interview_id)
-        await ws_token_service.revoke_all_for_session(interview_id)
+        await agent.aclose()
         await execution_service.close()
