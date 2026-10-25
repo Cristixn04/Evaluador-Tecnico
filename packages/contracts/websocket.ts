@@ -64,7 +64,7 @@ export type ClientRunCodeMessage = {
 
 export type ClientRequestPhaseTransitionMessage = {
   type: "request_phase_transition";
-  target_phase: Exclude<InterviewPhase, "INTRO" | "EVALUATE">;
+  target_phase: Exclude<InterviewPhase, "INTRO">;
   reason?: string;
 };
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { InterviewPhase } from "@evaluador/contracts";
@@ -14,6 +15,8 @@ import {
   HelpCircle,
   Cpu,
   FileText,
+  AlertTriangle,
+  Loader2,
 } from "lucide-react";
 
 interface InterviewHeaderProps {
@@ -42,6 +45,9 @@ export function InterviewHeader({
   onTransitionPhase,
   availableTransitions,
 }: InterviewHeaderProps) {
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -72,7 +78,8 @@ export function InterviewHeader({
   const nextTransition = getNextTransition();
 
   return (
-    <header className="h-16 border-b border-border/50 bg-background/95 backdrop-blur px-6 flex items-center justify-between shrink-0">
+    <>
+      <header className="h-16 border-b border-border/50 bg-background/95 backdrop-blur px-6 flex items-center justify-between shrink-0">
       {/* Left: Branding & Candidate Code */}
       <div className="flex items-center gap-3">
         <div className="h-8 w-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-bold text-xs">
@@ -156,7 +163,7 @@ export function InterviewHeader({
           </span>
         </div>
 
-        {/* Phase Transition Button */}
+        {/* Regular Phase Transition Button (for phases before WRAPUP) */}
         {nextTransition && (
           <Button
             size="sm"
@@ -167,7 +174,89 @@ export function InterviewHeader({
             <ArrowRight className="h-3 w-3" />
           </Button>
         )}
+
+        {/* Finish Interview Button: ONLY visible in WRAPUP */}
+        {phase === "WRAPUP" && (
+          <Button
+            size="sm"
+            id="finish-interview-btn"
+            onClick={() => setShowConfirmModal(true)}
+            disabled={isSubmitting || (connectionStatus !== "connected" && connectionStatus !== "simulated")}
+            className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold cursor-pointer"
+          >
+            <CheckCircle className="h-3.5 w-3.5" />
+            <span>Entregar y Finalizar Entrevista</span>
+          </Button>
+        )}
       </div>
     </header>
+
+    {/* Confirmation Modal */}
+    {showConfirmModal && phase === "WRAPUP" && (
+      <div
+        id="closure-modal-backdrop"
+        className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-150"
+      >
+        <div
+          id="closure-modal"
+          className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4"
+        >
+          <div className="flex items-center gap-3 text-amber-500">
+            <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="font-bold text-base text-foreground">
+                ¿Confirmas la entrega definitiva?
+              </h3>
+              <p className="text-xs text-muted-foreground">
+                Finalización formal de la evaluación técnica
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Al confirmar, tu sesión se dará por <strong>finalizada formalmente</strong>. No podrás volver a editar tu solución, ejecutar pruebas ni enviar mensajes adicionales en el chat. Esta acción es <strong>definitiva</strong>.
+          </p>
+
+          <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-border/40">
+            <Button
+              variant="outline"
+              size="sm"
+              id="cancel-closure-btn"
+              onClick={() => setShowConfirmModal(false)}
+              disabled={isSubmitting}
+              className="text-xs cursor-pointer"
+            >
+              Cancelar y seguir en Cierre
+            </Button>
+            <Button
+              size="sm"
+              id="confirm-closure-btn"
+              onClick={() => {
+                if (isSubmitting) return;
+                setIsSubmitting(true);
+                onTransitionPhase("EVALUATE");
+              }}
+              disabled={isSubmitting || (connectionStatus !== "connected" && connectionStatus !== "simulated")}
+              className="text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold cursor-pointer"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <span>Entregando...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  <span>Confirmar y Finalizar</span>
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    )}
+  </>
   );
 }

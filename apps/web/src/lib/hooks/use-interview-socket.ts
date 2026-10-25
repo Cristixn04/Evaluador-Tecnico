@@ -383,7 +383,7 @@ export function useInterviewSocket({
   const requestPhaseTransition = useCallback(
     (targetPhase: InterviewPhase) => {
       if (socketRef.current && socketRef.current.readyState === WebSocket.OPEN) {
-        if (targetPhase !== "INTRO" && targetPhase !== "EVALUATE") {
+        if (targetPhase !== "INTRO") {
           const payload: ClientWebSocketMessage = {
             type: "request_phase_transition",
             target_phase: targetPhase,
