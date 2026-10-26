@@ -255,6 +255,12 @@ class MessageDispatcher:
         )
         await self._manager.send(interview_id, phase_msg.model_dump())
 
+        # Disparar evaluación automática en segundo plano tras cierre formal
+        if target_phase == InterviewPhase.EVALUATE:
+            from src.evaluation.service import schedule_automatic_evaluation
+
+            schedule_automatic_evaluation(interview_id)
+
     async def _handle_integrity_event(self, interview_id: UUID, message: ClientIntegrityEventMessage) -> None:
         # Log integrity event (not persisted to DB per ADR-0008 DR-10)
         # Could be sent to monitoring/logging system

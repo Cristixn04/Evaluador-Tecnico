@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import logging
 import uuid
 from datetime import UTC, datetime
 from typing import Any, ClassVar, Literal, cast
@@ -9,6 +11,7 @@ from typing import Any, ClassVar, Literal, cast
 # anext no está disponible en asyncio namespace en este entorno;
 # usaremos create_llm_client() directamente
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -22,10 +25,25 @@ from src.core.config import settings
 from src.db.enums import TurnSpeaker
 from src.db.models import Interview, Snapshot, Turn
 from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
+from src.db.session import get_session_maker
 from src.llm import factory as llm_factory
 from src.llm.exceptions import LLMInvalidResponseError, LLMTimeoutError
 from src.llm.prompts import load_prompt
 from src.llm.types import ChatCompletion, ChatMessage
+
+logger = logging.getLogger(__name__)
+
+# Control de tareas en segundo plano para evitar garbage collection prematuro
+_background_tasks: set[asyncio.Task[Any]] = set()
+
+# Locks por entrevista para serializar ejecuciones concurrentes en el mismo proceso
+_evaluation_locks: dict[uuid.UUID, asyncio.Lock] = {}
+
+
+def _get_evaluation_lock(interview_id: uuid.UUID) -> asyncio.Lock:
+    if interview_id not in _evaluation_locks:
+        _evaluation_locks[interview_id] = asyncio.Lock()
+    return _evaluation_locks[interview_id]
 
 
 def _generate_masked_candidate_id(interview: Interview) -> str:
@@ -58,72 +76,75 @@ class EvaluationService:
         Construye el contexto a partir de turns, snapshots y ejecuciones reales,
         llama al juez LLM con protección frente a inyecciones, y persiste
         los resultados transaccionalmente. Es idempotente: si ya existe una evaluación,
-        la devuelve a menos que force=True.
+        la devuelve a menos que force=True. Protege concurrencia mediante lock por entrevista.
         """
-        # 1. Cargar entrevista con datos relacionados
-        interview = await self._session.get(Interview, interview_id)
-        if not interview:
-            raise ValueError(f"Interview {interview_id} not found")
+        interview_uuid = interview_id if isinstance(interview_id, uuid.UUID) else uuid.UUID(str(interview_id))
 
-        # Verificar si ya existe una evaluación persistida para esta entrevista (Idempotencia)
-        if not force:
-            result = await self._session.execute(
-                select(Evaluation)
-                .where(Evaluation.interview_id == interview.id)
-                .options(selectinload(Evaluation.dimensions), selectinload(Evaluation.evidences))
-            )
-            existing_eval = result.scalar_one_or_none()
-            if existing_eval:
-                return self._build_report_from_evaluation(existing_eval, interview)
+        async with _get_evaluation_lock(interview_uuid):
+            # 1. Cargar entrevista con datos relacionados
+            interview = await self._session.get(Interview, interview_uuid)
+            if not interview:
+                raise ValueError(f"Interview {interview_id} not found")
 
-        # 2. Construir contexto de evidencia
-        context = await self._build_context(interview)
-        if not context["has_sufficient_evidence"]:
-            # Decisión 3: evidencia insuficiente → human review
-            return EvaluationReport(
-                id="",
-                masked_candidate_id=_generate_masked_candidate_id(interview),
-                overall_score=0.0,
-                recommendation="borderline",
-                needs_human_review=True,
-                discrepancy_note="Evidencia insuficiente para evaluación automática",
-                competencies={},
-                evidence=[],
-            )
+            # Verificar si ya existe una evaluación persistida para esta entrevista (Idempotencia)
+            if not force:
+                result = await self._session.execute(
+                    select(Evaluation)
+                    .where(Evaluation.interview_id == interview.id)
+                    .options(selectinload(Evaluation.dimensions), selectinload(Evaluation.evidences))
+                )
+                existing_eval = result.scalar_one_or_none()
+                if existing_eval:
+                    return self._build_report_from_evaluation(existing_eval, interview)
 
-        # 3. Llamar al juez LLM
-        try:
-            raw_evaluation = await self._call_judge_llm(context)
-        except (LLMInvalidResponseError, LLMTimeoutError) as e:
-            # Fallback: human review on LLM failure
-            return EvaluationReport(
-                id="",
-                masked_candidate_id=_generate_masked_candidate_id(interview),
-                overall_score=0.0,
-                recommendation="borderline",
-                needs_human_review=True,
-                discrepancy_note=f"Error en proveedor LLM: {e!s}",
-                competencies={},
-                evidence=[],
-            )
+            # 2. Construir contexto de evidencia
+            context = await self._build_context(interview)
+            if not context["has_sufficient_evidence"]:
+                # Decisión 3: evidencia insuficiente → human review
+                return EvaluationReport(
+                    id="",
+                    masked_candidate_id=_generate_masked_candidate_id(interview),
+                    overall_score=0.0,
+                    recommendation="borderline",
+                    needs_human_review=True,
+                    discrepancy_note="Evidencia insuficiente para evaluación automática",
+                    competencies={},
+                    evidence=[],
+                )
 
-        # 4. Validar y persistir
-        try:
-            evaluation_report = await self._validate_and_persist(raw_evaluation, interview)
-        except ValueError as e:
-            # Datos inválidos → human review
-            return EvaluationReport(
-                id="",
-                masked_candidate_id=_generate_masked_candidate_id(interview),
-                overall_score=0.0,
-                recommendation="borderline",
-                needs_human_review=True,
-                discrepancy_note=str(e),
-                competencies={},
-                evidence=[],
-            )
+            # 3. Llamar al juez LLM
+            try:
+                raw_evaluation = await self._call_judge_llm(context)
+            except (LLMInvalidResponseError, LLMTimeoutError) as e:
+                # Fallback: human review on LLM failure
+                return EvaluationReport(
+                    id="",
+                    masked_candidate_id=_generate_masked_candidate_id(interview),
+                    overall_score=0.0,
+                    recommendation="borderline",
+                    needs_human_review=True,
+                    discrepancy_note=f"Error en proveedor LLM: {e!s}",
+                    competencies={},
+                    evidence=[],
+                )
 
-        return evaluation_report
+            # 4. Validar y persistir
+            try:
+                evaluation_report = await self._validate_and_persist(raw_evaluation, interview)
+            except ValueError as e:
+                # Datos inválidos → human review
+                return EvaluationReport(
+                    id="",
+                    masked_candidate_id=_generate_masked_candidate_id(interview),
+                    overall_score=0.0,
+                    recommendation="borderline",
+                    needs_human_review=True,
+                    discrepancy_note=str(e),
+                    competencies={},
+                    evidence=[],
+                )
+
+            return evaluation_report
 
     def _build_report_from_evaluation(
         self, evaluation: Evaluation, interview: Interview
@@ -295,51 +316,64 @@ class EvaluationService:
             created_at=datetime.now(UTC),
             evaluated_at=datetime.now(UTC),
         )
-        self._session.add(evaluation)
-        await self._session.flush()
+        try:
+            self._session.add(evaluation)
+            await self._session.flush()
 
-        reasoning_by_dimension: dict[str, str | None] = {}
-        for ev in validated_evidence:
-            competency = ev["competency"]
-            if competency not in reasoning_by_dimension:
-                reasoning_by_dimension[competency] = ev["reasoning"]
+            reasoning_by_dimension: dict[str, str | None] = {}
+            for ev in validated_evidence:
+                competency = ev["competency"]
+                if competency not in reasoning_by_dimension:
+                    reasoning_by_dimension[competency] = ev["reasoning"]
 
-        for dim_name, score in validated_scores.items():
-            self._session.add(
-                EvaluationDimension(
-                    evaluation_id=evaluation.id,
-                    name=dim_name,
-                    score=score,
-                    reasoning=reasoning_by_dimension.get(dim_name),
+            for dim_name, score in validated_scores.items():
+                self._session.add(
+                    EvaluationDimension(
+                        evaluation_id=evaluation.id,
+                        name=dim_name,
+                        score=score,
+                        reasoning=reasoning_by_dimension.get(dim_name),
+                    )
                 )
-            )
 
-        seen_turns: set[uuid.UUID] = set()
-        seen_snapshots: set[uuid.UUID] = set()
-        for ev in validated_evidence:
-            turn_id = ev["turn_id"]
-            snapshot_id = ev["snapshot_id"]
-            if turn_id is not None:
-                if turn_id in seen_turns:
-                    continue
-                seen_turns.add(turn_id)
-            if snapshot_id is not None:
-                if snapshot_id in seen_snapshots:
-                    continue
-                seen_snapshots.add(snapshot_id)
+            seen_turns: set[uuid.UUID] = set()
+            seen_snapshots: set[uuid.UUID] = set()
+            for ev in validated_evidence:
+                turn_id = ev["turn_id"]
+                snapshot_id = ev["snapshot_id"]
+                if turn_id is not None:
+                    if turn_id in seen_turns:
+                        continue
+                    seen_turns.add(turn_id)
+                if snapshot_id is not None:
+                    if snapshot_id in seen_snapshots:
+                        continue
+                    seen_snapshots.add(snapshot_id)
 
-            self._session.add(
-                EvaluationEvidence(
-                    evaluation_id=evaluation.id,
-                    dimension_name=ev["competency"],
-                    quote=ev["evidence_quote"],
-                    reasoning=ev["reasoning"],
-                    turn_id=turn_id,
-                    snapshot_id=snapshot_id,
+                self._session.add(
+                    EvaluationEvidence(
+                        evaluation_id=evaluation.id,
+                        dimension_name=ev["competency"],
+                        quote=ev["evidence_quote"],
+                        reasoning=ev["reasoning"],
+                        turn_id=turn_id,
+                        snapshot_id=snapshot_id,
+                    )
                 )
-            )
 
-        await self._session.commit()
+            await self._session.commit()
+        except IntegrityError:
+            await self._session.rollback()
+            # En caso de inserción concurrente externa, recuperar y devolver la evaluación persistida
+            result = await self._session.execute(
+                select(Evaluation)
+                .where(Evaluation.interview_id == interview.id)
+                .options(selectinload(Evaluation.dimensions), selectinload(Evaluation.evidences))
+            )
+            concurrent_eval = result.scalar_one_or_none()
+            if concurrent_eval:
+                return self._build_report_from_evaluation(concurrent_eval, interview)
+            raise
 
         # Evidencia en reporte: preservar tanto turns como snapshots
         report_evidence: list[PydanticEvaluationEvidence] = []
@@ -452,3 +486,64 @@ class EvaluationService:
             competencies={},
             evidence=[],
         )
+
+
+async def _run_background_evaluation(interview_id: uuid.UUID) -> EvaluationReport | None:
+    """Ejecuta la evaluación automática en una sesión de base de datos dedicada y aislada."""
+    logger.info("Automatic evaluation started for interview_id=%s", interview_id)
+    session_maker = get_session_maker()
+    try:
+        async with session_maker() as session:
+            service = EvaluationService(session)
+            report = await service.evaluate(interview_id)
+            logger.info(
+                "Automatic evaluation completed: interview_id=%s overall_score=%.2f recommendation=%s needs_human_review=%s",
+                interview_id,
+                report.overall_score,
+                report.recommendation,
+                report.needs_human_review,
+            )
+            return report
+    except Exception:
+        logger.exception(
+            "Automatic evaluation failed unexpectedly for interview_id=%s",
+            interview_id,
+        )
+        return None
+
+
+def schedule_automatic_evaluation(
+    interview_id: str | uuid.UUID,
+) -> asyncio.Task[EvaluationReport | None]:
+    """Programa la evaluación automática como background task sin bloquear el WebSocket."""
+    interview_uuid = (
+        interview_id if isinstance(interview_id, uuid.UUID) else uuid.UUID(str(interview_id))
+    )
+
+    task_name = f"auto-eval-{interview_uuid}"
+    for existing in _background_tasks:
+        if existing.get_name() == task_name and not existing.done():
+            logger.info("Automatic evaluation already active for interview_id=%s", interview_uuid)
+            return existing
+
+    task: asyncio.Task[EvaluationReport | None] = asyncio.create_task(
+        _run_background_evaluation(interview_uuid),
+        name=task_name,
+    )
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
+    return task
+
+
+async def wait_for_automatic_evaluations() -> None:
+    """Espera determinista para testing de todas las evaluaciones en curso."""
+    while True:
+        pending = [t for t in _background_tasks if not t.done()]
+        if not pending:
+            break
+        await asyncio.gather(*pending, return_exceptions=True)
+
+
+def get_active_evaluation_tasks() -> list[asyncio.Task[Any]]:
+    """Retorna las tareas de evaluación automática activas en este proceso."""
+    return [t for t in _background_tasks if not t.done()]
