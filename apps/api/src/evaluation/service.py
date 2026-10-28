@@ -26,6 +26,7 @@ from src.db.enums import TurnSpeaker
 from src.db.models import Interview, Snapshot, Turn
 from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
 from src.db.session import get_session_maker
+from src.evaluation.pricing import calculate_dual_judge_cost
 from src.llm import factory as llm_factory
 from src.llm.exceptions import LLMInvalidResponseError, LLMTimeoutError
 from src.llm.prompts import load_prompt
@@ -231,9 +232,17 @@ class EvaluationService:
             if not isinstance(raw, dict):
                 raise LLMInvalidResponseError("Respuesta LLM no es un objeto JSON")
             if "tokens_prompt" not in raw and completion.usage:
-                raw["tokens_prompt"] = completion.usage.prompt_tokens
+                prompt_val = getattr(completion.usage, "prompt_tokens", None)
+                if isinstance(prompt_val, int) and not isinstance(prompt_val, bool):
+                    raw["tokens_prompt"] = prompt_val
             if "tokens_completion" not in raw and completion.usage:
-                raw["tokens_completion"] = completion.usage.completion_tokens
+                comp_val = getattr(completion.usage, "completion_tokens", None)
+                if isinstance(comp_val, int) and not isinstance(comp_val, bool):
+                    raw["tokens_completion"] = comp_val
+            if "model_name" not in raw and getattr(completion, "model", None):
+                model_val = getattr(completion, "model", None)
+                if isinstance(model_val, str) and model_val.strip():
+                    raw["model_name"] = model_val.strip()
             return raw
         except json.JSONDecodeError as e:
             raise LLMInvalidResponseError(f"No se pudo parsear respuesta LLM: {e!s}")
@@ -419,19 +428,57 @@ class EvaluationService:
             final_discrepancy_note = final_discrepancy_note[:497] + "..."
 
         # Consolidar tokens y costos para auditabilidad (S-15)
-        tokens_prompt = raw.get("tokens_prompt")
-        tokens_completion = raw.get("tokens_completion")
-        cost_usd = raw.get("cost_usd")
-        if secondary_raw:
-            sec_prompt = secondary_raw.get("tokens_prompt")
-            sec_comp = secondary_raw.get("tokens_completion")
-            sec_cost = secondary_raw.get("cost_usd")
-            if sec_prompt is not None:
-                tokens_prompt = (tokens_prompt or 0) + sec_prompt
-            if sec_comp is not None:
-                tokens_completion = (tokens_completion or 0) + sec_comp
-            if sec_cost is not None:
-                cost_usd = round((cost_usd or 0.0) + sec_cost, 4)
+        raw_m1 = raw.get("model_name")
+        model_1 = raw_m1.strip() if isinstance(raw_m1, str) and raw_m1.strip() else settings.LLM_MODEL
+        raw_p1 = raw.get("tokens_prompt")
+        tokens_prompt_1 = raw_p1 if isinstance(raw_p1, int) and not isinstance(raw_p1, bool) else None
+        raw_c1 = raw.get("tokens_completion")
+        tokens_completion_1 = raw_c1 if isinstance(raw_c1, int) and not isinstance(raw_c1, bool) else None
+
+        has_second_judge = secondary_raw is not None
+        raw_m2 = secondary_raw.get("model_name") if secondary_raw else None
+        model_2 = raw_m2.strip() if isinstance(raw_m2, str) and raw_m2.strip() else model_1
+        raw_p2 = secondary_raw.get("tokens_prompt") if secondary_raw else None
+        tokens_prompt_2 = raw_p2 if isinstance(raw_p2, int) and not isinstance(raw_p2, bool) else None
+        raw_c2 = secondary_raw.get("tokens_completion") if secondary_raw else None
+        tokens_completion_2 = raw_c2 if isinstance(raw_c2, int) and not isinstance(raw_c2, bool) else None
+
+        # Consolidar tokens: solo sumar si están presentes, conservando None si el proveedor no reportó uso
+        tokens_prompt: int | None = None
+        if tokens_prompt_1 is not None or (has_second_judge and tokens_prompt_2 is not None):
+            tokens_prompt = (tokens_prompt_1 or 0) + ((tokens_prompt_2 or 0) if has_second_judge else 0)
+
+        tokens_completion: int | None = None
+        if tokens_completion_1 is not None or (has_second_judge and tokens_completion_2 is not None):
+            tokens_completion = (tokens_completion_1 or 0) + ((tokens_completion_2 or 0) if has_second_judge else 0)
+
+        # Cálculo determinista de coste auditado según tarifas oficiales soportadas
+        cost_usd = calculate_dual_judge_cost(
+            model_1=model_1,
+            tokens_prompt_1=tokens_prompt_1,
+            tokens_completion_1=tokens_completion_1,
+            model_2=model_2,
+            tokens_prompt_2=tokens_prompt_2,
+            tokens_completion_2=tokens_completion_2,
+            has_second_judge=has_second_judge,
+        )
+
+        # Si el modelo no tiene tarifa o es desconocido, mantener None salvo que se haya
+        # suministrado un costo explícito manual (para compatibilidad de mocks en tests)
+        raw_cost_1 = raw.get("cost_usd")
+        valid_cost_1 = float(raw_cost_1) if isinstance(raw_cost_1, (int, float)) and not isinstance(raw_cost_1, bool) else None
+        raw_cost_2 = secondary_raw.get("cost_usd") if secondary_raw else None
+        valid_cost_2 = float(raw_cost_2) if isinstance(raw_cost_2, (int, float)) and not isinstance(raw_cost_2, bool) else None
+
+        if cost_usd is None and valid_cost_1 is not None:
+            if has_second_judge and valid_cost_2 is not None:
+                cost_usd = round(valid_cost_1 + valid_cost_2, 6)
+            else:
+                cost_usd = round(valid_cost_1, 6)
+
+        saved_model_name = model_1
+        if has_second_judge and model_2 and model_2 != model_1:
+            saved_model_name = f"{model_1} + {model_2}"[:100]
 
         evaluation = Evaluation(
             interview_id=interview.id,
@@ -439,7 +486,7 @@ class EvaluationService:
             recommendation=recommendation,
             needs_human_review=needs_human_review,
             discrepancy_note=final_discrepancy_note,
-            model_name=raw.get("model_name", settings.LLM_MODEL),
+            model_name=saved_model_name,
             prompt_version=raw.get("prompt_version", "v2"),
             tokens_prompt=tokens_prompt,
             tokens_completion=tokens_completion,

@@ -864,3 +864,199 @@ async def test_s13_evaluate_end_to_end_triggers_dual_judge_and_flags_discrepancy
     assert report.discrepancy_note is not None
     assert "problem_solving" in report.discrepancy_note
     assert "diff=2" in report.discrepancy_note
+
+
+async def test_evaluacion_cost_and_tokens_persistence_dual_judge(
+    db_session, sample_interview, sample_turns
+):
+    """S-15: Persistencia del coste agregado y tokens sumados de ambos jueces."""
+    from sqlalchemy import select
+
+    from src.db.models.interview import Evaluation
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    # Juez 1: grok-4.6, 1500 prompt, 500 comp -> (1500*5 + 500*15)/1e6 = 0.015 USD
+    j1_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 4,
+                "evidence_quote": "Buen algoritmo",
+                "turn_id": turn_id,
+                "reasoning": "Respuesta clara",
+            }
+        ],
+        "discrepancy_note": None,
+        "model_name": "grok-4.6",
+        "tokens_prompt": 1500,
+        "tokens_completion": 500,
+    }
+
+    # Juez 2: grok-4.6, 1200 prompt, 400 comp -> (1200*5 + 400*15)/1e6 = 0.012 USD
+    j2_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [],
+        "discrepancy_note": None,
+        "model_name": "grok-4.6",
+        "tokens_prompt": 1200,
+        "tokens_completion": 400,
+    }
+
+    service._call_judge_llm = AsyncMock(side_effect=[j1_response, j2_response])
+
+    report = await service.evaluate(sample_interview.id)
+    assert report is not None
+
+    # Verificar registro en base de datos
+    result = await db_session.execute(
+        select(Evaluation).where(Evaluation.interview_id == sample_interview.id)
+    )
+    eval_db = result.scalar_one_or_none()
+    assert eval_db is not None
+    assert eval_db.tokens_prompt == 2700  # 1500 + 1200
+    assert eval_db.tokens_completion == 900  # 500 + 400
+    assert eval_db.cost_usd == pytest.approx(0.027, abs=1e-6)  # 0.015 + 0.012
+    assert eval_db.model_name == "grok-4.6"
+
+
+async def test_evaluacion_persistence_unknown_model_cost_is_none(
+    db_session, sample_interview, sample_turns
+):
+    """S-15: Modelo desconocido persiste tokens pero mantiene cost_usd como None (nunca 0.0)."""
+    from sqlalchemy import select
+
+    from src.db.models.interview import Evaluation
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    j1_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 4,
+                "evidence_quote": "Buen algoritmo",
+                "turn_id": turn_id,
+                "reasoning": "Respuesta clara",
+            }
+        ],
+        "discrepancy_note": None,
+        "model_name": "unsupported-experimental-model",
+        "tokens_prompt": 800,
+        "tokens_completion": 200,
+    }
+
+    j2_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [],
+        "discrepancy_note": None,
+        "model_name": "unsupported-experimental-model",
+        "tokens_prompt": 600,
+        "tokens_completion": 150,
+    }
+
+    service._call_judge_llm = AsyncMock(side_effect=[j1_response, j2_response])
+
+    report = await service.evaluate(sample_interview.id)
+    assert report is not None
+
+    result = await db_session.execute(
+        select(Evaluation).where(Evaluation.interview_id == sample_interview.id)
+    )
+    eval_db = result.scalar_one_or_none()
+    assert eval_db is not None
+    assert eval_db.tokens_prompt == 1400
+    assert eval_db.tokens_completion == 350
+    assert eval_db.cost_usd is None  # Explícito: no se inventa tarifa ni se pone 0.0
+
+
+async def test_evaluacion_persistence_missing_tokens_cost_is_none(
+    db_session, sample_interview, sample_turns
+):
+    """S-15: Proveedor sin reporte de tokens deja tokens y cost_usd como None."""
+    from sqlalchemy import select
+
+    from src.db.models.interview import Evaluation
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    j1_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 4,
+                "evidence_quote": "Buen algoritmo",
+                "turn_id": turn_id,
+                "reasoning": "Respuesta clara",
+            }
+        ],
+        "discrepancy_note": None,
+        "model_name": "grok-4.6",
+        # Sin tokens_prompt ni tokens_completion
+    }
+
+    j2_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [],
+        "discrepancy_note": None,
+        "model_name": "grok-4.6",
+    }
+
+    service._call_judge_llm = AsyncMock(side_effect=[j1_response, j2_response])
+
+    report = await service.evaluate(sample_interview.id)
+    assert report is not None
+
+    result = await db_session.execute(
+        select(Evaluation).where(Evaluation.interview_id == sample_interview.id)
+    )
+    eval_db = result.scalar_one_or_none()
+    assert eval_db is not None
+    assert eval_db.tokens_prompt is None
+    assert eval_db.tokens_completion is None
+    assert eval_db.cost_usd is None
