@@ -541,8 +541,8 @@ class TestAutomaticEvaluationOnClosure:
             assert res_sync is not None
             assert res_bg.overall_score == res_sync.overall_score
 
-        # El LLM solo debió completarse 1 vez debido al lock por interview_id
-        assert mock_llm.complete.call_count == 1
+        # La evaluación solo debió ejecutarse 1 vez (2 llamadas LLM por doble pasada S-13)
+        assert mock_llm.complete.call_count == 2
 
         # En la base de datos debe existir exactamente 1 registro
         async with isolated_session() as fresh:

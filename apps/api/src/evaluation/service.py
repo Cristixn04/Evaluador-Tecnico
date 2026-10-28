@@ -67,6 +67,10 @@ class EvaluationService:
     HIRE_THRESHOLD = 4.00
     BORDERLINE_THRESHOLD = 3.00
 
+    # Tolerancia de consistencia para doble pasada de juez (S-13): diferencia máxima tolerable
+    CONSISTENCY_DIMENSION_TOLERANCE = 1
+    CONSISTENCY_OVERALL_TOLERANCE = 1.0
+
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
@@ -112,9 +116,12 @@ class EvaluationService:
                     evidence=[],
                 )
 
-            # 3. Llamar al juez LLM
+            # 3. Llamar al juez LLM (doble pasada independiente con chequeo de consistencia - S-13)
             try:
-                raw_evaluation = await self._call_judge_llm(context)
+                raw_eval_1, raw_eval_2 = await asyncio.gather(
+                    self._call_judge_llm(context, judge_id="judge_1"),
+                    self._call_judge_llm(context, judge_id="judge_2"),
+                )
             except (LLMInvalidResponseError, LLMTimeoutError) as e:
                 # Fallback: human review on LLM failure
                 return EvaluationReport(
@@ -130,7 +137,9 @@ class EvaluationService:
 
             # 4. Validar y persistir
             try:
-                evaluation_report = await self._validate_and_persist(raw_evaluation, interview)
+                evaluation_report = await self._validate_and_persist(
+                    raw_eval_1, interview, secondary_raw=raw_eval_2
+                )
             except ValueError as e:
                 # Datos inválidos → human review
                 return EvaluationReport(
@@ -200,13 +209,16 @@ class EvaluationService:
             "snapshots": snapshots,
         }
 
-    async def _call_judge_llm(self, context: dict[str, Any]) -> dict[str, Any]:
+    async def _call_judge_llm(
+        self, context: dict[str, Any], judge_id: str = "judge_1"
+    ) -> dict[str, Any]:
         """Llamar al juez LLM con el prompt versionado y protección de entradas."""
         prompt = load_prompt("evaluator", "v2")
         system_msg = ChatMessage(role="system", content=prompt)
-        user_msg_content = self._format_evidence_for_llm(context)
+        user_msg_content = self._format_evidence_for_llm(context, judge_id=judge_id)
         user_msg = ChatMessage(role="user", content=user_msg_content)
 
+        logger.info("Invocando juez LLM independiente (%s)...", judge_id)
         llm_client = llm_factory.create_llm_client()
         try:
             completion: ChatCompletion = await llm_client.complete([system_msg, user_msg])
@@ -218,11 +230,17 @@ class EvaluationService:
             raw = json.loads(completion.content)
             if not isinstance(raw, dict):
                 raise LLMInvalidResponseError("Respuesta LLM no es un objeto JSON")
+            if "tokens_prompt" not in raw and completion.usage:
+                raw["tokens_prompt"] = completion.usage.prompt_tokens
+            if "tokens_completion" not in raw and completion.usage:
+                raw["tokens_completion"] = completion.usage.completion_tokens
             return raw
         except json.JSONDecodeError as e:
             raise LLMInvalidResponseError(f"No se pudo parsear respuesta LLM: {e!s}")
 
-    def _format_evidence_for_llm(self, context: dict[str, Any]) -> str:
+    def _format_evidence_for_llm(
+        self, context: dict[str, Any], judge_id: str = "judge_1"
+    ) -> str:
         """Formatear la evidencia del contexto para el prompt del LLM."""
         lines = []
         lines.append("EVIDENCIA DE ENTREVISTA (solo datos verificados del sistema):")
@@ -252,7 +270,7 @@ class EvaluationService:
                 )
             lines.append("")
 
-        lines.append("INSTRUCCIONES PARA EL JUEZ:")
+        lines.append(f"INSTRUCCIONES PARA EL JUEZ ({judge_id.upper()}):")
         lines.append("1. Cada una de las 5 dimensiones debe puntuar de 1 a 5 (entero).")
         lines.append("2. Cada puntuación debe estar sustentada por evidencia citando el ID verificable.")
         lines.append("3. Nunca inventar identificadores de turnos o snapshots; usar únicamente los IDs provistos arriba.")
@@ -262,7 +280,67 @@ class EvaluationService:
 
         return "\n".join(lines)
 
-    async def _validate_and_persist(self, raw: dict[str, Any], interview: Interview) -> EvaluationReport:
+    def check_consistency(
+        self,
+        scores_1: dict[str, int],
+        overall_1: float,
+        scores_2: dict[str, int],
+        overall_2: float,
+    ) -> tuple[bool, str | None]:
+        """Comprueba la consistencia entre dos jueces independientes (S-13).
+
+        Si dos jueces difieren en más de 1 punto en cualquier dimensión o en
+        el puntaje global, retorna (False, nota_explicativa).
+        """
+        discrepancies: list[str] = []
+
+        # 1. Comprobar diferencias por dimensión individual (> 1 punto)
+        for dim in self.EVALUATION_DIMENSIONS:
+            s1 = scores_1.get(dim)
+            s2 = scores_2.get(dim)
+            if s1 is None or s2 is None:
+                discrepancies.append(f"{dim} (faltante en juez: J1={s1}, J2={s2})")
+            elif abs(s1 - s2) > self.CONSISTENCY_DIMENSION_TOLERANCE:
+                discrepancies.append(f"{dim} (J1={s1}, J2={s2}, diff={abs(s1 - s2)})")
+
+        # 2. Comprobar diferencia en el puntaje global (> 1.0 punto)
+        overall_diff = round(abs(overall_1 - overall_2), 2)
+        if overall_diff > self.CONSISTENCY_OVERALL_TOLERANCE:
+            discrepancies.append(
+                f"overall_score (J1={overall_1:.2f}, J2={overall_2:.2f}, diff={overall_diff:.2f})"
+            )
+
+        if discrepancies:
+            note = f"Discrepancia entre jueces (>1 punto): {', '.join(discrepancies)}"
+            return False, note
+
+        return True, None
+
+    def _extract_validated_scores(self, raw: dict[str, Any]) -> dict[str, int] | None:
+        """Extrae y valida puntuaciones de las 5 dimensiones autorizadas."""
+        dimensions = raw.get("competencies", {})
+        if not isinstance(dimensions, dict):
+            return None
+
+        validated: dict[str, int] = {}
+        for dim_name in self.EVALUATION_DIMENSIONS:
+            if dim_name not in dimensions:
+                return None
+            score = dimensions[dim_name]
+            if isinstance(score, bool) or not isinstance(score, (int, float)):
+                return None
+            if int(score) != score or score < 1 or score > 5:
+                return None
+            validated[dim_name] = int(score)
+
+        return validated
+
+    async def _validate_and_persist(
+        self,
+        raw: dict[str, Any],
+        interview: Interview,
+        secondary_raw: dict[str, Any] | None = None,
+    ) -> EvaluationReport:
         """Validar la respuesta del LLM y persistir en la base de datos."""
         dimensions = raw.get("competencies", {})
         if not isinstance(dimensions, dict):
@@ -297,22 +375,75 @@ class EvaluationService:
         else:
             recommendation = "reject"
 
+        # Chequeo de consistencia entre dos pasadas independientes (S-13)
+        is_consistent = True
+        discrepancy_from_judges: str | None = None
+        if secondary_raw is not None:
+            secondary_scores = self._extract_validated_scores(secondary_raw)
+            if secondary_scores is None:
+                is_consistent = False
+                discrepancy_from_judges = "Fallo en juez secundario: formato o competencias inválidas"
+            else:
+                secondary_overall = round(
+                    sum(secondary_scores.values()) / len(secondary_scores.values()), 2
+                )
+                is_consistent, discrepancy_from_judges = self.check_consistency(
+                    validated_scores,
+                    overall_score,
+                    secondary_scores,
+                    secondary_overall,
+                )
+
         validated_evidence = await self._validate_evidence(interview, raw.get("evidence", []))
         has_valid_evidence = bool(validated_evidence)
 
-        needs_human_review = not has_valid_evidence or overall_score < 2.0
+        # Regla S-13: si los jueces difieren en >1 punto, marcar needs_human_review = True
+        needs_human_review = (
+            not has_valid_evidence
+            or overall_score < 2.0
+            or not is_consistent
+            or bool(raw.get("needs_human_review", False))
+        )
+
+        # Consolidar notas de discrepancia
+        discrepancy_notes: list[str] = []
+        if discrepancy_from_judges:
+            discrepancy_notes.append(discrepancy_from_judges)
+        if raw.get("discrepancy_note"):
+            discrepancy_notes.append(str(raw["discrepancy_note"]))
+
+        final_discrepancy_note: str | None = (
+            "; ".join(discrepancy_notes) if discrepancy_notes else None
+        )
+        if final_discrepancy_note and len(final_discrepancy_note) > 500:
+            final_discrepancy_note = final_discrepancy_note[:497] + "..."
+
+        # Consolidar tokens y costos para auditabilidad (S-15)
+        tokens_prompt = raw.get("tokens_prompt")
+        tokens_completion = raw.get("tokens_completion")
+        cost_usd = raw.get("cost_usd")
+        if secondary_raw:
+            sec_prompt = secondary_raw.get("tokens_prompt")
+            sec_comp = secondary_raw.get("tokens_completion")
+            sec_cost = secondary_raw.get("cost_usd")
+            if sec_prompt is not None:
+                tokens_prompt = (tokens_prompt or 0) + sec_prompt
+            if sec_comp is not None:
+                tokens_completion = (tokens_completion or 0) + sec_comp
+            if sec_cost is not None:
+                cost_usd = round((cost_usd or 0.0) + sec_cost, 4)
 
         evaluation = Evaluation(
             interview_id=interview.id,
             overall_score=overall_score,
             recommendation=recommendation,
             needs_human_review=needs_human_review,
-            discrepancy_note=raw.get("discrepancy_note"),
+            discrepancy_note=final_discrepancy_note,
             model_name=raw.get("model_name", settings.LLM_MODEL),
             prompt_version=raw.get("prompt_version", "v2"),
-            tokens_prompt=raw.get("tokens_prompt"),
-            tokens_completion=raw.get("tokens_completion"),
-            cost_usd=raw.get("cost_usd"),
+            tokens_prompt=tokens_prompt,
+            tokens_completion=tokens_completion,
+            cost_usd=cost_usd,
             created_at=datetime.now(UTC),
             evaluated_at=datetime.now(UTC),
         )
@@ -400,7 +531,7 @@ class EvaluationService:
             overall_score=overall_score,
             recommendation=cast("Literal[\"hire\", \"borderline\", \"reject\"]", recommendation),
             needs_human_review=needs_human_review,
-            discrepancy_note=raw.get("discrepancy_note"),
+            discrepancy_note=final_discrepancy_note,
             strengths=raw.get("strengths", []),
             risks=raw.get("risks", []),
             suggested_human_questions=raw.get("suggested_human_questions", []),

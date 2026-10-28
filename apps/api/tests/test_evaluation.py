@@ -541,3 +541,326 @@ async def test_evaluacion_multi_tenant_isolation(db_session, sample_interview):
             headers={"Authorization": f"Bearer {token_b}"},
         )
         assert resp_traj.status_code == HTTPStatus.NOT_FOUND
+
+
+# ==============================================================================
+# Pruebas para S-13: Doble pasada de juez con chequeo de consistencia
+# ==============================================================================
+
+
+def test_s13_check_consistency_within_tolerance(db_session):
+    """S-13 Unitario: Diferencias <= 1 punto en dimensiones y <= 1.0 overall son consistentes."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    scores_1 = {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 3,
+        "code_quality": 5,
+        "technical_communication": 4,
+        "complexity_management": 3,
+    }
+    overall_1 = 3.80
+
+    scores_2 = {
+        "problem_solving": 5,
+        "algorithmic_reasoning": 4,
+        "code_quality": 4,
+        "technical_communication": 3,
+        "complexity_management": 4,
+    }
+    overall_2 = 4.00
+
+    is_consistent, note = service.check_consistency(scores_1, overall_1, scores_2, overall_2)
+    assert is_consistent is True
+    assert note is None
+
+
+def test_s13_check_consistency_dimension_diff_greater_than_one(db_session):
+    """S-13 Unitario: Diferencia > 1 punto en dimensión individual marca inconsistencia."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    scores_1 = {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 5,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 4,
+    }
+    overall_1 = 4.20
+
+    # algorithmic_reasoning difiere en 2 (> 1 punto)
+    scores_2 = {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 3,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 4,
+    }
+    overall_2 = 3.80
+
+    is_consistent, note = service.check_consistency(scores_1, overall_1, scores_2, overall_2)
+    assert is_consistent is False
+    assert note is not None
+    assert "Discrepancia entre jueces (>1 punto)" in note
+    assert "algorithmic_reasoning" in note
+    assert "diff=2" in note
+
+
+def test_s13_check_consistency_overall_diff_greater_than_one(db_session):
+    """S-13 Unitario: Diferencia > 1.0 punto en puntaje general marca inconsistencia."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    scores_1 = {
+        "problem_solving": 5,
+        "algorithmic_reasoning": 4,
+        "code_quality": 5,
+        "technical_communication": 4,
+        "complexity_management": 4,
+    }
+    overall_1 = 4.40
+
+    scores_2 = {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 3,
+        "code_quality": 4,
+        "technical_communication": 3,
+        "complexity_management": 3,
+    }
+    # overall_2 = 3.40 -> overall_diff = 1.00 (en el límite tolerable)
+    is_consistent, note = service.check_consistency(scores_1, overall_1, scores_2, 3.40)
+    assert is_consistent is True
+
+    # overall_2 = 3.20 -> overall_diff = 1.20 (> 1.0 punto)
+    is_consistent, note = service.check_consistency(scores_1, overall_1, scores_2, 3.20)
+    assert is_consistent is False
+    assert note is not None
+    assert "overall_score" in note
+    assert "diff=1.20" in note
+
+
+def test_s13_check_consistency_missing_dimension(db_session):
+    """S-13 Unitario: Dimensión faltante en uno de los jueces marca inconsistencia."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    scores_1 = {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 4,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 4,
+    }
+    overall_1 = 4.00
+
+    scores_2 = {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 4,
+        "code_quality": 4,
+        "technical_communication": 4,
+    }
+    overall_2 = 4.00
+
+    is_consistent, note = service.check_consistency(scores_1, overall_1, scores_2, overall_2)
+    assert is_consistent is False
+    assert note is not None
+    assert "complexity_management" in note
+
+
+async def test_s13_validate_and_persist_discrepancy_flags_needs_human_review(
+    db_session, sample_interview, sample_turns
+):
+    """S-13 Integración: Discrepancia > 1 punto entre jueces activa needs_human_review en DB y reporte."""
+    from sqlalchemy import select
+
+    from src.db.models.interview import Evaluation as EvaluationModel
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    raw_j1 = {
+        "competencies": {
+            "problem_solving": 5,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 5,
+                "evidence_quote": "Solución óptima O(n)",
+                "turn_id": turn_id,
+                "reasoning": "Buen razonamiento",
+            }
+        ],
+        "discrepancy_note": None,
+    }
+
+    # Juez 2 difiere en 2 puntos en problem_solving (5 vs 3, diff=2 > 1)
+    raw_j2 = {
+        "competencies": {
+            "problem_solving": 3,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [],
+    }
+
+    report = await service._validate_and_persist(raw_j1, sample_interview, secondary_raw=raw_j2)
+
+    assert report.needs_human_review is True
+    assert report.discrepancy_note is not None
+    assert "Discrepancia entre jueces (>1 punto)" in report.discrepancy_note
+    assert "problem_solving" in report.discrepancy_note
+
+    # Verificar persistencia en base de datos
+    result = await db_session.execute(
+        select(EvaluationModel).where(EvaluationModel.interview_id == sample_interview.id)
+    )
+    persisted = result.scalar_one()
+    assert persisted.needs_human_review is True
+    assert persisted.discrepancy_note == report.discrepancy_note
+
+
+async def test_s13_validate_and_persist_consistent_does_not_flag_human_review(
+    db_session, sample_interview, sample_turns
+):
+    """S-13 Integración: Jueces consistentes (diff <= 1 punto) no activan needs_human_review."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    raw_j1 = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 4,
+                "evidence_quote": "Explicación adecuada",
+                "turn_id": turn_id,
+                "reasoning": "Razonamiento correcto",
+            }
+        ],
+        "discrepancy_note": None,
+    }
+
+    # Juez 2 difiere en 1 punto en problem_solving (4 vs 5, diff=1 <= 1)
+    raw_j2 = {
+        "competencies": {
+            "problem_solving": 5,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [],
+    }
+
+    report = await service._validate_and_persist(raw_j1, sample_interview, secondary_raw=raw_j2)
+
+    assert report.needs_human_review is False
+    assert report.discrepancy_note is None
+
+
+async def test_s13_validate_and_persist_invalid_secondary_structure(
+    db_session, sample_interview, sample_turns
+):
+    """S-13 Integración: Juez secundario con competencias inválidas marca needs_human_review."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    raw_j1 = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 4,
+                "evidence_quote": "Explicación adecuada",
+                "turn_id": turn_id,
+                "reasoning": "Razonamiento correcto",
+            }
+        ],
+    }
+
+    raw_j2_invalid = {"competencies": "no-es-un-objeto"}
+
+    report = await service._validate_and_persist(raw_j1, sample_interview, secondary_raw=raw_j2_invalid)
+
+    assert report.needs_human_review is True
+    assert report.discrepancy_note is not None
+    assert "Fallo en juez secundario" in report.discrepancy_note
+
+
+async def test_s13_evaluate_end_to_end_triggers_dual_judge_and_flags_discrepancy(
+    db_session, sample_interview, sample_turns
+):
+    """S-13 End-to-End: evaluate() invoca doble pasada y marca needs_human_review ante discrepancia."""
+    from src.evaluation.service import EvaluationService
+
+    service = EvaluationService(db_session)
+    turn_id = str(sample_turns[0].id)
+
+    j1_response = {
+        "competencies": {
+            "problem_solving": 5,
+            "algorithmic_reasoning": 5,
+            "code_quality": 5,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 5,
+                "evidence_quote": "Solución de alto nivel",
+                "turn_id": turn_id,
+                "reasoning": "Excelente diseño",
+            }
+        ],
+        "discrepancy_note": None,
+    }
+
+    # Juez 2 otorga 3 en problem_solving (diferencia de 2 > 1 punto)
+    j2_response = {
+        "competencies": {
+            "problem_solving": 3,
+            "algorithmic_reasoning": 5,
+            "code_quality": 5,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [],
+        "discrepancy_note": None,
+    }
+
+    service._call_judge_llm = AsyncMock(side_effect=[j1_response, j2_response])
+
+    report = await service.evaluate(sample_interview.id)
+
+    assert service._call_judge_llm.call_count == 2
+    assert report.needs_human_review is True
+    assert report.discrepancy_note is not None
+    assert "problem_solving" in report.discrepancy_note
+    assert "diff=2" in report.discrepancy_note
