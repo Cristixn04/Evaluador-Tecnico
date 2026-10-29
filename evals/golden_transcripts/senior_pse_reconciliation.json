@@ -3,6 +3,19 @@
   "expected_level": "senior",
   "expected_overall_score_range": [4.0, 5.0],
   "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.6,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 4,
+      "technical_communication": 5,
+      "complexity_management": 4
+    }
+  },
   "turns": [
     {
       "turn_id": "turn-1",

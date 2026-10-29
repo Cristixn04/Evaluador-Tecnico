@@ -2,10 +2,25 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 
 from src.core.security import create_access_token, hash_password
-from src.db.enums import InterviewPhase, InterviewStatus, Seniority, UserRole
-from src.db.models import Interview, Invitation, Membership, Organization, User, Vacancy
+from src.db.enums import InterviewPhase, InterviewStatus, Seniority, TurnSpeaker, UserRole
+from src.db.models import (
+    Interview,
+    Invitation,
+    Membership,
+    Organization,
+    User,
+    Vacancy,
+)
+from src.db.models.interview import (
+    Evaluation,
+    EvaluationDimension,
+    EvaluationEvidence,
+    Snapshot,
+    Turn,
+)
 from src.main import app
 
 
@@ -84,6 +99,18 @@ async def test_revoke_consent_valid_invitation(db_session):
     await db_session.refresh(interview)
     assert interview.status == InterviewStatus.CANCELLED
 
+    # Reintento de revocatoria: debe responder 200 y mantenerse cancelada de forma idempotente
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response2 = await client.post(
+            "/privacy/consent/revoke",
+            json={"invitation_token": raw_token},
+        )
+        assert response2.status_code == 200
+        assert response2.json()["status"] == "revoked"
+
+    await db_session.refresh(interview)
+    assert interview.status == InterviewStatus.CANCELLED
+
 
 @pytest.mark.asyncio
 async def test_delete_candidate_data(db_session):
@@ -147,3 +174,351 @@ async def test_delete_candidate_data(db_session):
 
     await db_session.refresh(interview)
     assert interview.status == InterviewStatus.CANCELLED
+    assert interview.candidate_name.startswith("CAND-ANON-")
+    assert "anon-" in interview.candidate_email
+
+
+@pytest.mark.asyncio
+async def test_cascading_deletion_with_evaluations_and_evidences(db_session):
+    """S-20: La eliminación en cascada purga evaluaciones, dimensiones, evidencias, turns y snapshots."""
+    org = Organization(name="Cascading Org")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(
+        email="admin_cascade@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    membership = Membership(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    db_session.add(membership)
+    await db_session.flush()
+
+    token = create_access_token(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    vacancy = Vacancy(
+        title="Cascading Test Vacancy",
+        role_category="Backend",
+        seniority=Seniority.MID,
+        raw_description="Pruebas de borrado profundo",
+    )
+    db_session.add(vacancy)
+    await db_session.flush()
+
+    interview = Interview(
+        vacancy_id=vacancy.id,
+        candidate_email="pedro.perez@example.com",
+        candidate_name="Pedro Pérez Gómez",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview)
+    await db_session.flush()
+
+    turn1 = Turn(
+        interview_id=interview.id,
+        speaker=TurnSpeaker.CANDIDATE,
+        content="Mi código de solución",
+    )
+    db_session.add(turn1)
+
+    snap1 = Snapshot(
+        interview_id=interview.id,
+        phase="CODING",
+        code="def solve(): return 1",
+    )
+    db_session.add(snap1)
+    await db_session.flush()
+
+    evaluation = Evaluation(
+        interview_id=interview.id,
+        overall_score=4.5,
+        recommendation="hire",
+        needs_human_review=False,
+        evaluated_at=datetime.now(UTC),
+    )
+    db_session.add(evaluation)
+    await db_session.flush()
+
+    dim1 = EvaluationDimension(
+        evaluation_id=evaluation.id,
+        name="problem_solving",
+        score=5,
+        reasoning="Excelente",
+    )
+    db_session.add(dim1)
+
+    ev1 = EvaluationEvidence(
+        evaluation_id=evaluation.id,
+        dimension_name="problem_solving",
+        quote="solve(): return 1",
+        reasoning="Código claro",
+        turn_id=turn1.id,
+        snapshot_id=snap1.id,
+    )
+    db_session.add(ev1)
+    await db_session.commit()
+
+    # Ejecutar DELETE
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            f"/privacy/candidates/{interview.id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "deleted"
+        assert data["records_deleted"] >= 5
+
+    # Verificar que no existen registros huérfanos
+    evals_left = (await db_session.execute(select(Evaluation).where(Evaluation.interview_id == interview.id))).scalars().all()
+    assert len(evals_left) == 0
+
+    dims_left = (await db_session.execute(select(EvaluationDimension).where(EvaluationDimension.evaluation_id == evaluation.id))).scalars().all()
+    assert len(dims_left) == 0
+
+    evs_left = (await db_session.execute(select(EvaluationEvidence).where(EvaluationEvidence.evaluation_id == evaluation.id))).scalars().all()
+    assert len(evs_left) == 0
+
+    turns_left = (await db_session.execute(select(Turn).where(Turn.interview_id == interview.id))).scalars().all()
+    assert len(turns_left) == 0
+
+    snaps_left = (await db_session.execute(select(Snapshot).where(Snapshot.interview_id == interview.id))).scalars().all()
+    assert len(snaps_left) == 0
+
+    # Entrevista anonimizada y cancelada
+    await db_session.refresh(interview)
+    assert interview.status == InterviewStatus.CANCELLED
+    assert "pedro.perez" not in interview.candidate_email
+    assert "Pedro Pérez" not in interview.candidate_name
+
+    # Ejecutar DELETE por segunda vez (idempotencia y manejo seguro ante re-intentos)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response2 = await client.delete(
+            f"/privacy/candidates/{interview.id}",
+            headers=auth_headers,
+        )
+        assert response2.status_code == 200
+        data2 = response2.json()
+        assert data2["status"] == "deleted"
+        assert data2["records_deleted"] == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_candidate_nonexistent_returns_404(db_session):
+    """S-20: Intentar eliminar un candidato inexistente retorna HTTP 404."""
+    from uuid import uuid4
+
+    org = Organization(name="404 Org")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(
+        email="admin_404@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    membership = Membership(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    db_session.add(membership)
+    await db_session.commit()
+
+    token = create_access_token(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            f"/privacy/candidates/{uuid4()}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_strict_anonymization_no_pii_in_evaluation_context(db_session):
+    """S-19: Cero PII en el contexto enviado a los jueces LLM (nombre, correo, edad, género)."""
+    from src.evaluation.service import EvaluationService, _generate_masked_candidate_id
+
+    vacancy = Vacancy(
+        title="Privacy Vacancy",
+        role_category="Backend",
+        seniority=Seniority.SENIOR,
+        raw_description="Prueba de anonimización estricta",
+    )
+    db_session.add(vacancy)
+    await db_session.flush()
+
+    # Candidato con datos personales sensibles
+    candidate_name = "María Fernanda Rodríguez"
+    candidate_email = "maria.rodriguez@universidad.edu.co"
+    interview = Interview(
+        vacancy_id=vacancy.id,
+        candidate_name=candidate_name,
+        candidate_email=candidate_email,
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview)
+    await db_session.flush()
+
+    turn1 = Turn(
+        interview_id=interview.id,
+        speaker=TurnSpeaker.CANDIDATE,
+        content=f"Hola, mi correo personal es {candidate_email} y mi solución usa un hash map.",
+    )
+    db_session.add(turn1)
+    await db_session.commit()
+
+    service = EvaluationService(db_session)
+    context = await service._build_context(interview)
+
+    # 1. El contexto de datos brutos no debe contener los atributos personales del candidato
+    assert "candidate_name" not in context
+    assert "candidate_email" not in context
+
+    # 2. El texto formateado para el LLM no debe contener datos personales
+    formatted_prompt = service._format_evidence_for_llm(context)
+
+    assert candidate_name not in formatted_prompt
+    assert candidate_email not in formatted_prompt
+    assert "[REDACTED_EMAIL]" in formatted_prompt
+    assert "universidad.edu.co" not in formatted_prompt
+    # Solo identificadores de formato opaco
+    assert f"CAND-{interview.id.hex[:4].upper()}" in _generate_masked_candidate_id(interview)
+
+
+@pytest.mark.asyncio
+async def test_llm_client_complete_payload_has_zero_candidate_pii(db_session):
+    """S-19: Inspecciona el payload exacto de llm_client.complete en evaluate_interview confirmando ausencia total de PII."""
+    import json
+    from typing import Any
+    from unittest.mock import AsyncMock, MagicMock, patch
+
+    from src.evaluation.service import EvaluationService, _generate_masked_candidate_id
+
+    vacancy = Vacancy(
+        title="Privacy Vacancy Payload",
+        role_category="Backend",
+        seniority=Seniority.SENIOR,
+        raw_description="Prueba estricta de payload hacia LLM",
+    )
+    db_session.add(vacancy)
+    await db_session.flush()
+
+    candidate_name = "Carlos Alberto Mendoza"
+    candidate_email = "carlos.mendoza@unal.edu.co"
+    interview = Interview(
+        vacancy_id=vacancy.id,
+        candidate_name=candidate_name,
+        candidate_email=candidate_email,
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview)
+    await db_session.flush()
+
+    turn1 = Turn(
+        interview_id=interview.id,
+        speaker=TurnSpeaker.CANDIDATE,
+        content=f"Hola, mi nombre es {candidate_name} y mi correo es {candidate_email}. Tengo 28 años y soy de Colombia.",
+    )
+    db_session.add(turn1)
+
+    snap1 = Snapshot(
+        interview_id=interview.id,
+        phase="CODING",
+        code=f"# Autor: {candidate_name} <{candidate_email}>\ndef solve(n):\n    return n * 2\n",
+        reason="run",
+        execution_status="success",
+        tests_passed=3,
+        total_tests=3,
+    )
+    db_session.add(snap1)
+    await db_session.commit()
+
+    captured_messages: list[Any] = []
+
+    mock_response = {
+        "competencies": {
+            "problem_solving": 4,
+            "algorithmic_reasoning": 4,
+            "code_quality": 4,
+            "technical_communication": 4,
+            "complexity_management": 4,
+        },
+        "evidence": [
+            {
+                "competency": "problem_solving",
+                "score": 4,
+                "evidence_quote": "solve",
+                "turn_id": str(snap1.id),
+                "reasoning": "Bien estructurado",
+            }
+        ],
+        "overall_score": 4.0,
+        "recommendation": "hire",
+        "needs_human_review": False,
+    }
+
+    mock_client = AsyncMock()
+
+    async def mock_complete(messages):
+        captured_messages.extend(messages)
+        return MagicMock(
+            content=json.dumps(mock_response),
+            usage=MagicMock(prompt_tokens=100, completion_tokens=50),
+            model="test-judge",
+        )
+
+    mock_client.complete = mock_complete
+    mock_client.aclose = AsyncMock()
+
+    with patch("src.llm.factory.create_llm_client", return_value=mock_client):
+        service = EvaluationService(db_session)
+        report = await service.evaluate(interview.id)
+
+    assert report is not None
+    assert len(captured_messages) > 0
+
+    all_payload_text = " ".join(msg.content for msg in captured_messages)
+
+    # 1. PII del candidato NO debe aparecer en el payload del LLM
+    assert candidate_name not in all_payload_text
+    assert candidate_email not in all_payload_text
+    assert "carlos.mendoza" not in all_payload_text
+    assert "unal.edu.co" not in all_payload_text
+
+    # 2. El email y el nombre en código y en turno deben haber sido redactados
+    assert "[REDACTED_EMAIL]" in all_payload_text
+    assert "[REDACTED_PII]" in all_payload_text
+
+    # 3. Solo debe aparecer el identificador enmascarado
+    masked_id = _generate_masked_candidate_id(interview)
+    assert report.masked_candidate_id == masked_id

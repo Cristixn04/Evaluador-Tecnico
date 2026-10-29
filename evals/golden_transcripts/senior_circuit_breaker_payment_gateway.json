@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-circuit-breaker-pasarela",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.3,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.7,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 4,
+      "technical_communication": 5,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Implementa una máquina de estados Circuit Breaker para una pasarela bancaria con estados CLOSED, OPEN y HALF_OPEN."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Registraré fallos consecutivos con umbral de 5 para abrir el circuito. En HALF_OPEN permitiré 1 solicitud de prueba."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Cómo manejas la concurrencia en HALF_OPEN para que solo 1 worker ejecute el probe request?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Uso atomic CAS (Compare-And-Swap) o Redis SETNX con expiración para seleccionar deterministamente el canary call."
+    }
+  ],
+  "final_code": "class CircuitBreaker:\n    def __init__(self, failure_threshold=5, recovery_timeout=30):\n        self.state = 'CLOSED'\n        self.failures = 0\n        self.threshold = failure_threshold\n        self.timeout = recovery_timeout\n        self.last_failure = 0\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 5,
+    "total_tests": 5
+  }
+}

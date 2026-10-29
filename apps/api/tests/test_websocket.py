@@ -306,7 +306,7 @@ class TestWebSocketMessages:
         from src.agent.service import InterviewAgent
         from src.db.models import Turn
 
-        async def fake_stream_llm(self, client, messages):
+        async def fake_stream_llm(self, client, messages, interview_id=None, *args, **kwargs):
             yield "Hello"
             yield " candidate!"
 

@@ -204,3 +204,52 @@ async def test_get_report_pdf_success(db_session):
         assert "x-audit-hash-sha256" in response.headers
         assert len(response.headers["x-audit-hash-sha256"]) == 64
         assert response.content.startswith(b"%PDF-")
+
+
+def test_radar_svg_generation():
+    """S-18: El generador produce un SVG vectorial válido con los 5 ejes y polígonos."""
+    generator = ReportPdfGenerator()
+    dims = [
+        {"dimension": "problem_solving", "score": 4.0},
+        {"dimension": "algorithmic_reasoning", "score": 5.0},
+        {"dimension": "code_quality", "score": 3.5},
+        {"dimension": "technical_communication", "score": 4.5},
+        {"dimension": "complexity_management", "score": 3.0},
+    ]
+    svg = generator.generate_radar_svg(dims)
+    assert svg.startswith("<svg")
+    assert svg.endswith("</svg>")
+    assert "polygon" in svg
+    assert "Problem Solving (4.0)" in svg
+    assert "Algorithmic Reasoning (5.0)" in svg
+
+
+def test_audit_hash_deterministic_and_sensitive_to_code_changes():
+    """S-18: El hash SHA-256 es determinista y varía si cambia el código auditado o las notas."""
+    generator = ReportPdfGenerator()
+    report = EvaluationReport(
+        id=str(uuid4()),
+        masked_candidate_id="CAND-TEST",
+        overall_score=4.0,
+        recommendation="hire",
+        needs_human_review=False,
+        competencies={"problem_solving": 4},
+        evidence=[],
+    )
+
+    h1 = generator._calculate_audit_hash(report, "def foo(): pass")
+    h2 = generator._calculate_audit_hash(report, "def foo(): pass")
+    assert h1 == h2  # Determinista
+
+    h3 = generator._calculate_audit_hash(report, "def foo(): return 1")
+    assert h1 != h3  # Sensible a modificaciones de código
+
+    # Invariante ante cambios en campos no auditados como report.id o strengths
+    report_diff_id = report.model_copy(update={"id": str(uuid4()), "strengths": ["Nueva fortaleza"]})
+    h_same = generator._calculate_audit_hash(report_diff_id, "def foo(): pass")
+    assert h1 == h_same
+
+    # Sensible ante cambios en puntuación o dimensiones
+    report_diff_score = report.model_copy(update={"overall_score": 4.5})
+    h_diff_score = generator._calculate_audit_hash(report_diff_score, "def foo(): pass")
+    assert h1 != h_diff_score
