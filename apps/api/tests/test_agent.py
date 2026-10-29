@@ -395,6 +395,100 @@ class TestInterviewAgent:
             assert fake_client.aclose.await_count == 1
 
     @pytest.mark.asyncio
+    async def test_probe_phase_injects_cognitive_anticheat_directive_and_snapshot_code(
+        self, agent, mock_session, sample_interview, sample_vacancy, sample_problem
+    ):
+        """S-16: En fase PROBE el agente incorpora el código del candidato y la directiva anti-cheat."""
+        from unittest.mock import MagicMock
+
+        from sqlalchemy import ScalarResult
+
+        from src.db.models import Snapshot
+
+        sample_interview.phase = InterviewPhase.PROBE
+
+        snap = Snapshot(
+            id=uuid4(),
+            interview_id=sample_interview.id,
+            phase="CODING",
+            code="def find_pair(nums, target):\n    seen = set()\n    for x in nums:\n        if target - x in seen: return True\n        seen.add(x)\n    return False",
+            execution_status="passed",
+            tests_passed=3,
+            total_tests=3,
+            reason="run",
+        )
+
+        mock_turns_result = MagicMock(spec=ScalarResult)
+        mock_turns_result.all.return_value = []
+        mock_snap_result = MagicMock(spec=ScalarResult)
+        mock_snap_result.first.return_value = snap
+
+        mock_session.scalars.side_effect = [mock_turns_result, mock_snap_result]
+        mock_session.get = AsyncMock(side_effect=[sample_interview, sample_vacancy, sample_problem])
+
+        captured_messages = []
+
+        async def capture_complete(messages):
+            captured_messages.extend(messages)
+            return ChatCompletion(content="Explícame la complejidad O(N)", model="test", usage=TokenUsage())
+
+        agent._llm_client.complete = capture_complete
+
+        async for _ in agent.stream_response(
+            interview_id=sample_interview.id,
+            user_message="He terminado mi solución.",
+        ):
+            pass
+
+        system_msg = next(m for m in captured_messages if m.role == "system")
+        assert "DIRECTIVA ANTI-CHEAT COGNITIVO (FASE PROBE)" in system_msg.content
+        assert "complejidad computacional temporal y espacial O()" in system_msg.content
+        assert "casos de borde" in system_msg.content
+        assert "def find_pair" in system_msg.content
+        assert "<untrusted_candidate_input>" in system_msg.content
+        assert "Tests pasados: 3/3" in system_msg.content
+        # Cero PII del candidato en el prompt
+        assert sample_interview.candidate_name not in system_msg.content
+        assert sample_interview.candidate_email not in system_msg.content
+
+    @pytest.mark.asyncio
+    async def test_probe_phase_handles_missing_snapshot_gracefully(
+        self, agent, mock_session, sample_interview, sample_vacancy, sample_problem
+    ):
+        """S-16: En fase PROBE sin snapshots disponibles, se mantiene la directiva sin fallar."""
+        from unittest.mock import MagicMock
+
+        from sqlalchemy import ScalarResult
+
+        sample_interview.phase = InterviewPhase.PROBE
+
+        mock_turns_result = MagicMock(spec=ScalarResult)
+        mock_turns_result.all.return_value = []
+        mock_snap_result = MagicMock(spec=ScalarResult)
+        mock_snap_result.first.return_value = None
+
+        mock_session.scalars.side_effect = [mock_turns_result, mock_snap_result]
+        mock_session.get = AsyncMock(side_effect=[sample_interview, sample_vacancy, sample_problem])
+
+        captured_messages = []
+
+        async def capture_complete(messages):
+            captured_messages.extend(messages)
+            return ChatCompletion(content="¿Cómo estructuraste tu solución?", model="test", usage=TokenUsage())
+
+        agent._llm_client.complete = capture_complete
+
+        async for _ in agent.stream_response(
+            interview_id=sample_interview.id,
+            user_message="Listo para las preguntas.",
+        ):
+            pass
+
+        system_msg = next(m for m in captured_messages if m.role == "system")
+        assert "DIRECTIVA ANTI-CHEAT COGNITIVO (FASE PROBE)" in system_msg.content
+        assert "complejidad" in system_msg.content
+
+    @pytest.mark.asyncio
     async def test_candidate_turns_are_wrapped_and_sanitized_in_agent(
         self, agent, mock_session, sample_interview, sample_vacancy, sample_problem
     ):
