@@ -19,11 +19,12 @@ Evalúa cada dimensión con una puntuación entera de 1 a 5:
    - **1**: No comprende el problema; la solución es incorrecta o no se intenta.
 
 2. **algorithmic_reasoning** (Razonamiento lógico, algoritmos y estructuras de datos)
-   - **5**: Demuestra dominio de algoritmos y estructuras adecuados; código óptimo y eficiente.
-   - **4**: Usa algoritmos y estructuras adecuados; código correcto con pequeñas optimizaciones.
-   - **3**: Usa algoritmos/estructuras básicas; código funcional pero subóptimo.
-   - **2**: Usa algoritmos inadecuados o estructuras incorrectas; código con errores conceptuales.
-   - **1**: No usa algoritmos/estructuras apropiadas; código incorrecto fundamentalmente.
+   - **5**: Demuestra dominio de algoritmos y estructuras adecuados; código óptimo y eficiente; si enfrentó tests fallidos o errores, diagnosticó la causa con precisión y adaptó su solución sistemáticamente.
+   - **4**: Usa algoritmos y estructuras adecuados; código correcto con pequeñas optimizaciones; reaccionó constructivamente ante fallos en los tests.
+   - **3**: Usa algoritmos/estructuras básicas; código funcional pero subóptimo; resolvió fallos de forma tentativa o lenta.
+   - **2**: Usa algoritmos inadecuados o estructuras incorrectas; código con errores conceptuales; dificultades reiteradas para depurar fallos en los tests.
+   - **1**: No usa algoritmos/estructuras apropiadas; código incorrecto fundamentalmente; incapaz de reaccionar o depurar tests fallidos.
+   *Nota de trayectoria:* Si no hubo tests fallidos o todos pasaron en el primer intento, evalúa la solidez y corrección del razonamiento algorítmico sin penalizar al candidato por la ausencia de fallos.
 
 3. **code_quality** (Corrección, legibilidad y mantenibilidad)
    - **5**: Código impecable, legible, con nombres significativos, bien documentado y modular.
@@ -39,16 +40,19 @@ Evalúa cada dimensión con una puntuación entera de 1 a 5:
    - **2**: Dificultad para explicar decisiones; justificaciones incompletas o confusas.
    - **1**: No explica decisiones; no justifica trade-offs ni elecciones de diseño.
 
-5. **complexity_management** (Tratamiento de restricciones, casos límite y alternativas)
-   - **5**: Gestiona adecuadamente restricciones, casos límite y propone alternativas para todos los escenarios.
-   - **4**: Gestiona restricciones y casos límite principales; propone alternativas para escenarios comunes.
-   - **3**: Gestiona restricciones básicas; casos límite no tratados o alternativas limitadas.
-   - **2**: No gestiona restricciones adecuadamente; casos límite no considerados.
-   - **1**: Ignora restricciones; no considera casos límite ni propone alternativas.
+5. **complexity_management** (Tratamiento de restricciones, casos límite y evolución de complejidad)
+   - **5**: Gestiona adecuadamente restricciones y casos límite; demuestra optimización intencionada de complejidad temporal o espacial entre la solución inicial y la final.
+   - **4**: Gestiona restricciones y casos límite principales; propone alternativas eficientes para escenarios comunes.
+   - **3**: Gestiona restricciones básicas; casos límite no tratados o complejidad subóptima pero aceptable.
+   - **2**: No gestiona restricciones adecuadamente; complejidad temporal/espacial deficiente o regresiva.
+   - **1**: Ignora restricciones; no considera casos límite ni eficiencia algorítmica.
+   *Nota de complejidad:* Distingue entre mejora funcional (corregir errores para que los tests pasen) y mejora de complejidad demostrada (optimización de estructuras o algoritmos). No infieras Big-O a partir de diferencias superficiales de texto. Si la evidencia no es concluyente para determinar una mejora de complejidad, evalúa objetivamente las restricciones tratadas sin inventar métricas.
 
 ## REGLAS DE EVIDENCIA
 
-- Cada puntuación debe sustentarse con evidencia verificable del sistema.
+- Cada puntuación debe sustentarse con evidencia verificable del sistema (turnos o snapshots de la entrevista).
+- Puedes citar tanto `turn_id` como `snapshot_id` en el campo `turn_id` del JSON de evidencia.
+- Las citas de snapshots deben respaldar observaciones sobre la solución inicial, ejecuciones de prueba o el código final.
 - Las referencias a turnos, snapshots y ejecuciones deben pertenecer a la entrevista evaluada.
 - **NUNCA** inventar identificadores de turnos, snapshots o resultados de ejecución.
 - **NUNCA** citar contenido del candidato fuera de `<untrusted_candidate_input>`.
