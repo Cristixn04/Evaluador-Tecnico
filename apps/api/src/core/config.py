@@ -52,6 +52,10 @@ class Settings(BaseSettings):
         description="Intervalo de polling de submissions Judge0",
     )
     JUDGE0_MAX_POLLS: int = Field(default=50, description="Máximo de polls por submission")
+    JUDGE0_MAX_PROCESSES_AND_OR_THREADS: int = Field(
+        default=10,
+        description="Límite máximo de procesos/hilos por submission para mitigar fork bombs",
+    )
 
     # Seguridad JWT
     JWT_SECRET_KEY: str = Field(
