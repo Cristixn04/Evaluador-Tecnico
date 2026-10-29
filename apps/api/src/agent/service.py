@@ -14,7 +14,8 @@ from src.db.models import Interview, Turn
 from src.interview.service import InterviewService
 from src.llm.factory import create_llm_client, get_llm_client  # noqa: F401
 from src.llm.prompts import load_hints, load_phase_instructions, load_prompt
-from src.llm.types import ChatMessage, LLMClient, Role
+from src.llm.sanitizer import wrap_untrusted_input
+from src.llm.types import ChatMessage, LLMClient
 from src.problems.selector import ProblemSelector
 
 if TYPE_CHECKING:
@@ -115,11 +116,14 @@ class InterviewAgent:
             if turn.id == unreplied_turn_id:
                 continue
 
-            role: Role = "assistant" if turn.speaker == TurnSpeaker.AGENT else "user"
-            messages.append(ChatMessage(role=role, content=turn.content))
+            if turn.speaker == TurnSpeaker.AGENT:
+                messages.append(ChatMessage(role="assistant", content=turn.content))
+            else:
+                # Sanitizar y delimitar turnos previos del candidato para defensa de injection (S-17)
+                messages.append(ChatMessage(role="user", content=wrap_untrusted_input(turn.content)))
 
-        # Add current user message - wrap in untrusted tags for prompt injection defense
-        messages.append(ChatMessage(role="user", content=f"<untrusted_candidate_input>\n{user_message}\n</untrusted_candidate_input>"))
+        # Add current user message - wrap in untrusted tags for prompt injection defense (S-17)
+        messages.append(ChatMessage(role="user", content=wrap_untrusted_input(user_message)))
 
         # Stream response
         llm_client = await self._get_llm_client()
