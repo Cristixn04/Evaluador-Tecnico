@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-liquidacion-bre-b-inmediata",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.3,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.7,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 5,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Diseña la compensación neta multilateral en tiempo real para el sistema Bre-B entre 5 entidades financieras."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Modelaré las obligaciones como una matriz de adyacencia dirigida y aplicaré el algoritmo de cancelación de ciclos para reducir el flujo bruto requerido."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Qué algoritmo de optimización de flujo utilizas?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Reducción por componentes conexas y algoritmo simplex de redes / push-relabel para obtener la liquidación neta mínima."
+    }
+  ],
+  "final_code": "def net_multilateral_settlement(transactions):\n    balances = {}\n    for tx in transactions:\n        orig, dest, amt = tx['from'], tx['to'], tx['amount']\n        balances[orig] = balances.get(orig, 0) - amt\n        balances[dest] = balances.get(dest, 0) + amt\n    return balances\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 5,
+    "total_tests": 5
+  }
+}

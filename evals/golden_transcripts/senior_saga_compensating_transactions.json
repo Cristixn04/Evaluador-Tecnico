@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-orquestador-saga-compensacion",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.1,
+    4.9
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.5,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 5,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Implementa un orquestador Saga para una dispersión masiva de pagos con transacciones compensatorias en caso de fallo."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Estructuraré cada paso con una acción `execute` y una acción `compensate`. Si el paso N falla, ejecutaré en reversa (LIFO) de N-1 a 1."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Qué sucede si una acción de compensación falla en el camino de retroceso?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Debe persistirse el estado parcial en una cola de reintentos exponencial y marcarse para intervención manual en caso de superar el umbral."
+    }
+  ],
+  "final_code": "class SagaOrchestrator:\n    def __init__(self):\n        self.steps = []\n    def add_step(self, execute_fn, compensate_fn):\n        self.steps.append((execute_fn, compensate_fn))\n    async def run(self):\n        executed = []\n        for exe, comp in self.steps:\n            try:\n                await exe()\n                executed.append(comp)\n            except Exception:\n                for c in reversed(executed): await c()\n                raise\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 5,
+    "total_tests": 5
+  }
+}

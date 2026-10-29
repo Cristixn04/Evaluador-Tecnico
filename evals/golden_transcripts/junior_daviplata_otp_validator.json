@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-daviplata-otp-retries",
+  "expected_level": "junior",
+  "expected_overall_score_range": [
+    2.6,
+    3.6
+  ],
+  "expected_recommendation": "borderline",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 3.1,
+    "recommendation": "borderline",
+    "competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Verifica tokens OTP de 6 dígitos con límite de 3 intentos y expiración de 120 segundos."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Guardaré en un objeto el código y comparo el string de entrada."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Cómo evitas ataques de tiempo (timing attacks) al comparar los hashes de los tokens?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Usaré hmac.compare_digest para comparar en tiempo constante."
+    }
+  ],
+  "final_code": "import hmac, time\ndef verify_otp(session, input_code):\n    if time.time() > session['expires_at']:\n        return False, 'expired'\n    if session['attempts'] >= 3:\n        return False, 'locked'\n    session['attempts'] += 1\n    valid = hmac.compare_digest(session['code'], input_code)\n    return valid, 'ok' if valid else 'invalid'\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 4,
+    "total_tests": 4
+  }
+}

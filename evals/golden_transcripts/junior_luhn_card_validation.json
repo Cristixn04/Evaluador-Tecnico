@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-luhn-tarjetas",
+  "expected_level": "junior",
+  "expected_overall_score_range": [
+    2.8,
+    3.8
+  ],
+  "expected_recommendation": "borderline",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 3.3,
+    "recommendation": "borderline",
+    "competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Implementa el algoritmo de Luhn (módulo 10) para validar números de tarjetas Visa y Mastercard."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Duplicaré los dígitos en posiciones pares contando de derecha a izquierda y sumaré los dígitos."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Qué haces cuando la multiplicación por 2 supera 9?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Le resto 9 o sumo los dos dígitos del resultado, ambos dan el mismo número."
+    }
+  ],
+  "final_code": "def luhn_validate(card_number: str) -> bool:\n    digits = [int(c) for c in card_number if c.isdigit()]\n    if len(digits) < 13:\n        return False\n    checksum = 0\n    parity = len(digits) % 2\n    for i, d in enumerate(digits):\n        if i % 2 == parity:\n            d = d * 2\n            if d > 9: d -= 9\n        checksum += d\n    return checksum % 10 == 0\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 5,
+    "total_tests": 5
+  }
+}
