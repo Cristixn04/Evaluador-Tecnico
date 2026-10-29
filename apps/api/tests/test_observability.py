@@ -6,9 +6,12 @@ alertas de latencia y protección estricta Anti-Leak (S-26).
 import asyncio
 import logging
 import uuid
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+from sqlalchemy import ScalarResult
 
+from src.agent.service import InterviewAgent
 from src.core.config import settings
 from src.core.telemetry import (
     _sanitize_value,
@@ -21,6 +24,11 @@ from src.core.telemetry import (
     record_latency,
     tool_telemetry,
 )
+from src.db.enums import Difficulty, InterviewPhase
+from src.db.models import Interview, Problem, Vacancy
+from src.interview.service import InterviewService
+from src.llm.types import ChatCompletion, TokenUsage
+from src.problems.selector import ProblemSelector
 
 
 @pytest.fixture(autouse=True)
@@ -303,3 +311,185 @@ def test_anti_leak_prohibits_full_prompts_and_candidate_code(telemetry_caplog):
     assert "\n" not in sanitized_prompt
     assert len(sanitized_code) <= 60
     assert len(sanitized_prompt) <= 60
+
+
+# -----------------------------------------------------------------------------
+# 4. Tests de Integración Conversacional (F-S26-01)
+# -----------------------------------------------------------------------------
+
+@pytest.fixture
+def agent_test_setup():
+    """Configura un InterviewAgent con mocks para pruebas de turnos conversacionales."""
+    session = AsyncMock()
+    mock_scalar = MagicMock(spec=ScalarResult)
+    mock_scalar.all.return_value = []
+    session.scalars.return_value = mock_scalar
+    session.flush = AsyncMock()
+    session.add = MagicMock()
+
+    interview_id = uuid.uuid4()
+    vacancy_id = uuid.uuid4()
+    problem_id = uuid.uuid4()
+
+    interview = Interview(
+        id=interview_id,
+        vacancy_id=vacancy_id,
+        problem_id=problem_id,
+        candidate_name="Test Dev",
+        candidate_email="test.dev@example.com",
+        phase=InterviewPhase.CODING,
+    )
+    vacancy = Vacancy(id=vacancy_id, title="Backend Developer", raw_description="Backend Dev Role")
+    problem = Problem(
+        id=problem_id,
+        title="Test Problem",
+        scenario_preview="Solve this",
+        difficulty=Difficulty.JUNIOR,
+        language="python",
+    )
+
+    session.get = AsyncMock(side_effect=[interview, vacancy, problem])
+
+    mock_llm = AsyncMock()
+    mock_interview_service = MagicMock(spec=InterviewService)
+    mock_problem_selector = MagicMock(spec=ProblemSelector)
+
+    agent = InterviewAgent(session, mock_interview_service, mock_problem_selector, llm_client=mock_llm)
+    return agent, mock_llm, interview_id
+
+
+@pytest.mark.asyncio
+async def test_conversational_turn_records_interview_cost(agent_test_setup, telemetry_caplog):
+    """Caso 1: Un turno conversacional con prompt y completion tokens registra el coste."""
+    agent, mock_llm, interview_id = agent_test_setup
+
+    # 10,000 prompt, 2,000 completion en grok-4.6 -> $0.08
+    mock_llm.complete.return_value = ChatCompletion(
+        content="Respuesta del asistente",
+        model="grok-4.6",
+        usage=TokenUsage(prompt_tokens=10_000, completion_tokens=2_000, total_tokens=12_000),
+    )
+
+    chunks = []
+    async for chunk in agent.stream_response(interview_id, "Hola, tengo una pregunta"):
+        chunks.append(chunk)
+
+    assert "".join(chunks) == "Respuesta del asistente"
+
+    summary = get_interview_cost_summary(interview_id)
+    assert summary.call_count == 1
+    assert summary.total_input_tokens == 10_000
+    assert summary.total_output_tokens == 2_000
+    assert summary.total_tokens == 12_000
+    assert summary.total_estimated_cost == 0.08
+    assert summary.models == ["grok-4.6"]
+
+    # Verificar emisión estructurada en telemetría
+    cost_logs = [r.message for r in telemetry_caplog.records if "[METRICS:INTERVIEW_COST]" in r.message]
+    assert len(cost_logs) == 1
+    assert f"interview_id={interview_id}" in cost_logs[0]
+    assert "input_tokens=10000" in cost_logs[0]
+    assert "output_tokens=2000" in cost_logs[0]
+    assert "estimated_cost=0.080000" in cost_logs[0]
+
+
+@pytest.mark.asyncio
+async def test_conversational_turn_multiple_calls_accumulates_correctly(agent_test_setup):
+    """Caso 2: Múltiples turnos para una misma entrevista acumulan correctamente tokens y costes."""
+    agent, mock_llm, interview_id = agent_test_setup
+
+    # Turno 1
+    mock_llm.complete.return_value = ChatCompletion(
+        content="Respuesta 1",
+        model="grok-4.6",
+        usage=TokenUsage(prompt_tokens=5_000, completion_tokens=1_000, total_tokens=6_000),
+    )
+    async for _ in agent.stream_response(interview_id, "Mensaje 1"):
+        pass
+
+    # Turno 2 (reconfigurar side_effect de get para las entidades)
+    agent._session.get = AsyncMock(side_effect=[
+        Interview(id=interview_id, vacancy_id=uuid.uuid4(), problem_id=uuid.uuid4(), phase=InterviewPhase.CODING),
+        Vacancy(title="Backend Dev"),
+        Problem(title="Test Prob", scenario_preview="Preview", difficulty=Difficulty.JUNIOR, language="python"),
+    ])
+    mock_llm.complete.return_value = ChatCompletion(
+        content="Respuesta 2",
+        model="grok-4.6",
+        usage=TokenUsage(prompt_tokens=8_000, completion_tokens=1_500, total_tokens=9_500),
+    )
+    async for _ in agent.stream_response(interview_id, "Mensaje 2"):
+        pass
+
+    summary = get_interview_cost_summary(interview_id)
+    assert summary.call_count == 2
+    assert summary.total_input_tokens == 13_000
+    assert summary.total_output_tokens == 2_500
+    assert summary.total_tokens == 15_500
+    # Costo 1 = (5000*5 + 1000*15)/1e6 = 0.04
+    # Costo 2 = (8000*5 + 1500*15)/1e6 = 0.0625
+    # Total = 0.1025
+    assert summary.total_estimated_cost == pytest.approx(0.1025, rel=1e-5)
+
+
+@pytest.mark.asyncio
+async def test_conversational_turn_missing_usage_preserves_none(agent_test_setup):
+    """Caso 3: Proveedor sin datos de usage no genera métricas inventadas."""
+    agent, mock_llm, interview_id = agent_test_setup
+
+    mock_llm.complete.return_value = ChatCompletion(
+        content="Respuesta sin usage",
+        model="grok-4.6",
+        usage=TokenUsage(),  # prompt_tokens y completion_tokens son None
+    )
+    async for _ in agent.stream_response(interview_id, "Mensaje"):
+        pass
+
+    summary = get_interview_cost_summary(interview_id)
+    assert summary.call_count == 1
+    assert summary.total_input_tokens is None
+    assert summary.total_output_tokens is None
+    assert summary.total_tokens is None
+    assert summary.total_estimated_cost is None
+
+
+@pytest.mark.asyncio
+async def test_conversational_turn_unknown_model_preserves_none_cost(agent_test_setup):
+    """Caso 4: Modelo no registrado en pricing mantiene coste None pero preserva tokens."""
+    agent, mock_llm, interview_id = agent_test_setup
+
+    mock_llm.complete.return_value = ChatCompletion(
+        content="Respuesta modelo desconocido",
+        model="exotic-llm-v1",
+        usage=TokenUsage(prompt_tokens=1_000, completion_tokens=500, total_tokens=1_500),
+    )
+    async for _ in agent.stream_response(interview_id, "Mensaje"):
+        pass
+
+    summary = get_interview_cost_summary(interview_id)
+    assert summary.call_count == 1
+    assert summary.total_input_tokens == 1_000
+    assert summary.total_output_tokens == 500
+    assert summary.total_tokens == 1_500
+    assert summary.total_estimated_cost is None
+
+
+@pytest.mark.asyncio
+async def test_conversational_turn_anti_leak_no_candidate_code_or_prompt_in_logs(agent_test_setup, telemetry_caplog):
+    """Caso 5: No se registran prompts, respuestas completas ni código del candidato en telemetría."""
+    agent, mock_llm, interview_id = agent_test_setup
+
+    sensitive_code = "def secreto_candidato(): return 'CLAVE_SUPER_SECRETA_XYZ'"
+    mock_llm.complete.return_value = ChatCompletion(
+        content="Respuesta con análisis seguro",
+        model="grok-4.6",
+        usage=TokenUsage(prompt_tokens=500, completion_tokens=100, total_tokens=600),
+    )
+
+    async for _ in agent.stream_response(interview_id, f"Mira mi código: {sensitive_code}"):
+        pass
+
+    all_logs = " ".join(r.message for r in telemetry_caplog.records)
+    assert "CLAVE_SUPER_SECRETA_XYZ" not in all_logs
+    assert "secreto_candidato" not in all_logs
+    assert "Respuesta con análisis seguro" not in all_logs

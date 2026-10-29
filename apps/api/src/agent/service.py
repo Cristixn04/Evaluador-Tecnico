@@ -8,7 +8,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.telemetry import tool_telemetry
+from src.core.telemetry import async_measure_latency, record_interview_cost, tool_telemetry
 from src.db.enums import InterviewPhase, TurnSpeaker
 from src.db.models import Interview, Turn
 from src.interview.service import InterviewService
@@ -147,7 +147,7 @@ class InterviewAgent:
         llm_client = await self._get_llm_client()
         full_response = ""
 
-        async for chunk in self._stream_llm(llm_client, messages):
+        async for chunk in self._stream_llm(llm_client, messages, interview_id=interview_id):
             full_response += chunk
             yield chunk
 
@@ -300,11 +300,31 @@ class InterviewAgent:
 
         return prompt
 
-    async def _stream_llm(self, client: LLMClient, messages: list[ChatMessage]) -> AsyncGenerator[str, None]:
+    async def _stream_llm(
+        self,
+        client: LLMClient,
+        messages: list[ChatMessage],
+        interview_id: UUID | None = None,
+    ) -> AsyncGenerator[str, None]:
         """Stream response from LLM."""
         # For now, use a simple completion and yield chunks
         # In a real implementation, this would use the streaming API
-        completion = await client.complete(messages)
+        async with async_measure_latency(operation="llm_agent_complete", interview_id=interview_id):
+            completion = await client.complete(messages)
+
+        if interview_id is not None:
+            usage = completion.usage
+            in_tok = usage.prompt_tokens if usage else None
+            out_tok = usage.completion_tokens if usage else None
+            tot_tok = usage.total_tokens if usage else None
+            record_interview_cost(
+                interview_id=interview_id,
+                model=completion.model,
+                input_tokens=in_tok,
+                output_tokens=out_tok,
+                total_tokens=tot_tok,
+            )
+
         # Simulate streaming by yielding words
         words = completion.content.split()
         for i, word in enumerate(words):
