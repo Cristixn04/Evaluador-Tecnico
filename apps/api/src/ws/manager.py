@@ -22,6 +22,7 @@ from src.api.schemas.websocket import (
     ServerPhaseChangedMessage,
     ServerPongMessage,
 )
+from src.core.telemetry import async_measure_latency
 
 if TYPE_CHECKING:
     from src.agent.service import InterviewAgent
@@ -86,26 +87,31 @@ class MessageDispatcher:
         self._execution_service = execution_service
 
     async def dispatch(self, interview_id: UUID, raw_message: dict) -> None:
-        try:
-            message = self._parse_message(raw_message)
-        except ValidationError as e:
-            await self._manager.send_error(interview_id, "INVALID_MESSAGE", f"Invalid message format: {e}")
-            return
+        msg_type = raw_message.get("type", "unknown") if isinstance(raw_message, dict) else "unknown"
+        clean_msg_type = str(msg_type).strip() if msg_type else "unknown"
+        op_name = f"websocket_{clean_msg_type}"
 
-        if isinstance(message, ClientPingMessage):
-            await self._handle_ping(interview_id, message)
-        elif isinstance(message, ClientChatMessage):
-            await self._handle_chat(interview_id, message)
-        elif isinstance(message, ClientCodeSnapshotMessage):
-            await self._handle_code_snapshot(interview_id, message)
-        elif isinstance(message, ClientRunCodeMessage):
-            await self._handle_run_code(interview_id, message)
-        elif isinstance(message, ClientRequestPhaseTransitionMessage):
-            await self._handle_phase_transition(interview_id, message)
-        elif isinstance(message, ClientIntegrityEventMessage):
-            await self._handle_integrity_event(interview_id, message)
-        else:
-            await self._manager.send_error(interview_id, "UNKNOWN_MESSAGE_TYPE", "Unknown message type")
+        async with async_measure_latency(op_name, interview_id=interview_id):
+            try:
+                message = self._parse_message(raw_message)
+            except ValidationError as e:
+                await self._manager.send_error(interview_id, "INVALID_MESSAGE", f"Invalid message format: {e}")
+                return
+
+            if isinstance(message, ClientPingMessage):
+                await self._handle_ping(interview_id, message)
+            elif isinstance(message, ClientChatMessage):
+                await self._handle_chat(interview_id, message)
+            elif isinstance(message, ClientCodeSnapshotMessage):
+                await self._handle_code_snapshot(interview_id, message)
+            elif isinstance(message, ClientRunCodeMessage):
+                await self._handle_run_code(interview_id, message)
+            elif isinstance(message, ClientRequestPhaseTransitionMessage):
+                await self._handle_phase_transition(interview_id, message)
+            elif isinstance(message, ClientIntegrityEventMessage):
+                await self._handle_integrity_event(interview_id, message)
+            else:
+                await self._manager.send_error(interview_id, "UNKNOWN_MESSAGE_TYPE", "Unknown message type")
 
     def _parse_message(self, raw: dict) -> ClientWebSocketMessage:
         msg_type = raw.get("type")

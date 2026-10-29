@@ -29,6 +29,7 @@ from src.db.models import Interview, Problem, Vacancy
 from src.interview.service import InterviewService
 from src.llm.types import ChatCompletion, TokenUsage
 from src.problems.selector import ProblemSelector
+from src.ws.manager import MessageDispatcher
 
 
 @pytest.fixture(autouse=True)
@@ -493,3 +494,90 @@ async def test_conversational_turn_anti_leak_no_candidate_code_or_prompt_in_logs
     assert "CLAVE_SUPER_SECRETA_XYZ" not in all_logs
     assert "secreto_candidato" not in all_logs
     assert "Respuesta con análisis seguro" not in all_logs
+
+
+# -----------------------------------------------------------------------------
+# 5. Tests de Latencia de Dispatch WebSocket (F-S26-02)
+# -----------------------------------------------------------------------------
+
+@pytest.mark.asyncio
+async def test_websocket_dispatch_normal_latency_metric(telemetry_caplog):
+    """Prueba que el dispatch de un evento WebSocket bajo el umbral emite METRICS:LATENCY."""
+    manager = AsyncMock()
+    interview_service = MagicMock()
+    agent = AsyncMock()
+    exec_service = AsyncMock()
+    dispatcher = MessageDispatcher(manager, interview_service, agent, exec_service)
+
+    interview_id = uuid.uuid4()
+    await dispatcher.dispatch(interview_id, {"type": "ping", "client_timestamp": 123456})
+
+    logs = [r.message for r in telemetry_caplog.records if "[METRICS:LATENCY]" in r.message]
+    assert len(logs) >= 1
+    assert "operation=websocket_ping" in logs[0]
+    assert f"interview_id={interview_id}" in logs[0]
+    assert "threshold_ms=1000.00" in logs[0]
+
+
+@pytest.mark.asyncio
+async def test_websocket_dispatch_low_latency_no_alert(telemetry_caplog):
+    """Prueba que el dispatch normal no genera falsas alertas de latencia."""
+    manager = AsyncMock()
+    interview_service = MagicMock()
+    agent = AsyncMock()
+    exec_service = AsyncMock()
+    dispatcher = MessageDispatcher(manager, interview_service, agent, exec_service)
+
+    interview_id = uuid.uuid4()
+    await dispatcher.dispatch(interview_id, {"type": "ping", "client_timestamp": 123456})
+
+    alerts = [r.message for r in telemetry_caplog.records if "[ALERT:HIGH_LATENCY]" in r.message]
+    assert len(alerts) == 0
+
+
+@pytest.mark.asyncio
+async def test_websocket_dispatch_high_latency_alert(telemetry_caplog, monkeypatch):
+    """Prueba que el dispatch de un evento WebSocket que supera 1000ms emite ALERT:HIGH_LATENCY."""
+    manager = AsyncMock()
+    interview_service = MagicMock()
+    agent = AsyncMock()
+    exec_service = AsyncMock()
+    dispatcher = MessageDispatcher(manager, interview_service, agent, exec_service)
+
+    interview_id = uuid.uuid4()
+
+    # Simular retardo superior al umbral de 1000ms mediante mock determinista
+    clock_values = [100.0, 101.5]
+    monkeypatch.setattr("src.core.telemetry.time.perf_counter", lambda: clock_values.pop(0) if clock_values else 200.0)
+
+    await dispatcher.dispatch(interview_id, {"type": "ping", "client_timestamp": 123456})
+
+    alerts = [r.message for r in telemetry_caplog.records if "[ALERT:HIGH_LATENCY]" in r.message]
+    assert len(alerts) >= 1
+    assert "operation=websocket_ping" in alerts[0]
+    assert f"interview_id={interview_id}" in alerts[0]
+    assert "threshold_ms=1000.00" in alerts[0]
+    assert "duration_ms=1500.00" in alerts[0]
+
+
+@pytest.mark.asyncio
+async def test_websocket_dispatch_anti_leak_no_sensitive_payload_in_logs(telemetry_caplog):
+    """Prueba que los mensajes WebSocket con código o tokens no filtran contenido en telemetría."""
+    manager = AsyncMock()
+    interview_service = MagicMock()
+    agent = AsyncMock()
+    exec_service = AsyncMock()
+    dispatcher = MessageDispatcher(manager, interview_service, agent, exec_service)
+
+    interview_id = uuid.uuid4()
+    secret_code = "def secreto_super_confidencial(): pass"
+    await dispatcher.dispatch(interview_id, {
+        "type": "run_code",
+        "code": secret_code,
+        "language": "python",
+    })
+
+    all_logs = " ".join(r.message for r in telemetry_caplog.records)
+    assert "secreto_super_confidencial" not in all_logs
+    assert "def " not in all_logs
+    assert "operation=websocket_run_code" in all_logs
