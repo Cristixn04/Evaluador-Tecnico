@@ -478,7 +478,7 @@ class TestAutomaticEvaluationOnClosure:
         )
 
         with patch("src.llm.factory.create_llm_client", return_value=mock_llm):
-            task = schedule_automatic_evaluation(interview.id)
+            task = schedule_automatic_evaluation(interview.id, enqueue_durable=False)
             await task
             await wait_for_automatic_evaluations()
 
@@ -533,7 +533,7 @@ class TestAutomaticEvaluationOnClosure:
 
         with patch("src.llm.factory.create_llm_client", return_value=mock_llm):
             service = EvaluationService(db_session)
-            bg_task = schedule_automatic_evaluation(interview.id)
+            bg_task = schedule_automatic_evaluation(interview.id, enqueue_durable=False)
             sync_coro = service.evaluate(interview.id)
 
             res_bg, res_sync = await asyncio.gather(bg_task, sync_coro)

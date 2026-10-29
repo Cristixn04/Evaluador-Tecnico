@@ -8,6 +8,8 @@ import uuid
 from datetime import UTC, datetime
 from typing import Any, ClassVar, Literal, cast
 
+from redis.exceptions import RedisError
+
 # anext no está disponible en asyncio namespace en este entorno;
 # usaremos create_llm_client() directamente
 from sqlalchemy import select
@@ -27,6 +29,7 @@ from src.db.models import Interview, Snapshot, Turn
 from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
 from src.db.session import get_session_maker
 from src.evaluation.pricing import calculate_dual_judge_cost
+from src.evaluation.queue import BrokerConnectionError, evaluation_queue
 from src.llm import factory as llm_factory
 from src.llm.exceptions import LLMInvalidResponseError, LLMTimeoutError
 from src.llm.prompts import load_prompt
@@ -907,7 +910,29 @@ class EvaluationService:
 async def _run_background_evaluation(interview_id: uuid.UUID) -> EvaluationReport | None:
     """Ejecuta la evaluación automática en una sesión de base de datos dedicada y aislada."""
     logger.info("Automatic evaluation started for interview_id=%s", interview_id)
+    runner_id = f"local-runner-{uuid.uuid4().hex[:8]}"
+    lock_acquired = False
+
+    # Intentar adquirir lock distribuido para sincronizar con el worker ARQ u otros procesos
+    try:
+        lock_acquired = await evaluation_queue.acquire_lock(interview_id, runner_id, ttl_seconds=300)
+        if not lock_acquired:
+            logger.warning(
+                "Runner local omitió evaluación de interview_id=%s: lock distribuido activo en worker/runner",
+                interview_id,
+            )
+            return None
+    except (BrokerConnectionError, RedisError, OSError) as e:
+        logger.debug("Redis no disponible para lock distribuido en runner local (modo aislado/test): %s", e)
+
     session_maker = get_session_maker()
+
+    # Intentar registrar status in_progress en Redis
+    try:
+        await evaluation_queue.set_evaluation_status(interview_id, status="in_progress")
+    except (BrokerConnectionError, RedisError, OSError) as e:
+        logger.debug("No se pudo emitir status in_progress en Redis: %s", e)
+
     try:
         async with session_maker() as session:
             service = EvaluationService(session)
@@ -919,19 +944,62 @@ async def _run_background_evaluation(interview_id: uuid.UUID) -> EvaluationRepor
                 report.recommendation,
                 report.needs_human_review,
             )
+
+            # Notificar completed en Redis
+            try:
+                await evaluation_queue.set_evaluation_status(
+                    interview_id,
+                    status="completed",
+                    metadata={
+                        "report_id": getattr(report, "id", None),
+                        "overall_score": getattr(report, "overall_score", 0.0),
+                        "recommendation": getattr(report, "recommendation", "borderline"),
+                        "needs_human_review": getattr(report, "needs_human_review", False),
+                    },
+                )
+            except (BrokerConnectionError, RedisError, OSError) as e:
+                logger.debug("No se pudo emitir status completed en Redis: %s", e)
+
             return report
-    except Exception:
+    except Exception as exc:
         logger.exception(
             "Automatic evaluation failed unexpectedly for interview_id=%s",
             interview_id,
         )
+        try:
+            await evaluation_queue.set_evaluation_status(
+                interview_id,
+                status="failed",
+                metadata={"error": str(exc)},
+            )
+        except (BrokerConnectionError, RedisError, OSError) as e:
+            logger.debug("No se pudo emitir status failed en Redis: %s", e)
         return None
+    finally:
+        if lock_acquired:
+            try:
+                await evaluation_queue.release_lock(interview_id, runner_id)
+            except (BrokerConnectionError, RedisError, OSError) as e:
+                logger.warning("Fallo al liberar lock distribuido en Redis para interview_id=%s: %s", interview_id, e)
 
 
 def schedule_automatic_evaluation(
     interview_id: str | uuid.UUID,
-) -> asyncio.Task[EvaluationReport | None]:
-    """Programa la evaluación automática como background task sin bloquear el WebSocket."""
+    *,
+    enqueue_durable: bool = True,
+) -> asyncio.Task[Any]:
+    """Programa la evaluación automática de una entrevista.
+
+    En modo durable (enqueue_durable=True, por defecto):
+    - Encola el trabajo en Redis/ARQ de forma determinista ('eval:{interview_id}').
+    - NO ejecuta la evaluación localmente ni invoca al LLM desde el proceso API.
+    - Si el broker Redis falla, propaga explícitamente BrokerConnectionError (sin fallback silencioso).
+    - El trabajo será procesado de forma asíncrona por el worker ARQ independiente.
+
+    En modo in-process (enqueue_durable=False, explícito para tests unitarios / desarrollo offline):
+    - Ejecuta `_run_background_evaluation` localmente en sesión aislada.
+    - Respeta el lock distribuido de Redis si está disponible.
+    """
     interview_uuid = (
         interview_id if isinstance(interview_id, uuid.UUID) else uuid.UUID(str(interview_id))
     )
@@ -942,13 +1010,27 @@ def schedule_automatic_evaluation(
             logger.info("Automatic evaluation already active for interview_id=%s", interview_uuid)
             return existing
 
-    task: asyncio.Task[EvaluationReport | None] = asyncio.create_task(
-        _run_background_evaluation(interview_uuid),
-        name=task_name,
-    )
+    task: asyncio.Task[Any]
+    if enqueue_durable:
+        async def _durable_enqueuer() -> str:
+            # Encolar en Redis/ARQ. Si falla el broker, se propaga BrokerConnectionError
+            # SIN fallback silencioso a ejecución local.
+            job_id = await evaluation_queue.enqueue_evaluation(interview_uuid)
+            logger.info("Evaluación encolada durablemente en ARQ: interview_id=%s job_id=%s", interview_uuid, job_id)
+            return job_id
+
+        task = asyncio.create_task(_durable_enqueuer(), name=task_name)
+    else:
+        async def _in_process_runner() -> EvaluationReport | None:
+            # Modo explícito in-process para tests / desarrollo local sin worker
+            return await _run_background_evaluation(interview_uuid)
+
+        task = asyncio.create_task(_in_process_runner(), name=task_name)
+
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
     return task
+
 
 
 async def wait_for_automatic_evaluations() -> None:
