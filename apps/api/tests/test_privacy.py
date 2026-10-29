@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select
 
 from src.core.security import create_access_token, hash_password
 from src.db.enums import InterviewPhase, InterviewStatus, Seniority, TurnSpeaker, UserRole
@@ -13,7 +14,13 @@ from src.db.models import (
     User,
     Vacancy,
 )
-from src.db.models.interview import Snapshot, Turn
+from src.db.models.interview import (
+    Evaluation,
+    EvaluationDimension,
+    EvaluationEvidence,
+    Snapshot,
+    Turn,
+)
 from src.main import app
 
 
@@ -92,6 +99,18 @@ async def test_revoke_consent_valid_invitation(db_session):
     await db_session.refresh(interview)
     assert interview.status == InterviewStatus.CANCELLED
 
+    # Reintento de revocatoria: debe responder 200 y mantenerse cancelada de forma idempotente
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response2 = await client.post(
+            "/privacy/consent/revoke",
+            json={"invitation_token": raw_token},
+        )
+        assert response2.status_code == 200
+        assert response2.json()["status"] == "revoked"
+
+    await db_session.refresh(interview)
+    assert interview.status == InterviewStatus.CANCELLED
+
 
 @pytest.mark.asyncio
 async def test_delete_candidate_data(db_session):
@@ -155,6 +174,189 @@ async def test_delete_candidate_data(db_session):
 
     await db_session.refresh(interview)
     assert interview.status == InterviewStatus.CANCELLED
+    assert interview.candidate_name.startswith("CAND-ANON-")
+    assert "anon-" in interview.candidate_email
+
+
+@pytest.mark.asyncio
+async def test_cascading_deletion_with_evaluations_and_evidences(db_session):
+    """S-20: La eliminación en cascada purga evaluaciones, dimensiones, evidencias, turns y snapshots."""
+    org = Organization(name="Cascading Org")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(
+        email="admin_cascade@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    membership = Membership(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    db_session.add(membership)
+    await db_session.flush()
+
+    token = create_access_token(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    vacancy = Vacancy(
+        title="Cascading Test Vacancy",
+        role_category="Backend",
+        seniority=Seniority.MID,
+        raw_description="Pruebas de borrado profundo",
+    )
+    db_session.add(vacancy)
+    await db_session.flush()
+
+    interview = Interview(
+        vacancy_id=vacancy.id,
+        candidate_email="pedro.perez@example.com",
+        candidate_name="Pedro Pérez Gómez",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview)
+    await db_session.flush()
+
+    turn1 = Turn(
+        interview_id=interview.id,
+        speaker=TurnSpeaker.CANDIDATE,
+        content="Mi código de solución",
+    )
+    db_session.add(turn1)
+
+    snap1 = Snapshot(
+        interview_id=interview.id,
+        phase="CODING",
+        code="def solve(): return 1",
+    )
+    db_session.add(snap1)
+    await db_session.flush()
+
+    evaluation = Evaluation(
+        interview_id=interview.id,
+        overall_score=4.5,
+        recommendation="hire",
+        needs_human_review=False,
+        evaluated_at=datetime.now(UTC),
+    )
+    db_session.add(evaluation)
+    await db_session.flush()
+
+    dim1 = EvaluationDimension(
+        evaluation_id=evaluation.id,
+        name="problem_solving",
+        score=5,
+        reasoning="Excelente",
+    )
+    db_session.add(dim1)
+
+    ev1 = EvaluationEvidence(
+        evaluation_id=evaluation.id,
+        dimension_name="problem_solving",
+        quote="solve(): return 1",
+        reasoning="Código claro",
+        turn_id=turn1.id,
+        snapshot_id=snap1.id,
+    )
+    db_session.add(ev1)
+    await db_session.commit()
+
+    # Ejecutar DELETE
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            f"/privacy/candidates/{interview.id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "deleted"
+        assert data["records_deleted"] >= 5
+
+    # Verificar que no existen registros huérfanos
+    evals_left = (await db_session.execute(select(Evaluation).where(Evaluation.interview_id == interview.id))).scalars().all()
+    assert len(evals_left) == 0
+
+    dims_left = (await db_session.execute(select(EvaluationDimension).where(EvaluationDimension.evaluation_id == evaluation.id))).scalars().all()
+    assert len(dims_left) == 0
+
+    evs_left = (await db_session.execute(select(EvaluationEvidence).where(EvaluationEvidence.evaluation_id == evaluation.id))).scalars().all()
+    assert len(evs_left) == 0
+
+    turns_left = (await db_session.execute(select(Turn).where(Turn.interview_id == interview.id))).scalars().all()
+    assert len(turns_left) == 0
+
+    snaps_left = (await db_session.execute(select(Snapshot).where(Snapshot.interview_id == interview.id))).scalars().all()
+    assert len(snaps_left) == 0
+
+    # Entrevista anonimizada y cancelada
+    await db_session.refresh(interview)
+    assert interview.status == InterviewStatus.CANCELLED
+    assert "pedro.perez" not in interview.candidate_email
+    assert "Pedro Pérez" not in interview.candidate_name
+
+    # Ejecutar DELETE por segunda vez (idempotencia y manejo seguro ante re-intentos)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response2 = await client.delete(
+            f"/privacy/candidates/{interview.id}",
+            headers=auth_headers,
+        )
+        assert response2.status_code == 200
+        data2 = response2.json()
+        assert data2["status"] == "deleted"
+        assert data2["records_deleted"] == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_candidate_nonexistent_returns_404(db_session):
+    """S-20: Intentar eliminar un candidato inexistente retorna HTTP 404."""
+    from uuid import uuid4
+
+    org = Organization(name="404 Org")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(
+        email="admin_404@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    membership = Membership(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    db_session.add(membership)
+    await db_session.commit()
+
+    token = create_access_token(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.ADMIN,
+    )
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            f"/privacy/candidates/{uuid4()}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 404
 
 
 @pytest.mark.asyncio
