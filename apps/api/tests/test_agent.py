@@ -530,3 +530,68 @@ class TestInterviewAgent:
             assert u.content.count("</untrusted_candidate_input>") == 1
             assert "<system>" not in u.content
             assert "[INST]" not in u.content
+
+    @pytest.mark.asyncio
+    async def test_stream_response_interview_not_found(self, agent, mock_session):
+        """Verifica que si la entrevista no existe, stream_response termina inmediatamente sin tokens."""
+        mock_session.get.return_value = None
+        chunks = [
+            chunk
+            async for chunk in agent.stream_response(
+                interview_id=uuid4(),
+                user_message="Hola",
+            )
+        ]
+        assert len(chunks) == 0
+
+    @pytest.mark.asyncio
+    async def test_maybe_deliver_hint_thresholds_and_max_level(self, agent, sample_interview):
+        """Verifica las ramas de nivel máximo, falta de turnos e inactividad no superada."""
+        # 1. Nivel máximo alcanzado (hint_level >= 3)
+        sample_interview.hint_level = 3
+        assert await agent._maybe_deliver_hint(sample_interview, InterviewPhase.CODING) is False
+
+        # 2. Sin turnos previos de candidato
+        sample_interview.hint_level = 0
+        sample_interview.turns = []
+        assert await agent._maybe_deliver_hint(sample_interview, InterviewPhase.CODING) is False
+
+        # 3. Inactividad no superada (hace 5 segundos, umbral nivel 0 es 60s)
+        recent_turn = Turn(
+            id=uuid4(),
+            interview_id=sample_interview.id,
+            speaker=TurnSpeaker.CANDIDATE,
+            content="Pensando...",
+            created_at=datetime.now(UTC) - timedelta(seconds=5),
+        )
+        sample_interview.turns = [recent_turn]
+        assert await agent._maybe_deliver_hint(sample_interview, InterviewPhase.CODING) is False
+
+    @pytest.mark.asyncio
+    async def test_maybe_deliver_hint_success_and_exception_handling(
+        self, agent, mock_session, sample_interview
+    ):
+        """Verifica entrega exitosa de hint con persistencia y manejo de error con rollback."""
+        old_turn = Turn(
+            id=uuid4(),
+            interview_id=sample_interview.id,
+            speaker=TurnSpeaker.CANDIDATE,
+            content="No sé cómo continuar",
+            created_at=datetime.now(UTC) - timedelta(seconds=180),
+        )
+        sample_interview.hint_level = 0
+        sample_interview.turns = [old_turn]
+
+        # Entrega exitosa
+        result = await agent._maybe_deliver_hint(sample_interview, InterviewPhase.CODING)
+        assert result is True
+        assert sample_interview.hint_level == 1
+        assert sample_interview.last_hint_at is not None
+        mock_session.flush.assert_awaited()
+
+        # Excepción y rollback al fallar el flush
+        sample_interview.hint_level = 0
+        mock_session.flush.side_effect = RuntimeError("DB connection failure")
+        with pytest.raises(RuntimeError, match="DB connection failure"):
+            await agent._maybe_deliver_hint(sample_interview, InterviewPhase.CODING)
+        mock_session.rollback.assert_awaited()
