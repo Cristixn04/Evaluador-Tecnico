@@ -1,0 +1,38 @@
+# Pre-commit configuration for Evaluador Técnico Backend
+# Instalar hooks: pre-commit install
+# Ejecutar manualmente: pre-commit run --all-files
+
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: ^plan_evaluador_tecnico\.md$
+      - id: end-of-file-fixer
+        exclude: ^plan_evaluador_tecnico\.md$
+      - id: check-yaml
+        args: [--unsafe]
+        exclude: ^plan_evaluador_tecnico\.md$
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.0
+    hooks:
+      - id: ruff
+        name: ruff check (backend)
+        args: [--config, apps/api/pyproject.toml]
+        files: ^apps/api/
+
+  - repo: local
+    hooks:
+      - id: mypy-backend
+        name: mypy (apps/api/src)
+        entry: bash -c "cd apps/api && if [ -x .venv/bin/mypy ]; then .venv/bin/mypy src; else mypy src; fi"
+        language: system
+        types: [python]
+        files: ^apps/api/src/
+        pass_filenames: false
