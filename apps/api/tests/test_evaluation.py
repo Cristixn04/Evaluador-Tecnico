@@ -1801,3 +1801,37 @@ async def test_s12_evidence_isolation_rejects_foreign_interview_evidence(
     validated = await service._validate_evidence(sample_interview, raw_evidence)
     # Deben ser rechazados completamente
     assert len(validated) == 0
+
+
+def test_evaluation_dimension_schema_validation_boundaries():
+    """Verifica validación en límites (1 a 5) del schema Pydantic v2 EvaluationDimension (S-11)."""
+    from pydantic import ValidationError
+
+    from src.api.schemas.evaluation import EvaluationDimension as EvaluationDimensionSchema
+
+    # Casos válidos: límites 1 y 5, y valor intermedio 3
+    dim_min = EvaluationDimensionSchema(name="problem_solving", score=1, reasoning="Mínimo aceptado")
+    assert dim_min.score == 1
+
+    dim_max = EvaluationDimensionSchema(name="code_quality", score=5, reasoning="Máximo aceptado")
+    assert dim_max.score == 5
+
+    dim_mid = EvaluationDimensionSchema(name="technical_communication", score=3, reasoning="Intermedio")
+    assert dim_mid.score == 3
+
+    # Caso inválido: score inferior al mínimo (0)
+    with pytest.raises(ValidationError) as exc_info:
+        EvaluationDimensionSchema(name="problem_solving", score=0)
+    errors = exc_info.value.errors()
+    assert any("Score must be between 1 and 5" in str(err) or "greater than or equal to 1" in str(err) for err in errors)
+
+    # Caso inválido: score negativo (-1)
+    with pytest.raises(ValidationError):
+        EvaluationDimensionSchema(name="problem_solving", score=-1)
+
+    # Caso inválido: score superior al máximo (6)
+    with pytest.raises(ValidationError) as exc_info:
+        EvaluationDimensionSchema(name="problem_solving", score=6)
+    errors = exc_info.value.errors()
+    assert any("Score must be between 1 and 5" in str(err) or "less than or equal to 5" in str(err) for err in errors)
+

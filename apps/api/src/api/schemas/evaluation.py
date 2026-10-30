@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class EvaluationDimension(BaseModel):
@@ -12,8 +12,9 @@ class EvaluationDimension(BaseModel):
     score: int = Field(..., ge=1, le=5, description="Puntuación de 1 a 5")
     reasoning: str | None = Field(None, description="Justificación de la puntuación")
 
-    @validator("score")
-    def validate_score_range(cls, v):
+    @field_validator("score")
+    @classmethod
+    def validate_score_range(cls, v: int) -> int:
         if v < 1 or v > 5:
             raise ValueError("Score must be between 1 and 5")
         return v
