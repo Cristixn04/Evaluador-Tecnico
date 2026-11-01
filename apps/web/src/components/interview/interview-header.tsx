@@ -165,7 +165,7 @@ export function InterviewHeader({
         {/* Timer */}
         <div
           role="timer"
-          aria-label={`Tiempo restante: ${formatTime(timeRemainingSeconds)}`}
+          aria-label={`Tiempo restante de evaluación: ${formatTime(timeRemainingSeconds)}`}
           className="flex items-center gap-1.5 bg-muted/30 border border-border/50 px-2.5 py-1 rounded-md font-mono text-xs"
         >
           <Clock aria-hidden="true" className={`h-3.5 w-3.5 ${timeRemainingSeconds < 300 ? "text-destructive animate-pulse" : "text-primary"}`} />
@@ -179,7 +179,7 @@ export function InterviewHeader({
           <Button
             size="sm"
             onClick={() => onTransitionPhase(nextTransition.target)}
-            aria-label={`Avanzar fase: ${nextTransition.label}`}
+            aria-label={`Avanzar a fase: ${nextTransition.label}`}
             className="h-8 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm focus-visible:ring-2"
           >
             <span>{nextTransition.label}</span>
@@ -192,11 +192,12 @@ export function InterviewHeader({
           <Button
             size="sm"
             id="finish-interview-btn"
+            aria-label="Entregar solución y finalizar formalmente la entrevista técnica"
             onClick={() => setShowConfirmModal(true)}
             disabled={isSubmitting || (connectionStatus !== "connected" && connectionStatus !== "simulated")}
             className="h-8 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm font-semibold cursor-pointer"
           >
-            <CheckCircle className="h-3.5 w-3.5" />
+            <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
             <span>Entregar y Finalizar Entrevista</span>
           </Button>
         )}
@@ -211,14 +212,18 @@ export function InterviewHeader({
       >
         <div
           id="closure-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="closure-modal-title"
+          aria-describedby="closure-modal-description"
           className="bg-card border border-border rounded-xl shadow-2xl max-w-md w-full p-6 space-y-4"
         >
           <div className="flex items-center gap-3 text-amber-500">
-            <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0" aria-hidden="true">
               <AlertTriangle className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-foreground">
+              <h3 id="closure-modal-title" className="font-bold text-base text-foreground">
                 ¿Confirmas la entrega definitiva?
               </h3>
               <p className="text-xs text-muted-foreground">
@@ -227,7 +232,7 @@ export function InterviewHeader({
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground leading-relaxed">
+          <p id="closure-modal-description" className="text-xs text-muted-foreground leading-relaxed">
             Al confirmar, tu sesión se dará por <strong>finalizada formalmente</strong>. No podrás volver a editar tu solución, ejecutar pruebas ni enviar mensajes adicionales en el chat. Esta acción es <strong>definitiva</strong>.
           </p>
 
@@ -236,6 +241,7 @@ export function InterviewHeader({
               variant="outline"
               size="sm"
               id="cancel-closure-btn"
+              aria-label="Cancelar entrega y continuar en fase de cierre"
               onClick={() => setShowConfirmModal(false)}
               disabled={isSubmitting}
               className="text-xs cursor-pointer"
@@ -245,6 +251,7 @@ export function InterviewHeader({
             <Button
               size="sm"
               id="confirm-closure-btn"
+              aria-label="Confirmar entrega definitiva y solicitar evaluación"
               onClick={() => {
                 if (isSubmitting) return;
                 setIsSubmitting(true);
@@ -255,12 +262,12 @@ export function InterviewHeader({
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                   <span>Entregando...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-3.5 w-3.5" />
+                  <CheckCircle className="h-3.5 w-3.5" aria-hidden="true" />
                   <span>Confirmar y Finalizar</span>
                 </>
               )}

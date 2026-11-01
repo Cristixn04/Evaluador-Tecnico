@@ -169,12 +169,17 @@ export const handlers = [
     const shortLivedWsToken = `ws_jwt_${Math.random().toString(36).substring(2, 12)}`;
     const wsUrl = `ws://localhost:8000/api/v1/interviews/sess-live-999/live`;
 
+    // Soporte para pruebas E2E: Si el token incluye 'wrapup', la sesión rehidrata en WRAPUP
+    const isWrapup = token.toLowerCase().includes("wrapup");
+    const currentPhase = isWrapup ? "WRAPUP" : "INTRO";
+    const sessionStatus = isWrapup ? "in_progress" : "pending";
+
     return HttpResponse.json({
       session_id: "sess-live-999",
       masked_candidate_id: "CAND-7F2A",
       vacancy_title: "Senior Backend Engineer (Python / FastAPI)",
-      current_phase: "INTRO",
-      status: "pending",
+      current_phase: currentPhase,
+      status: sessionStatus,
       problem: {
         id: "prob-pse-conciliacion",
         title: "Conciliación de Pagos PSE y Liquidación Bancaria",

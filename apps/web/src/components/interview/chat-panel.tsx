@@ -133,6 +133,7 @@ export function ChatPanel({
         {isStreaming && (
           <div
             role="status"
+            aria-live="polite"
             aria-label="El entrevistador está escribiendo"
             className="flex items-center gap-2 text-xs text-muted-foreground italic pl-9 animate-pulse"
           >
@@ -171,6 +172,7 @@ export function ChatPanel({
         className="p-3 border-t border-border/50 bg-card/60 flex items-center gap-2"
       >
         <Input
+          id="chat-input-field"
           placeholder="Escribe tu pregunta o razonamiento..."
           aria-label="Escribe tu pregunta o razonamiento para el evaluador"
           value={inputText}
@@ -179,10 +181,11 @@ export function ChatPanel({
           className="text-xs h-9 bg-background focus-visible:ring-2 focus-visible:ring-primary"
         />
         <Button
+          id="chat-submit-btn"
           type="submit"
           size="sm"
-          disabled={isStreaming || !inputText.trim()}
           aria-label="Enviar mensaje al evaluador"
+          disabled={isStreaming || !inputText.trim()}
           className="h-9 px-3 shrink-0 gap-1 focus-visible:ring-2"
         >
           <Send className="h-3.5 w-3.5" aria-hidden="true" />

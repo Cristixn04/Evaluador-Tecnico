@@ -290,7 +290,9 @@ function InterviewContent() {
               <div className="pt-2 border-t border-border/60">
                 <label className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/60 transition-colors">
                   <input
+                    id="consent-checkbox"
                     type="checkbox"
+                    aria-label="Autorización expresa de tratamiento de datos bajo Ley 1581 de 2012"
                     checked={consentAccepted}
                     onChange={(e) => setConsentAccepted(e.target.checked)}
                     className="mt-1 h-4 w-4 rounded border-slate-700 text-primary focus:ring-primary cursor-pointer accent-primary shrink-0"
@@ -304,13 +306,14 @@ function InterviewContent() {
 
             <CardFooter className="pt-2">
               <Button
+                id="start-interview-btn"
                 size="lg"
                 className="w-full gap-2 text-sm font-semibold"
                 onClick={handleStartInterview}
                 disabled={!consentAccepted}
               >
                 <span>Entiendo las Reglas y Deseo Comenzar</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </CardFooter>
           </Card>
@@ -398,9 +401,13 @@ function InterviewContent() {
         {/* Left Panel: Chat & Problem Tabs (45% width) */}
         <div className="w-full md:w-[45%] lg:w-[42%] flex flex-col border-r border-border/50 h-full overflow-hidden bg-card/30">
           {/* Tab Selector */}
-          <div className="h-10 px-4 bg-muted/20 border-b border-border/40 flex items-center gap-2 shrink-0">
+          <div role="tablist" aria-label="Paneles de contenido" className="h-10 px-4 bg-muted/20 border-b border-border/40 flex items-center gap-2 shrink-0">
             <button
+              id="tab-chat"
+              role="tab"
               type="button"
+              aria-selected={activeLeftTab === "chat"}
+              aria-controls="panel-left-content"
               onClick={() => setActiveLeftTab("chat")}
               className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 activeLeftTab === "chat"
@@ -408,15 +415,19 @@ function InterviewContent() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <MessageSquare className="h-3.5 w-3.5" />
+              <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Chat con el Evaluador</span>
               {socket.isStreaming && (
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" aria-hidden="true" />
               )}
             </button>
 
             <button
+              id="tab-problem"
+              role="tab"
               type="button"
+              aria-selected={activeLeftTab === "problem"}
+              aria-controls="panel-left-content"
               onClick={() => setActiveLeftTab("problem")}
               className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 activeLeftTab === "problem"
@@ -424,13 +435,18 @@ function InterviewContent() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <FileText className="h-3.5 w-3.5" />
+              <FileText className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Enunciado del Problema</span>
             </button>
           </div>
 
           {/* Panel Content */}
-          <div className="flex-1 overflow-hidden">
+          <div
+            id="panel-left-content"
+            role="tabpanel"
+            aria-labelledby={activeLeftTab === "chat" ? "tab-chat" : "tab-problem"}
+            className="flex-1 overflow-hidden"
+          >
             {activeLeftTab === "chat" ? (
               <ChatPanel
                 messages={socket.messages}

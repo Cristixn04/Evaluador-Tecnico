@@ -283,6 +283,8 @@ export default function DemoPage() {
           <div className="hidden md:flex items-center gap-2">
             <span className="text-xs text-slate-400">Problema:</span>
             <select
+              id="demo-problem-select"
+              aria-label="Seleccionar problema de evaluación"
               value={selectedProblem.id}
               onChange={(e) => {
                 const found = DEMO_PROBLEMS.find((p) => p.id === e.target.value);
@@ -432,13 +434,19 @@ export default function DemoPage() {
               <div className="p-3 border-t border-slate-800/80 bg-slate-900/70 flex gap-2">
                 <input
                   type="text"
+                  aria-label="Escribe tu mensaje para el evaluador técnico"
                   placeholder="Pregúntale al agente o explica tu enfoque..."
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                   className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-cyan-500"
                 />
-                <Button size="sm" onClick={handleSendMessage} className="bg-cyan-600 hover:bg-cyan-500 px-3">
+                <Button
+                  size="sm"
+                  aria-label="Enviar mensaje al evaluador"
+                  onClick={handleSendMessage}
+                  className="bg-cyan-600 hover:bg-cyan-500 px-3"
+                >
                   <Send className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -458,6 +466,7 @@ export default function DemoPage() {
               <div className="flex items-center gap-2">
                 <Button
                   size="sm"
+                  aria-label="Ejecutar pruebas unitarias en sandbox"
                   onClick={handleRunTests}
                   className="bg-emerald-600 hover:bg-emerald-500 text-white text-xs h-7 px-3 gap-1.5"
                 >

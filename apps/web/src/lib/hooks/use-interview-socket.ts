@@ -390,6 +390,21 @@ export function useInterviewSocket({
           };
           socketRef.current.send(JSON.stringify(payload));
         }
+      } else if (process.env.NEXT_PUBLIC_ENABLE_MOCKS === "true") {
+        if (targetPhase !== "INTRO") {
+          setTimeout(() => {
+            setPhase(targetPhase);
+            setMessages((prev) => [
+              ...prev,
+              {
+                id: `turn-sys-${Date.now()}`,
+                speaker: "system",
+                content: `Fase confirmada: ${targetPhase}.`,
+                timestamp: Date.now(),
+              },
+            ]);
+          }, 200);
+        }
       }
     },
     []

@@ -109,12 +109,15 @@ export function CodeEditor({
       {/* Editor Control Bar */}
       <div className="h-10 px-4 bg-[#252526] border-b border-[#333333] flex items-center justify-between shrink-0 text-xs">
         {/* Left: Language Tabs */}
-        <div className="flex items-center gap-1.5">
+        <div role="radiogroup" aria-label="Lenguaje de programación" className="flex items-center gap-1.5">
           <span className="text-neutral-400 text-[11px] mr-1 hidden sm:inline">Lenguaje:</span>
           {(["python", "javascript", "sql"] as const).map((lang) => (
             <button
               key={lang}
               type="button"
+              role="radio"
+              aria-checked={language === lang}
+              aria-label={`Seleccionar lenguaje ${lang}`}
               onClick={() => {
                 onLanguageChange(lang);
                 onChangeCode(DEFAULT_STARTER_CODES[lang] || "");
@@ -132,15 +135,15 @@ export function CodeEditor({
 
         {/* Right: Autosave Status & Actions */}
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
+          <div role="status" aria-live="polite" className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
             {saveStatus === "saving" ? (
               <>
-                <Loader2 className="h-3 w-3 animate-spin text-yellow-400" />
+                <Loader2 className="h-3 w-3 animate-spin text-yellow-400" aria-hidden="true" />
                 <span className="text-yellow-400 hidden sm:inline">Guardando...</span>
               </>
             ) : (
               <>
-                <Check className="h-3 w-3 text-emerald-400" />
+                <Check className="h-3 w-3 text-emerald-400" aria-hidden="true" />
                 <span className="text-neutral-400 hidden sm:inline">Autosave activo</span>
               </>
             )}
@@ -150,26 +153,29 @@ export function CodeEditor({
             variant="ghost"
             size="sm"
             onClick={handleReset}
+            aria-label="Restablecer plantilla de código inicial"
             className="h-7 px-2 text-[11px] text-neutral-400 hover:text-white hover:bg-neutral-800"
             title="Restablecer plantilla inicial"
           >
-            <RotateCcw className="h-3 w-3" />
+            <RotateCcw className="h-3 w-3" aria-hidden="true" />
           </Button>
 
           <Button
+            id="run-tests-btn"
             size="sm"
             onClick={onRunTests}
             disabled={isRunningTests}
+            aria-label="Ejecutar pruebas unitarias en el sandbox de código"
             className="h-7 text-xs gap-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-medium shadow-sm"
           >
             {isRunningTests ? (
               <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
                 <span>Ejecutando...</span>
               </>
             ) : (
               <>
-                <Play className="h-3.5 w-3.5 fill-current" />
+                <Play className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
                 <span>Ejecutar Pruebas</span>
               </>
             )}
@@ -178,7 +184,7 @@ export function CodeEditor({
       </div>
 
       {/* Editor Main Canvas */}
-      <div className="flex-1 min-h-[300px]">
+      <div role="region" aria-label="Editor de código fuente" className="flex-1 min-h-[300px]">
         <Editor
           height="100%"
           language={language === "sql" ? "sql" : language === "javascript" ? "javascript" : "python"}
