@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import {
   Briefcase,
   Users,
@@ -82,6 +83,7 @@ export default function DashboardLayout({
               <Shield className="h-3.5 w-3.5 text-emerald-500" />
               <span>Entrevistas Ciega a PII</span>
             </div>
+            <ThemeToggle />
             <Button
               variant="ghost"
               size="sm"

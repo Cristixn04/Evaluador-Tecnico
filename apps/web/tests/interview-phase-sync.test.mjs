@@ -24,7 +24,7 @@ const PHASES = [
 function getNextTransition(phase) {
   switch (phase) {
     case "INTRO":
-      return { label: "Ver problema", target: "PROBLEM" };
+      return null;
     case "PROBLEM":
       return { label: "Hacer preguntas al evaluador", target: "CLARIFY" };
     case "CLARIFY":
@@ -66,10 +66,9 @@ function computeStepperState(currentPhase, availableTransitions) {
   });
 }
 
-test("1. En fase inicial INTRO, la siguiente transición es PROBLEM y no CLARIFY", () => {
+test("1. En fase inicial INTRO, no hay transición disponible en el header antes del consentimiento", () => {
   const next = getNextTransition("INTRO");
-  assert.equal(next?.target, "PROBLEM");
-  assert.equal(next?.label, "Ver problema");
+  assert.equal(next, null);
 });
 
 test("2. En fase PROBLEM, solo 1. Enunciado es current y solo 2. Aclaración es interactiva", () => {

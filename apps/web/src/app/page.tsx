@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { CheckCircle2, Terminal, Shield, Cpu, Code2, ArrowRight, Sparkles } from "lucide-react";
 
 export default function Home() {
@@ -20,6 +21,7 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-3">
+            <ThemeToggle />
             <Link href="/demo">
               <Button variant="secondary" size="sm" className="text-xs gap-1.5 bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 hover:bg-cyan-500/20">
                 <Sparkles className="h-3.5 w-3.5" /> Modo Demo

@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 import { api, type Vacancy, type InvitationResponse } from "@/lib/api/client";
 import {
   Briefcase,
@@ -56,8 +58,18 @@ export default function VacanciesPage() {
         candidate_email: candidateEmail,
       });
       setGeneratedInvitation(inv);
+      toast({
+        title: "Invitación Generada Exitosamente",
+        description: `Enlace seguro para candidato anonimizado (${inv.masked_candidate_id})`,
+        variant: "success",
+      });
     } catch (err) {
       console.error(err);
+      toast({
+        title: "Error al generar invitación",
+        description: "No se pudo crear el enlace seguro. Intenta nuevamente.",
+        variant: "destructive",
+      });
     } finally {
       setInvitingLoading(false);
     }
@@ -76,6 +88,11 @@ export default function VacanciesPage() {
     if (candidateAccessUrl) {
       navigator.clipboard.writeText(candidateAccessUrl);
       setCopied(true);
+      toast({
+        title: "Enlace Copiado",
+        description: "El enlace de acceso para el candidato fue copiado al portapapeles.",
+        variant: "success",
+      });
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -123,8 +140,14 @@ export default function VacanciesPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {vacancies.map((vacancy) => (
-            <Card key={vacancy.id} className="border-border/70 hover:border-border transition-all">
+          {vacancies.map((vacancy, index) => (
+            <motion.div
+              key={vacancy.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: index * 0.04 }}
+            >
+              <Card className="border-border/70 hover:border-border transition-all">
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="space-y-1">
@@ -190,8 +213,9 @@ export default function VacanciesPage() {
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </motion.div>
+        ))}
+      </div>
       )}
 
       {/* Modal / Overlay de Invitación de Candidato */}
