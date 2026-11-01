@@ -34,6 +34,7 @@ def test_models_are_registered_in_metadata() -> None:
         "evaluations",
         "evaluation_dimensions",
         "evaluation_evidence",
+        "llm_usage_records",
     }
 
 
