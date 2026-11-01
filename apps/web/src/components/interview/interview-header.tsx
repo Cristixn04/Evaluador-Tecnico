@@ -51,7 +51,7 @@ export function InterviewHeader({
   const getNextTransition = () => {
     switch (phase) {
       case "INTRO":
-        return { label: "Ver problema", target: "PROBLEM" as InterviewPhase };
+        return null;
       case "PROBLEM":
         return { label: "Hacer preguntas al evaluador", target: "CLARIFY" as InterviewPhase };
       case "CLARIFY":

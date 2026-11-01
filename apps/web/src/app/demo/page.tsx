@@ -497,7 +497,7 @@ export default function DemoPage() {
               <div className="p-3 flex-1 font-mono text-xs text-slate-300 overflow-y-auto bg-slate-950/90 whitespace-pre-wrap">
                 {testOutput || (
                   <span className="text-slate-600">
-                    Haz clic en "Ejecutar Pruebas" para compilar y validar tu solución contra los casos de prueba unitarios.
+                    Haz clic en &quot;Ejecutar Pruebas&quot; para compilar y validar tu solución contra los casos de prueba unitarios.
                   </span>
                 )}
               </div>
@@ -583,7 +583,7 @@ export default function DemoPage() {
                     <Badge variant="outline" className="text-[10px] text-slate-400">Turno 4 • Fase DESIGN</Badge>
                   </div>
                   <p className="text-slate-300 italic border-l-2 border-cyan-500 pl-2">
-                    "Optó por lookup tables en O(1) evitando un bucle anidado O(N²), reconociendo el cuello de botella con 100,000 transacciones."
+                    &quot;Optó por lookup tables en O(1) evitando un bucle anidado O(N²), reconociendo el cuello de botella con 100,000 transacciones.&quot;
                   </p>
                 </div>
 
@@ -593,7 +593,7 @@ export default function DemoPage() {
                     <Badge variant="outline" className="text-[10px] text-slate-400">Snapshot 2 • Fase CODING</Badge>
                   </div>
                   <p className="text-slate-300 italic border-l-2 border-emerald-500 pl-2">
-                    "Estructuró tipado estricto con List y Dict de typing, manejó llaves faltantes de forma defensiva y ordenó listas de salida."
+                    &quot;Estructuró tipado estricto con List y Dict de typing, manejó llaves faltantes de forma defensiva y ordenó listas de salida.&quot;
                   </p>
                 </div>
 
@@ -603,7 +603,7 @@ export default function DemoPage() {
                     <Badge variant="outline" className="text-[10px] text-slate-400">Turno 6 • Fase PROBE</Badge>
                   </div>
                   <p className="text-slate-300 italic border-l-2 border-blue-500 pl-2">
-                    "Al ser cuestionado sobre streaming masivo de 50M de registros, propuso de inmediato generator chunks y ordenamiento externo (external merge sort)."
+                    &quot;Al ser cuestionado sobre streaming masivo de 50M de registros, propuso de inmediato generator chunks y ordenamiento externo (external merge sort).&quot;
                   </p>
                 </div>
               </div>
