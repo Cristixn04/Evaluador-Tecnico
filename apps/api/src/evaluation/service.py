@@ -25,7 +25,7 @@ from src.api.schemas.evaluation import (
     EvaluationReport,
 )
 from src.core.config import settings
-from src.core.telemetry import record_interview_cost
+from src.core.telemetry import record_persisted_interview_cost
 from src.db.enums import TurnSpeaker
 from src.db.models import Interview, Snapshot, Turn
 from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
@@ -761,11 +761,15 @@ class EvaluationService:
         )
         try:
             self._session.add(evaluation)
-            record_interview_cost(
+            await record_persisted_interview_cost(
                 interview_id=interview.id,
                 model=saved_model_name,
                 input_tokens=tokens_prompt,
                 output_tokens=tokens_completion,
+                stage="evaluation",
+                provider="openai-compatible",
+                measurement_status="measured" if (tokens_prompt is not None and tokens_completion is not None) else "unavailable",
+                session=self._session,
             )
             await self._session.flush()
 

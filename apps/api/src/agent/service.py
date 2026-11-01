@@ -8,7 +8,11 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.telemetry import async_measure_latency, record_interview_cost, tool_telemetry
+from src.core.telemetry import (
+    async_measure_latency,
+    record_persisted_interview_cost,
+    tool_telemetry,
+)
 from src.db.enums import InterviewPhase, TurnSpeaker
 from src.db.models import Interview, Turn
 from src.interview.service import InterviewService
@@ -317,12 +321,18 @@ class InterviewAgent:
             in_tok = usage.prompt_tokens if usage else None
             out_tok = usage.completion_tokens if usage else None
             tot_tok = usage.total_tokens if usage else None
-            record_interview_cost(
+            meas_status = "measured" if (in_tok is not None and out_tok is not None) else "unavailable"
+            await record_persisted_interview_cost(
                 interview_id=interview_id,
                 model=completion.model,
                 input_tokens=in_tok,
                 output_tokens=out_tok,
                 total_tokens=tot_tok,
+                stage="conversational",
+                provider="openai-compatible",
+                turn_id=None,
+                measurement_status=meas_status,
+                session=self._session,
             )
 
         # Simulate streaming by yielding words

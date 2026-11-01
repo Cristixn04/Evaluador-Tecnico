@@ -76,6 +76,17 @@ class Judge0Adapter:
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(timeout=timeout_seconds)
 
+    async def check_availability(self) -> bool:
+        """Verifica si el servicio Judge0 CE está disponible y respondiendo activamente."""
+        try:
+            resp = await self._client.get(f"{self._base_url}/system_info", headers=self._headers(), timeout=2.0)
+            if resp.status_code == 200:
+                return True
+            resp2 = await self._client.get(f"{self._base_url}/about", headers=self._headers(), timeout=2.0)
+            return resp2.status_code == 200
+        except Exception:  # noqa: BLE001
+            return False
+
     async def aclose(self) -> None:
         if self._owns_client:
             await self._client.aclose()

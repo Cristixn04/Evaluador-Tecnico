@@ -19,7 +19,7 @@ import re
 import time
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 from uuid import UUID
 
@@ -185,6 +185,40 @@ class TokenCostRecord:
     total_tokens: int | None
     estimated_cost: float | None
     timestamp: float
+    stage: str = "conversational"
+    provider: str = "openai-compatible"
+    turn_id: str | None = None
+    measurement_status: str = "measured"  # "measured" | "estimated" | "unavailable"
+
+
+@dataclass(frozen=True, slots=True)
+class StageCostSummary:
+    """Resumen consolidado de consumo de tokens y costo por etapa (conversational / evaluation)."""
+
+    stage: str
+    total_input_tokens: int | None
+    total_output_tokens: int | None
+    total_tokens: int | None
+    total_estimated_cost: float | None
+    call_count: int
+    models: list[str]
+    has_unknown_tokens: bool
+    has_unknown_cost: bool
+    measured_cost: float = 0.0
+    estimated_cost: float = 0.0
+    measurement_statuses: list[str] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class TaskCostBreakdown:
+    """Desglose consolidado de la tarea completa sin doble contabilidad."""
+
+    interview_id: str
+    conversational: StageCostSummary
+    evaluation: StageCostSummary
+    total: StageCostSummary
+    records: list[TokenCostRecord]
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -213,6 +247,10 @@ class InterviewCostTracker:
         input_tokens: int | None,
         output_tokens: int | None,
         total_tokens: int | None = None,
+        stage: str = "conversational",
+        provider: str = "openai-compatible",
+        turn_id: Any = None,
+        measurement_status: str = "measured",
     ) -> TokenCostRecord:
         """Registra una llamada LLM, calcula su costo mediante pricing y emite telemetría.
 
@@ -222,6 +260,14 @@ class InterviewCostTracker:
         """
         clean_iid = str(interview_id) if interview_id is not None else "unknown"
         safe_model = str(model).strip() if model else "unknown"
+        clean_stage = str(stage).strip().lower() if stage else "conversational"
+        clean_provider = str(provider).strip().lower() if provider else "openai-compatible"
+        clean_turn_id = str(turn_id) if turn_id is not None else None
+        clean_status = (
+            str(measurement_status).strip().lower()
+            if measurement_status in ("measured", "estimated", "unavailable")
+            else "measured"
+        )
 
         # Validación estricta de tokens
         valid_in = (
@@ -243,8 +289,12 @@ class InterviewCostTracker:
         else:
             calc_total = None
 
-        # Cálculo de costo mediante módulo unificado de pricing
-        cost = calculate_llm_cost(safe_model, valid_in, valid_out)
+        # Si el proveedor no entregó tokens o el estado es unavailable, el costo es None
+        if clean_status == "unavailable":
+            cost = None
+        else:
+            # Cálculo de costo mediante módulo unificado de pricing
+            cost = calculate_llm_cost(safe_model, valid_in, valid_out)
 
         record = TokenCostRecord(
             interview_id=clean_iid,
@@ -254,6 +304,10 @@ class InterviewCostTracker:
             total_tokens=calc_total,
             estimated_cost=cost,
             timestamp=time.time(),
+            stage=clean_stage,
+            provider=clean_provider,
+            turn_id=clean_turn_id,
+            measurement_status=clean_status,
         )
 
         if clean_iid not in self._records:
@@ -268,46 +322,50 @@ class InterviewCostTracker:
 
         msg = (
             f"[METRICS:INTERVIEW_COST] interview_id={_sanitize_value(clean_iid)} "
+            f"stage={_sanitize_value(clean_stage)} "
+            f"provider={_sanitize_value(clean_provider)} "
             f"model={_sanitize_value(safe_model)} "
+            f"status={_sanitize_value(clean_status)} "
             f"input_tokens={in_str} "
             f"output_tokens={out_str} "
             f"total_tokens={tot_str} "
-            f"estimated_cost={cost_str}"
+            f"estimated_cost={cost_str} "
+            f"cost_usd={cost_str}"
         )
         logger.info(msg)
         return record
 
-    def get_summary(self, interview_id: Any) -> InterviewCostSummary:
-        """Calcula el resumen agregado de tokens y costo para una entrevista.
-
-        Si para alguna llamada el costo es desconocido (None), el costo total se
-        reporta deterministamente como None para evitar emitir costos parciales
-        engañosos en la auditoría.
-        """
-        clean_iid = str(interview_id) if interview_id is not None else "unknown"
-        records = self._records.get(clean_iid, [])
-
+    def _summarize_records(self, stage_name: str, records: list[TokenCostRecord]) -> StageCostSummary:
         if not records:
-            return InterviewCostSummary(
-                interview_id=clean_iid,
+            return StageCostSummary(
+                stage=stage_name,
                 total_input_tokens=0,
                 total_output_tokens=0,
                 total_tokens=0,
                 total_estimated_cost=0.0,
                 call_count=0,
                 models=[],
+                has_unknown_tokens=False,
+                has_unknown_cost=False,
+                measured_cost=0.0,
+                estimated_cost=0.0,
+                measurement_statuses=[],
             )
 
         sum_in = 0
         sum_out = 0
         sum_total = 0
         sum_cost = 0.0
+        sum_measured_cost = 0.0
+        sum_estimated_cost = 0.0
         has_unknown_tokens = False
         has_unknown_cost = False
         models: set[str] = set()
+        statuses: set[str] = set()
 
         for r in records:
             models.add(r.model)
+            statuses.add(r.measurement_status)
             if r.input_tokens is not None:
                 sum_in += r.input_tokens
             else:
@@ -325,6 +383,10 @@ class InterviewCostTracker:
 
             if r.estimated_cost is not None:
                 sum_cost += r.estimated_cost
+                if r.measurement_status == "measured":
+                    sum_measured_cost += r.estimated_cost
+                elif r.measurement_status == "estimated":
+                    sum_estimated_cost += r.estimated_cost
             else:
                 has_unknown_cost = True
 
@@ -333,14 +395,67 @@ class InterviewCostTracker:
         tot_out = None if has_unknown_tokens and sum_out == 0 else sum_out
         tot_tokens = None if has_unknown_tokens and sum_total == 0 else sum_total
 
-        return InterviewCostSummary(
-            interview_id=clean_iid,
+        return StageCostSummary(
+            stage=stage_name,
             total_input_tokens=tot_in,
             total_output_tokens=tot_out,
             total_tokens=tot_tokens,
             total_estimated_cost=total_cost,
             call_count=len(records),
             models=sorted(models),
+            has_unknown_tokens=has_unknown_tokens,
+            has_unknown_cost=has_unknown_cost,
+            measured_cost=round(sum_measured_cost, 6),
+            estimated_cost=round(sum_estimated_cost, 6),
+            measurement_statuses=sorted(statuses),
+        )
+
+    def get_summary(self, interview_id: Any) -> InterviewCostSummary:
+        """Calcula el resumen agregado de tokens y costo para una entrevista.
+
+        Si para alguna llamada el costo es desconocido (None), el costo total se
+        reporta deterministamente como None para evitar emitir costos parciales
+        engañosos en la auditoría.
+        """
+        clean_iid = str(interview_id) if interview_id is not None else "unknown"
+        records = self._records.get(clean_iid, [])
+
+        stage_summary = self._summarize_records("all", records)
+
+        return InterviewCostSummary(
+            interview_id=clean_iid,
+            total_input_tokens=stage_summary.total_input_tokens,
+            total_output_tokens=stage_summary.total_output_tokens,
+            total_tokens=stage_summary.total_tokens,
+            total_estimated_cost=stage_summary.total_estimated_cost,
+            call_count=stage_summary.call_count,
+            models=stage_summary.models,
+        )
+
+    def get_task_breakdown(self, interview_id: Any) -> TaskCostBreakdown:
+        """Genera el desglose consolidado de la tarea separando Conversación y Evaluación.
+
+        Garantiza:
+        - 1 tarea = 1 entrevista completada y evaluada.
+        - Cero doble contabilidad: el total suma cada llamada registrada exactamente una vez.
+        - Preservación estricta de None ante tokens o tarifas desconocidas.
+        """
+        clean_iid = str(interview_id) if interview_id is not None else "unknown"
+        records = list(self._records.get(clean_iid, []))
+
+        conv_records = [r for r in records if r.stage == "conversational"]
+        eval_records = [r for r in records if r.stage == "evaluation"]
+
+        conv_summary = self._summarize_records("conversational", conv_records)
+        eval_summary = self._summarize_records("evaluation", eval_records)
+        total_summary = self._summarize_records("total", records)
+
+        return TaskCostBreakdown(
+            interview_id=clean_iid,
+            conversational=conv_summary,
+            evaluation=eval_summary,
+            total=total_summary,
+            records=records,
         )
 
     def clear(self) -> None:
@@ -358,20 +473,162 @@ def record_interview_cost(
     input_tokens: int | None,
     output_tokens: int | None,
     total_tokens: int | None = None,
+    stage: str = "conversational",
+    provider: str = "openai-compatible",
+    turn_id: Any = None,
+    measurement_status: str = "measured",
 ) -> TokenCostRecord:
-    """Helper global para registrar el costo y consumo de tokens de una entrevista."""
+    """Helper global sincrónico para registrar el costo y consumo de tokens de una entrevista en memoria."""
     return interview_cost_tracker.record_call(
         interview_id=interview_id,
         model=model,
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         total_tokens=total_tokens,
+        stage=stage,
+        provider=provider,
+        turn_id=turn_id,
+        measurement_status=measurement_status,
     )
+
+
+async def record_persisted_interview_cost(
+    interview_id: Any,
+    model: str | None,
+    input_tokens: int | None,
+    output_tokens: int | None,
+    total_tokens: int | None = None,
+    stage: str = "conversational",
+    provider: str = "openai-compatible",
+    turn_id: Any = None,
+    measurement_status: str = "measured",
+    session: Any = None,
+) -> TokenCostRecord:
+    """Registra en memoria y persiste duraderamente en la tabla llm_usage_records de PostgreSQL.
+    
+    Protección contra fallos:
+    - Si la sesión falla o se produce un error de base de datos, el error se captura y registra,
+      garantizando que la operación principal nunca se interrumpa por un fallo de telemetría.
+    """
+    record = record_interview_cost(
+        interview_id=interview_id,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        total_tokens=total_tokens,
+        stage=stage,
+        provider=provider,
+        turn_id=turn_id,
+        measurement_status=measurement_status,
+    )
+
+    try:
+        import uuid as _uuid
+
+        from src.db.models.interview import LLMUsageRecord
+
+        valid_iid = _uuid.UUID(str(interview_id)) if interview_id else None
+        valid_tid = _uuid.UUID(str(turn_id)) if turn_id else None
+        if valid_iid is None:
+            return record
+
+        db_record = LLMUsageRecord(
+            interview_id=valid_iid,
+            turn_id=valid_tid,
+            stage=record.stage,
+            provider=record.provider,
+            model=record.model,
+            tokens_input=record.input_tokens,
+            tokens_output=record.output_tokens,
+            tokens_total=record.total_tokens,
+            cost_usd=record.estimated_cost,
+            measurement_status=record.measurement_status,
+        )
+
+        if session is not None:
+            session.add(db_record)
+            await session.flush()
+        else:
+            from src.db.session import async_session_maker
+            async with async_session_maker() as new_session:
+                new_session.add(db_record)
+                await new_session.commit()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("No se pudo persistir registro de telemetría LLM en BD: %s", exc)
+
+    return record
+
+
+async def reconstruct_task_cost_breakdown_from_db(
+    session: Any,
+    interview_id: Any,
+) -> TaskCostBreakdown:
+    """Reconstruye de forma exacta el desglose de costos por tarea directamente desde PostgreSQL.
+    
+    Permite auditar y verificar el costo de una entrevista tras reiniciar el proceso
+    o cuando los registros en memoria del tracker hayan sido limpiados.
+    """
+    import uuid as _uuid
+
+    from sqlalchemy import select
+
+    from src.db.models.interview import LLMUsageRecord
+
+    clean_iid = str(interview_id)
+    parsed_uuid = _uuid.UUID(clean_iid)
+
+    stmt = (
+        select(LLMUsageRecord)
+        .where(LLMUsageRecord.interview_id == parsed_uuid)
+        .order_by(LLMUsageRecord.created_at)
+    )
+    result = await session.execute(stmt)
+    db_records = result.scalars().all()
+
+    records: list[TokenCostRecord] = []
+    for r in db_records:
+        records.append(
+            TokenCostRecord(
+                interview_id=str(r.interview_id),
+                model=r.model,
+                input_tokens=r.tokens_input,
+                output_tokens=r.tokens_output,
+                total_tokens=r.tokens_total,
+                estimated_cost=r.cost_usd,
+                timestamp=r.created_at.timestamp() if r.created_at else time.time(),
+                stage=r.stage,
+                provider=r.provider,
+                turn_id=str(r.turn_id) if r.turn_id else None,
+                measurement_status=r.measurement_status,
+            )
+        )
+
+    tracker = InterviewCostTracker()
+    conv_records = [r for r in records if r.stage == "conversational"]
+    eval_records = [r for r in records if r.stage == "evaluation"]
+
+    conv_summary = tracker._summarize_records("conversational", conv_records)
+    eval_summary = tracker._summarize_records("evaluation", eval_records)
+    total_summary = tracker._summarize_records("total", records)
+
+    return TaskCostBreakdown(
+        interview_id=clean_iid,
+        conversational=conv_summary,
+        evaluation=eval_summary,
+        total=total_summary,
+        records=records,
+    )
+
 
 
 def get_interview_cost_summary(interview_id: Any) -> InterviewCostSummary:
     """Helper global para obtener el resumen agregado de costos de una entrevista."""
     return interview_cost_tracker.get_summary(interview_id)
+
+
+def get_task_cost_breakdown(interview_id: Any) -> TaskCostBreakdown:
+    """Helper global para obtener el desglose por etapas y costo total de la tarea."""
+    return interview_cost_tracker.get_task_breakdown(interview_id)
 
 
 # -----------------------------------------------------------------------------
