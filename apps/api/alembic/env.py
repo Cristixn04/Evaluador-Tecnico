@@ -19,8 +19,15 @@ from src.db.models import (
     Vacancy,
 )
 
+import os
+
 config = context.config
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+target_db_url = (
+    os.getenv("ALEMBIC_DATABASE_URL")
+    or os.getenv("TEST_DATABASE_URL")
+    or settings.DATABASE_URL
+)
+config.set_main_option("sqlalchemy.url", target_db_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)

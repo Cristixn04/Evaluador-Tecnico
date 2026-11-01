@@ -117,6 +117,11 @@ class Interview(Base):
         cascade="all, delete-orphan",
     )
     evaluation: Mapped[Evaluation] = relationship(back_populates="interview", uselist=False)
+    llm_usage_records: Mapped[list[LLMUsageRecord]] = relationship(
+        back_populates="interview",
+        cascade="all, delete-orphan",
+        order_by="LLMUsageRecord.created_at",
+    )
 
 
 class Turn(Base):
@@ -380,3 +385,85 @@ class EvaluationEvidence(Base):
 
     def __repr__(self) -> str:
         return f"<EvaluationEvidence evaluation_id={self.evaluation_id} dimension={self.dimension_name} turn_id={self.turn_id is not None}>"
+
+
+class LLMUsageRecord(Base):
+    """Registro persistente de consumo de tokens y costes de LLM por llamada (S3.1).
+    
+    Permite auditar y reconstruir el costo de la tarea de forma durable tras reinicio
+    del proceso, sin doble contabilidad y distinguiendo el estado de medición.
+    """
+
+    __tablename__ = "llm_usage_records"
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
+    )
+    interview_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("interviews.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    turn_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("turns.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    stage: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="conversational",
+        index=True,
+    )
+    provider: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="openai-compatible",
+    )
+    model: Mapped[str] = mapped_column(
+        String(100),
+        nullable=False,
+    )
+    tokens_input: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    tokens_output: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    tokens_total: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+    cost_usd: Mapped[float | None] = mapped_column(
+        Float,
+        nullable=True,
+    )
+    measurement_status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="measured",
+        server_default=text("'measured'"),
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        index=True,
+    )
+
+    interview: Mapped[Interview] = relationship("Interview", back_populates="llm_usage_records")
+    turn: Mapped[Turn | None] = relationship("Turn")
+
+    def __repr__(self) -> str:
+        return (
+            f"<LLMUsageRecord interview_id={self.interview_id} stage={self.stage} "
+            f"model={self.model} cost_usd={self.cost_usd} status={self.measurement_status}>"
+        )
+
