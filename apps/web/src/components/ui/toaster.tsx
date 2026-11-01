@@ -10,6 +10,7 @@ export function Toaster() {
 
   return (
     <div
+      role="region"
       aria-label="Notificaciones del sistema"
       className="fixed bottom-4 right-4 z-50 flex max-h-screen w-full max-w-sm flex-col gap-2 pointer-events-none p-4 md:bottom-6 md:right-6"
     >

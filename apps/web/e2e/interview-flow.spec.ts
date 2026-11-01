@@ -36,8 +36,8 @@ test.describe("Flujo Completo de Evaluación Técnica Asistida", () => {
     ).toBeVisible();
 
     // 6. Validar pestañas del panel izquierdo: "Chat con el Evaluador" y "Enunciado del Problema"
-    const chatTab = page.getByRole("button", { name: /Chat con el Evaluador/i });
-    const problemTab = page.getByRole("button", { name: /Enunciado del Problema/i });
+    const chatTab = page.getByRole("tab", { name: /Chat con el Evaluador/i });
+    const problemTab = page.getByRole("tab", { name: /Enunciado del Problema/i });
     await expect(chatTab).toBeVisible();
     await expect(problemTab).toBeVisible();
 
