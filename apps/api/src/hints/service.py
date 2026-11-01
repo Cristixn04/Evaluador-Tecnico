@@ -22,6 +22,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import object_session, selectinload
 from sqlalchemy.util.concurrency import greenlet_spawn
 
+from src.core.telemetry import tool_telemetry
 from src.db.enums import InterviewPhase, TurnSpeaker
 from src.db.models import Interview, Turn
 from src.db.session import get_session_maker
@@ -213,6 +214,9 @@ async def _generate_and_deliver_hint(
             await session.rollback()
             return False
 
+    telemetry = tool_telemetry("adaptive_hint_generator", "deliver_hint")
+    telemetry.start(phase="CODING", hint_level=hint_level)
+
     # ---- FASE 2: Llamada al LLM (SIN transacción, SIN bloqueo de fila) ----
     # En este punto hemos liberado el lock (commit en Fase 1).
     # Llama al LLM fuera de cualquier transacción DB.
@@ -323,8 +327,10 @@ async def _generate_and_deliver_hint(
             # Persistir
             await session.flush()
             await session.commit()
+            telemetry.success(hint_delivered=True, new_level=hint_level)
 
         except Exception as e:  # noqa: BLE001 - caught to prevent crashing persistence atomically; outer loop handles degradation
+            telemetry.error(e)
             logger.error(f"Error persistiendo hint para entrevista {interview_id}: {e}")
             await session.rollback()
             return False

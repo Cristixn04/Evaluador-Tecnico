@@ -52,6 +52,10 @@ class Settings(BaseSettings):
         description="Intervalo de polling de submissions Judge0",
     )
     JUDGE0_MAX_POLLS: int = Field(default=50, description="Máximo de polls por submission")
+    JUDGE0_MAX_PROCESSES_AND_OR_THREADS: int = Field(
+        default=10,
+        description="Límite máximo de procesos/hilos por submission para mitigar fork bombs",
+    )
 
     # Seguridad JWT
     JWT_SECRET_KEY: str = Field(
@@ -60,6 +64,20 @@ class Settings(BaseSettings):
     )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+
+    # Umbrales de observabilidad y alertas de latencia (en milisegundos)
+    LLM_LATENCY_ALERT_MS: float = Field(
+        default=5000.0,
+        description="Umbral de alerta de latencia para llamadas LLM en milisegundos (5s para interacción conversacional fluida)",
+    )
+    SANDBOX_LATENCY_ALERT_MS: float = Field(
+        default=3000.0,
+        description="Umbral de alerta de latencia para ejecuciones en Sandbox en milisegundos (3s acorde a límites de ejecución)",
+    )
+    WEBSOCKET_LATENCY_ALERT_MS: float = Field(
+        default=1000.0,
+        description="Umbral de alerta de latencia para procesamiento en WebSocket en milisegundos (1s para responsividad en tiempo real)",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

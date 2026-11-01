@@ -319,6 +319,59 @@ function InterviewContent() {
     );
   }
 
+  // 1.5 Pantalla de Entrevista Concluida / Evaluación Pendiente (Fase EVALUATE)
+  if (socket.phase === "EVALUATE") {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <InterviewHeader
+          phase={socket.phase}
+          candidateMaskedId={candidateMaskedId}
+          timeRemainingSeconds={0}
+          connectionStatus={socket.connectionStatus}
+          onTransitionPhase={handlePhaseTransition}
+          availableTransitions={[]}
+        />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-muted/20">
+          <div className="w-full max-w-lg space-y-6">
+            <Card className="border-border/80 shadow-2xl">
+              <CardHeader className="text-center space-y-3 pb-2">
+                <div className="h-14 w-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  Entrevista Finalizada
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Has completado y entregado formalmente tu sesión de evaluación técnica.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-center text-sm">
+                <div className="p-4 rounded-lg bg-muted/40 border border-border/60 space-y-1.5">
+                  <span className="font-semibold text-foreground text-xs uppercase tracking-wider block">
+                    Estado de la Evaluación
+                  </span>
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    Tu solución, snapshots de código y turnos de interacción han sido asegurados. La evaluación está pendiente de revisión por el equipo técnico.
+                  </p>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Identificador anónimo: <strong className="font-mono text-foreground">{candidateMaskedId}</strong>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-center pt-2">
+                <Link href="/">
+                  <Button variant="outline" size="sm">
+                    Volver al inicio
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // 2. Sala de Entrevista Activa (Split Screen)
   return (
     <div className="h-screen w-screen flex flex-col bg-background overflow-hidden">

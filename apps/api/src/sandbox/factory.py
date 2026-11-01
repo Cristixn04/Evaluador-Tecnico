@@ -21,6 +21,7 @@ def create_code_runner(config: Settings | None = None) -> Judge0Adapter:
         timeout_seconds=current.JUDGE0_TIMEOUT_SECONDS,
         poll_interval_seconds=current.JUDGE0_POLL_INTERVAL_SECONDS,
         max_polls=current.JUDGE0_MAX_POLLS,
+        max_processes_and_or_threads=getattr(current, "JUDGE0_MAX_PROCESSES_AND_OR_THREADS", 10),
     )
 
 

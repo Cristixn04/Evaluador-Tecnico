@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-nequi-qr-interoperable",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    3.5,
+    4.5
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.0,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Bienvenido. Debes parsear códigos QR EMVCo interoperables de Bre-B y extraer llave, banco y monto."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Entendido. El estándar EMVCo utiliza campos TLV (Tag-Length-Value). Implementaré un parser iterativo O(N)."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Cómo manejas sub-tags anidados en el tag 26 y 62?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Haré una función recursiva o bucle de segundo nivel para desempaquetar sub-tags manteniendo validación de longitud exacta."
+    }
+  ],
+  "final_code": "def parse_emvco_qr(payload: str) -> dict:\n    data = {}\n    idx = 0\n    while idx < len(payload):\n        tag = payload[idx:idx+2]\n        length = int(payload[idx+2:idx+4])\n        val = payload[idx+4:idx+4+length]\n        data[tag] = val\n        idx += 4 + length\n    return data\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 5,
+    "total_tests": 5
+  }
+}

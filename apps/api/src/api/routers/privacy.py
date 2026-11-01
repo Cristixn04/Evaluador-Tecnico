@@ -16,6 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from src.core.auth import AuthenticatedPrincipal, get_current_user
 from src.db.enums import InterviewStatus
 from src.db.models import Interview, Invitation, Snapshot, Turn
+from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
 from src.db.session import get_db
 
 router = APIRouter(prefix="/privacy", tags=["Privacy & Ley 1581"])
@@ -132,20 +133,58 @@ async def delete_candidate_data(
             status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
         ) from exc
 
-    # Eliminar turns y snapshots vinculados
+    interview = await session.get(Interview, interview_id)
+    if not interview:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
+        )
+
+    # 1. Eliminar evaluaciones vinculadas y sus evidencias/dimensiones dependientes
+    eval_res = await session.execute(
+        select(Evaluation).where(Evaluation.interview_id == interview_id)
+    )
+    evaluations = list(eval_res.scalars().all())
+    deleted_evals = len(evaluations)
+    deleted_evidences = 0
+    deleted_dimensions = 0
+    for ev in evaluations:
+        res_evid = await session.execute(
+            delete(EvaluationEvidence).where(EvaluationEvidence.evaluation_id == ev.id)
+        )
+        deleted_evidences += int(getattr(res_evid, "rowcount", 0) or 0)
+        res_dim = await session.execute(
+            delete(EvaluationDimension).where(EvaluationDimension.evaluation_id == ev.id)
+        )
+        deleted_dimensions += int(getattr(res_dim, "rowcount", 0) or 0)
+        await session.delete(ev)
+
+    # 2. Eliminar turns y snapshots vinculados
     res_turns = await session.execute(delete(Turn).where(Turn.interview_id == interview_id))
     deleted_turns = int(getattr(res_turns, "rowcount", 0) or 0)
     res_snapshots = await session.execute(delete(Snapshot).where(Snapshot.interview_id == interview_id))
     deleted_snapshots = int(getattr(res_snapshots, "rowcount", 0) or 0)
 
-    # Anonimizar o eliminar la entrevista
-    interview = await session.get(Interview, interview_id)
-    if interview:
-        interview.status = InterviewStatus.CANCELLED
-        await session.commit()
+    # 3. Anonimizar y revocar datos personales en Interview e Invitations
+    interview.status = InterviewStatus.CANCELLED
+    interview.candidate_name = f"CAND-ANON-{interview.id.hex[:6].upper()}"
+    interview.candidate_email = f"anon-{interview.id.hex[:6].lower()}@privacidad.local"
+    interview.access_token = None
+
+    res_inv = await session.execute(
+        select(Invitation).where(Invitation.interview_id == interview_id)
+    )
+    for inv in res_inv.scalars().all():
+        inv.candidate_name = f"CAND-ANON-{inv.id.hex[:6].upper()}"
+        inv.candidate_email = f"anon-{inv.id.hex[:6].lower()}@privacidad.local"
+
+    await session.commit()
+
+    total_records = (
+        deleted_turns + deleted_snapshots + deleted_evals + deleted_dimensions + deleted_evidences
+    )
 
     return DataDeletionResponse(
         status="deleted",
-        records_deleted=deleted_turns + deleted_snapshots,
-        message="Datos suprimidos conforme al derecho de cancelación de la Ley 1581 de 2012.",
+        records_deleted=total_records,
+        message="Datos y evaluaciones suprimidos conforme al derecho de cancelación de la Ley 1581 de 2012.",
     )

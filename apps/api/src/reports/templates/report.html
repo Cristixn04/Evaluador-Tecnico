@@ -289,9 +289,14 @@
     </div>
   </div>
 
-  <!-- Rúbrica de 5 Dimensiones -->
+  <!-- Rúbrica de 5 Dimensiones y Gráfico Radar Vectorial -->
   <div class="section">
     <div class="section-title">Evaluación por Dimensiones Técnicas</div>
+    {% if radar_svg %}
+    <div style="text-align: center; margin-bottom: 14px;">
+      {{ radar_svg|safe }}
+    </div>
+    {% endif %}
     <table class="dimensions-table">
       <thead>
         <tr>

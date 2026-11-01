@@ -10,10 +10,20 @@ from src.sandbox.exceptions import (
     SandboxProviderError,
     SandboxTimeoutError,
 )
-from src.sandbox.types import ExecutionStatus, RunRequest, RunResult
+from src.sandbox.types import (
+    MAX_MEMORY_MB,
+    MAX_TIMEOUT_MS,
+    MIN_MEMORY_MB,
+    MIN_TIMEOUT_MS,
+    ExecutionStatus,
+    RunRequest,
+    RunResult,
+)
 
-# Judge0 CE language ids. Limits sent as cpu_time_limit / memory_limit are
-# requests only: the provider may cap or ignore them.
+# Judge0 CE language ids. Limits sent as cpu_time_limit / memory_limit / enable_network /
+# max_processes_and_or_threads are requests only: remote execution isolation depends on
+# the Judge0 server configuration (Docker/isolate flags and bridge setup). Application-level
+# hardening guarantees that the backend never requests higher limits or enables network access.
 LANGUAGE_IDS = {
     "python": 71,
     "javascript": 63,
@@ -47,18 +57,22 @@ class Judge0Adapter:
         timeout_seconds: float = 15.0,
         poll_interval_seconds: float = 0.2,
         max_polls: int = 50,
+        max_processes_and_or_threads: int = 10,
         client: httpx.AsyncClient | None = None,
     ) -> None:
         if not base_url:
             raise SandboxConfigurationError("Judge0 base URL is not configured")
         if max_polls < 1:
             raise SandboxConfigurationError("Judge0 max polls must be at least 1")
+        if max_processes_and_or_threads < 1:
+            raise SandboxConfigurationError("Judge0 max processes/threads must be at least 1")
 
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._timeout = timeout_seconds
         self._poll_interval = poll_interval_seconds
         self._max_polls = max_polls
+        self._max_processes_and_or_threads = max_processes_and_or_threads
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(timeout=timeout_seconds)
 
@@ -82,13 +96,19 @@ class Judge0Adapter:
         return headers
 
     async def _submit(self, request: RunRequest, language_id: int) -> str:
+        # Defense-in-depth: enforce hard limits (max 2000ms CPU, max 128MB memory)
+        effective_timeout_ms = min(max(request.timeout_ms, MIN_TIMEOUT_MS), MAX_TIMEOUT_MS)
+        effective_memory_mb = min(max(request.memory_mb, MIN_MEMORY_MB), MAX_MEMORY_MB)
+
         payload: dict[str, Any] = {
             "source_code": request.source,
             "language_id": language_id,
             "stdin": request.stdin,
-            "cpu_time_limit": max(request.timeout_ms / 1000, 0.1),
-            "wall_time_limit": max(request.timeout_ms / 1000, 0.1) + 1,
-            "memory_limit": request.memory_mb * 1000,
+            "cpu_time_limit": max(effective_timeout_ms / 1000.0, 0.1),
+            "wall_time_limit": max(effective_timeout_ms / 1000.0, 0.1) + 1.0,
+            "memory_limit": effective_memory_mb * 1000,
+            "max_processes_and_or_threads": self._max_processes_and_or_threads,
+            "enable_network": False,
         }
         if request.expected_output is not None:
             payload["expected_output"] = request.expected_output

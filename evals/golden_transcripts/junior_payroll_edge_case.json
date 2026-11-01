@@ -3,6 +3,19 @@
   "expected_level": "junior",
   "expected_overall_score_range": [2.5, 3.5],
   "expected_recommendation": "borderline",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 3.0,
+    "recommendation": "borderline",
+    "competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    }
+  },
   "turns": [
     {
       "turn_id": "turn-1",

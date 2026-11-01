@@ -4,6 +4,7 @@ from hashlib import sha256
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.telemetry import tool_telemetry
 from src.db.enums import Difficulty, Seniority
 from src.db.models import Problem
 from src.problems.schemas import ProblemSpec
@@ -79,19 +80,38 @@ class ProblemSelector:
         preferred_skills: Sequence[str] | None = None,
         seed: str | None = None,
     ) -> Problem | None:
-        matches = await self.search(
-            skills=skills,
-            seniority=seniority,
-            language=language,
-            preferred_skills=preferred_skills,
+        telemetry = tool_telemetry("problem_selector", "select_one")
+        telemetry.start(
+            seniority=seniority.value if seniority else "any",
+            language=language or "any",
+            skills_count=len(skills) if skills else 0,
         )
-        if not matches:
-            return None
-        if seed is None:
-            return matches[0]
-        digest = sha256(seed.encode("utf-8")).digest()
-        index = int.from_bytes(digest[:8], "big") % len(matches)
-        return matches[index]
+        try:
+            matches = await self.search(
+                skills=skills,
+                seniority=seniority,
+                language=language,
+                preferred_skills=preferred_skills,
+            )
+            if not matches:
+                telemetry.error("No problem matches criteria")
+                return None
+            if seed is None:
+                selected = matches[0]
+            else:
+                digest = sha256(seed.encode("utf-8")).digest()
+                index = int.from_bytes(digest[:8], "big") % len(matches)
+                selected = matches[index]
+
+            telemetry.success(
+                problem_id=str(selected.id)[:8],
+                difficulty=selected.difficulty.value if hasattr(selected.difficulty, "value") else str(selected.difficulty),
+                title=selected.title,
+            )
+            return selected
+        except Exception as exc:
+            telemetry.error(exc)
+            raise
 
     def _filtered_statement(
         self,

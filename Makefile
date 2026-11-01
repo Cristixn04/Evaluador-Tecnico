@@ -1,4 +1,12 @@
-.PHONY: help dev dev-web dev-api docker-up docker-down update-contracts test test-api test-web install
+API_DIR := apps/api
+VENV_BIN := $(shell if [ -x "$$(pwd)/$(API_DIR)/.venv/bin/pytest" ]; then echo "$$(pwd)/$(API_DIR)/.venv/bin/"; elif [ -x "$$(pwd)/.venv/bin/pytest" ]; then echo "$$(pwd)/.venv/bin/"; else echo ""; fi)
+PYTHON ?= $(VENV_BIN)python
+PYTEST ?= $(VENV_BIN)pytest
+UVICORN ?= $(VENV_BIN)uvicorn
+RUFF ?= $(VENV_BIN)ruff
+MYPY ?= $(VENV_BIN)mypy
+
+.PHONY: help dev dev-web dev-api docker-up docker-down update-contracts test test-api test-web lint-api lint install
 
 help: ## Muestra la ayuda de comandos disponibles
 	@echo "Comandos disponibles en el monorepo:"
@@ -20,7 +28,7 @@ dev-web: ## Inicia el servidor de desarrollo del Frontend (Next.js)
 	cd apps/web && pnpm dev
 
 dev-api: ## Inicia el servidor de desarrollo del Backend (FastAPI)
-	cd apps/api && uvicorn src.main:app --reload --port 8000
+	cd $(API_DIR) && $(UVICORN) src.main:app --reload --port 8000
 
 dev: ## Instrucciones para levantar ambos entornos en paralelo
 	@echo "Para desarrollo concurrente:"
@@ -31,9 +39,15 @@ update-contracts: ## Genera los tipos de TypeScript desde openapi.json
 	cd packages/contracts && pnpm run generate-types
 
 test-api: ## Ejecuta las pruebas del Backend con pytest
-	cd apps/api && pytest -v
+	cd $(API_DIR) && $(PYTEST) -v
 
 test-web: ## Ejecuta las pruebas del Frontend con vitest
 	cd apps/web && pnpm test
 
 test: test-api test-web ## Ejecuta todas las pruebas
+
+lint-api: ## Ejecuta los linters del Backend (ruff y mypy)
+	cd $(API_DIR) && $(RUFF) check src tests
+	cd $(API_DIR) && $(MYPY) src
+
+lint: lint-api ## Ejecuta linters del proyecto
