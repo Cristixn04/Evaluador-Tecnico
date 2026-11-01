@@ -104,7 +104,10 @@ export function InterviewHeader({
       </div>
 
       {/* Center: Phase Stepper */}
-      <div className="hidden lg:flex items-center gap-1 bg-muted/20 p-1 rounded-lg border border-border/40">
+      <nav
+        aria-label="Fases de la evaluación técnica"
+        className="hidden lg:flex items-center gap-1 bg-muted/20 p-1 rounded-lg border border-border/40"
+      >
         {PHASES.map((p, idx) => {
           const isCurrent = phase === p.id;
           const currentIdx = PHASES.findIndex((item) => item.id === phase);
@@ -119,10 +122,11 @@ export function InterviewHeader({
                 key={p.id}
                 type="button"
                 onClick={() => onTransitionPhase(p.id)}
+                aria-label={`Avanzar a fase ${p.label}`}
                 title={`Avanzar a ${p.label}`}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all text-primary hover:bg-primary/20 border border-primary/40 cursor-pointer shadow-sm hover:scale-[1.02]"
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all text-primary hover:bg-primary/20 border border-primary/40 cursor-pointer shadow-sm hover:scale-[1.02] focus-visible:ring-2 focus-visible:ring-primary"
               >
-                <p.icon className="h-3.5 w-3.5" />
+                <p.icon className="h-3.5 w-3.5" aria-hidden="true" />
                 <span>{p.label}</span>
               </button>
             );
@@ -131,6 +135,9 @@ export function InterviewHeader({
           return (
             <div
               key={p.id}
+              role="status"
+              aria-current={isCurrent ? "step" : undefined}
+              aria-label={`${p.label}: ${isCurrent ? "Fase actual" : isPassed ? "Fase completada" : "Fase pendiente"}`}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors ${
                 isCurrent
                   ? "bg-primary text-primary-foreground shadow-sm"
@@ -139,18 +146,22 @@ export function InterviewHeader({
                   : "text-muted-foreground/60"
               }`}
             >
-              <p.icon className="h-3.5 w-3.5" />
+              <p.icon className="h-3.5 w-3.5" aria-hidden="true" />
               <span>{p.label}</span>
             </div>
           );
         })}
-      </div>
+      </nav>
 
       {/* Right: Timer & Transition Action */}
       <div className="flex items-center gap-3">
         {/* Timer */}
-        <div className="flex items-center gap-1.5 bg-muted/30 border border-border/50 px-2.5 py-1 rounded-md font-mono text-xs">
-          <Clock className={`h-3.5 w-3.5 ${timeRemainingSeconds < 300 ? "text-destructive animate-pulse" : "text-primary"}`} />
+        <div
+          role="timer"
+          aria-label={`Tiempo restante: ${formatTime(timeRemainingSeconds)}`}
+          className="flex items-center gap-1.5 bg-muted/30 border border-border/50 px-2.5 py-1 rounded-md font-mono text-xs"
+        >
+          <Clock aria-hidden="true" className={`h-3.5 w-3.5 ${timeRemainingSeconds < 300 ? "text-destructive animate-pulse" : "text-primary"}`} />
           <span className={timeRemainingSeconds < 300 ? "text-destructive font-bold" : "text-foreground"}>
             {formatTime(timeRemainingSeconds)}
           </span>
@@ -161,10 +172,11 @@ export function InterviewHeader({
           <Button
             size="sm"
             onClick={() => onTransitionPhase(nextTransition.target)}
-            className="h-8 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
+            aria-label={`Avanzar fase: ${nextTransition.label}`}
+            className="h-8 text-xs gap-1.5 bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm focus-visible:ring-2"
           >
             <span>{nextTransition.label}</span>
-            <ArrowRight className="h-3 w-3" />
+            <ArrowRight aria-hidden="true" className="h-3 w-3" />
           </Button>
         )}
       </div>

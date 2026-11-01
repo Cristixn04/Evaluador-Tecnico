@@ -45,14 +45,26 @@ export function ChatPanel({
   };
 
   return (
-    <div className="flex flex-col h-full bg-background border-r border-border/40">
+    <div
+      role="region"
+      aria-label="Panel de conversación interactiva con el evaluador"
+      className="flex flex-col h-full bg-background border-r border-border/40"
+    >
       {/* Messages Scroll Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div
+        role="log"
+        aria-live="polite"
+        aria-atomic="false"
+        aria-label="Historial de mensajes de la entrevista"
+        className="flex-1 overflow-y-auto p-4 space-y-4"
+      >
         {messages.map((msg) => {
           if (msg.speaker === "system") {
             return (
               <div
                 key={msg.id}
+                role="status"
+                aria-label={`Evento de sistema: ${msg.content}`}
                 className="text-center my-2"
               >
                 <span className="text-[11px] font-mono bg-muted/60 text-muted-foreground px-2.5 py-1 rounded-full border border-border/40">
@@ -67,12 +79,17 @@ export function ChatPanel({
           return (
             <div
               key={msg.id}
+              role="article"
+              aria-label={isAgent ? "Mensaje del evaluador técnico" : "Tu mensaje"}
               className={`flex items-start gap-2.5 ${
                 isAgent ? "justify-start" : "justify-end"
               }`}
             >
               {isAgent && (
-                <div className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 mt-0.5">
+                <div
+                  aria-hidden="true"
+                  className="h-7 w-7 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shrink-0 mt-0.5"
+                >
                   <Bot className="h-4 w-4" />
                 </div>
               )}
@@ -102,7 +119,10 @@ export function ChatPanel({
               </div>
 
               {!isAgent && (
-                <div className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center text-foreground shrink-0 mt-0.5">
+                <div
+                  aria-hidden="true"
+                  className="h-7 w-7 rounded-lg bg-secondary flex items-center justify-center text-foreground shrink-0 mt-0.5"
+                >
                   <User className="h-4 w-4" />
                 </div>
               )}
@@ -111,8 +131,12 @@ export function ChatPanel({
         })}
 
         {isStreaming && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground italic pl-9 animate-pulse">
-            <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <div
+            role="status"
+            aria-label="El entrevistador está escribiendo"
+            className="flex items-center gap-2 text-xs text-muted-foreground italic pl-9 animate-pulse"
+          >
+            <Sparkles className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
             <span>El entrevistador está escribiendo...</span>
           </div>
         )}
@@ -121,14 +145,19 @@ export function ChatPanel({
       </div>
 
       {/* Quick Prompts Bar */}
-      <div className="px-4 py-2 border-t border-border/30 bg-muted/10 flex gap-1.5 overflow-x-auto">
+      <div
+        role="toolbar"
+        aria-label="Preguntas rápidas sugeridas"
+        className="px-4 py-2 border-t border-border/30 bg-muted/10 flex gap-1.5 overflow-x-auto"
+      >
         {QUICK_PROMPTS.map((q) => (
           <button
             key={q}
             type="button"
             disabled={isStreaming}
             onClick={() => handleQuickPrompt(q)}
-            className="text-[11px] whitespace-nowrap bg-background hover:bg-muted border border-border/60 text-muted-foreground hover:text-foreground px-2 py-1 rounded-md transition-colors disabled:opacity-50 shrink-0"
+            aria-label={`Insertar pregunta rápida: ${q}`}
+            className="text-[11px] whitespace-nowrap bg-background hover:bg-muted border border-border/60 text-muted-foreground hover:text-foreground px-2 py-1 rounded-md transition-colors disabled:opacity-50 shrink-0 focus-visible:ring-2 focus-visible:ring-primary"
           >
             {q}
           </button>
@@ -138,23 +167,26 @@ export function ChatPanel({
       {/* Input Area */}
       <form
         onSubmit={handleSend}
+        aria-label="Formulario de envío de respuesta al evaluador"
         className="p-3 border-t border-border/50 bg-card/60 flex items-center gap-2"
       >
         <Input
           placeholder="Escribe tu pregunta o razonamiento..."
+          aria-label="Escribe tu pregunta o razonamiento para el evaluador"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
           disabled={isStreaming}
-          className="text-xs h-9 bg-background"
+          className="text-xs h-9 bg-background focus-visible:ring-2 focus-visible:ring-primary"
         />
         <Button
           type="submit"
           size="sm"
           disabled={isStreaming || !inputText.trim()}
-          className="h-9 px-3 shrink-0 gap-1"
+          aria-label="Enviar mensaje al evaluador"
+          className="h-9 px-3 shrink-0 gap-1 focus-visible:ring-2"
         >
-          <Send className="h-3.5 w-3.5" />
-          <CornerDownLeft className="h-3 w-3 opacity-60 hidden sm:inline" />
+          <Send className="h-3.5 w-3.5" aria-hidden="true" />
+          <CornerDownLeft className="h-3 w-3 opacity-60 hidden sm:inline" aria-hidden="true" />
         </Button>
       </form>
     </div>
