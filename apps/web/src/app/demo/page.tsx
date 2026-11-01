@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { CompetencyRadar } from "@/components/evaluation/competency-radar";
 import dynamic from "next/dynamic";
 import {
@@ -324,6 +325,7 @@ export default function DemoPage() {
 
         {/* Action Controls */}
         <div className="flex items-center gap-2.5">
+          <ThemeToggle />
           <Badge variant="outline" className="text-[11px] border-emerald-500/30 text-emerald-400 gap-1 hidden sm:flex">
             <Shield className="h-3 w-3" /> Ley 1581 Habeas Data
           </Badge>
