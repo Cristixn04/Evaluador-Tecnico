@@ -154,47 +154,42 @@ El ciclo de vida de la entrevista técnica sigue una máquina de estados estrict
 
 ---
 
-## 6. El agente técnico
+## 6. El agente técnico (S1 & S2)
 
-### Orquestación e integración con LLM
-El agente utiliza un modelo de lenguaje de última generación (`grok-4.6` o compatible con OpenAI API) configurado a través de `httpx.AsyncClient` con parámetros estrictos de timeout (30s) y reintentos automáticos (2).
-
-La arquitectura del agente se basa en **orquestación por backend**: no delega el control de flujo ni la invocación arbitraria de funciones al modelo mediante function calling externo, sino que coordina la conversación a través de etapas controladas, inyectando el contexto de la fase activa y el historial de turnos.
+### Orquestación híbrida y Function Calling con Grok
+El agente ([`apps/api/src/agent/service.py`](apps/api/src/agent/service.py)) se conecta en tiempo real con el proveedor LLM compatible con OpenAI (`https://api.reto.pltk.mx/v1`, modelo `grok-4.6`) a través de [`OpenAICompatibleClient`](apps/api/src/llm/openai_compatible.py), soportando:
+- **Conversación multi-turno con memoria persistente (S1):** Recupera los turnos recientes de PostgreSQL (`turns`), conserva el contexto conversacional entre turnos y fases, y persiste métricas reales de tokens (`prompt_tokens`, `completion_tokens`, `total_tokens`) y costo en USD en la tabla `llm_usage_records`.
+- **Function Calling acotado y autónomo (S2):** El agente expone 3 herramientas tipadas mediante JSON Schema (`OPENAI_TOOLS_SCHEMA` en [`apps/api/src/agent/tools.py`](apps/api/src/agent/tools.py)). Cuando `grok-4.6` decide invocar una herramienta (`finish_reason="tool_calls"`), [`AgentToolRuntime`](apps/api/src/agent/tools.py) valida los argumentos con Pydantic v2 (`extra="forbid"`), ejecuta el servicio de dominio, devuelve el resultado estructurado mediante un mensaje `role="tool"` con su `tool_call_id`, y el modelo sintetiza la respuesta final para el candidato dentro de un bucle acotado (`MAX_TOOL_ITERATIONS = 3`, `MAX_TOOL_CALLS_PER_TURN = 4`).
 
 ### Construcción de prompts y aislamiento de seguridad
 Los prompts del sistema están versionados en `apps/api/prompts/` (`v1/` y `v2/`):
-- `interview_agent.md` e `interview_agent_phases.md`: Definen el tono socrático, el rol pedagógico-evaluador y las directrices de no otorgar respuestas directas.
-- **Aislamiento de entradas del candidato:** Todo contenido proveniente del candidato (mensajes de chat, fragmentos de código) se encapsula de manera estricta dentro de etiquetas `<untrusted_candidate_input>` antes de enviarse al modelo, evitando ataques de inyección de instrucciones (*prompt injection*) que intenten alterar el criterio del evaluador.
-
-### Persistencia y telemetría de turnos
-Cada interacción (mensaje del candidato y respuesta del agente) se persiste de forma transaccional en la tabla `turns` de PostgreSQL con su respectivo rol (`candidate`, `agent`, `system`), número correlativo de turno y marca de tiempo ISO-8601.
+- `interview_agent.md` y `phases/*.md`: Definen el tono socrático, el rol pedagógico-evaluador y las directrices por fase.
+- **Aislamiento de entradas del candidato (S-17):** Todo contenido proveniente del candidato (mensajes de chat, fragmentos de código) se sanitiza y encapsula dentro de etiquetas `<untrusted_candidate_input>` mediante [`src/llm/sanitizer.py`](apps/api/src/llm/sanitizer.py) antes de enviarse al modelo.
+- **Vinculación inmutable al contexto de sesión y organización:** `AgentToolRuntime` bloquea explícitamente (`CONTEXT_SECURITY_VIOLATION`) cualquier intento de inyectar o sobrescribir `interview_id`, `organization_id`, `user_id` o `candidate_id` en los argumentos de una herramienta.
 
 ---
 
-## 7. Herramientas del agente (Sprint 2)
+## 7. Herramientas del agente (Sprint 2 — Function Calling)
 
-Para cumplir con los requerimientos técnicos de **Sprint 2 (S2)**, el sistema dispone de 3 herramientas reales integradas en la lógica del backend y completamente instrumentadas:
+Las 3 herramientas expuestas a Grok en [`apps/api/src/agent/tools.py`](apps/api/src/agent/tools.py) reutilizan los servicios de dominio del backend sin duplicar lógica:
 
-### 1. `ProblemSelectorTool`
-- **Ubicación en código:** [`apps/api/src/problems/selector.py`](apps/api/src/problems/selector.py)
-- **Propósito:** Selección automatizada y filtrado de problemas técnicos desde el catálogo en disco.
-- **Entrada:** `category: Optional[str]`, `seniority: Optional[SeniorityLevel]`, `tags: Optional[list[str]]`.
-- **Salida:** Instancia de `Problem` con identificador, título, descripción, plantilla de código, casos de prueba públicos y privados.
-- **Manejo de errores:** Si los filtros no arrojan resultados o el catálogo YAML está corrupto, la herramienta captura la excepción, registra el error y realiza un fallback determinista al problema base (`sliding-window-rate-limiter.yaml`).
+### 1. `problem_selector` (`ProblemSelectorTool`)
+- **Implementación:** [`apps/api/src/agent/tools.py`](apps/api/src/agent/tools.py) $\to$ [`apps/api/src/problems/selector.py`](apps/api/src/problems/selector.py) y [`apps/api/src/problems/loader.py`](apps/api/src/problems/loader.py).
+- **Esquema de entrada (`ProblemSelectorArgs`):** `action` (`"inspect_assigned_problem"` | `"search_catalog"`), `problem_id`, `seniority` (`"junior"` | `"mid"` | `"senior"` | `"lead"`), `language` (`"python"` | `"javascript"` | `"sql"`), `skills`.
+- **Propósito:** Inspeccionar el enunciado, límites de tiempo/memoria (`timeout_ms`, `memory_mb`) y casos de prueba del problema asignado o seleccionar problemas compatibles del catálogo YAML (`apps/api/src/problems/catalog/`).
+- **Resiliencia:** Reintento automático acotado (`MAX_TOOL_RETRIES = 1`) ante fallos transitorios de lectura y fallback determinista al catálogo en disco.
 
-### 2. `CodeExecutionSandboxTool`
-- **Ubicación en código:** [`apps/api/src/execution/service.py`](apps/api/src/execution/service.py) / [`apps/api/src/sandbox/judge0.py`](apps/api/src/sandbox/judge0.py)
-- **Propósito:** Ejecución aislada y segura del código entregado por el candidato contra casos de prueba.
-- **Entrada:** `source_code: str`, `language: str`, `test_cases: list[dict]`, `time_limit: float`, `memory_limit: int`.
-- **Salida:** `ExecutionResult` conteniendo `status` (SUCCESS, COMPILATION_ERROR, RUNTIME_ERROR, TIME_LIMIT_EXCEEDED), `stdout`, `stderr`, tiempo de ejecución y detalle de pruebas superadas/fallidas.
-- **Manejo de errores:** Control de excepciones de red contra Judge0, timeouts de ejecución y captura estructurada de stacktraces de Python sin tumbar la sesión del usuario.
+### 2. `code_execution_sandbox` (`CodeExecutionSandboxTool`)
+- **Implementación:** [`apps/api/src/agent/tools.py`](apps/api/src/agent/tools.py) $\to$ [`apps/api/src/execution/service.py`](apps/api/src/execution/service.py) y [`apps/api/src/sandbox/judge0.py`](apps/api/src/sandbox/judge0.py).
+- **Esquema de entrada (`CodeExecutionSandboxArgs`):** `code`, `language` (`"python"` | `"javascript"` | `"sql"`), `use_latest_snapshot`.
+- **Propósito:** Ejecutar el código del candidato de forma aislada contra la suite de pruebas del problema activo mediante Judge0 CE (`http://localhost:2358`), persistiendo el `Snapshot` y el turno correspondiente.
+- **Manejo honesto de indisponibilidad (H-01):** Si Judge0 CE no está accesible en el entorno, devuelve `status="unavailable"` con `stdout=None` y `tests_passed=None`, permitiendo tanto al frontend WebSocket como al agente informar honestamente al candidato sin inventar resultados de pruebas ni romper la sesión.
 
-### 3. `AdaptiveHintGeneratorTool`
-- **Ubicación en código:** [`apps/api/src/hints/service.py`](apps/api/src/hints/service.py)
-- **Propósito:** Generación y dosificación progresiva de pistas contextuales cuando el candidato experimenta bloqueos.
-- **Entrada:** `interview_id: UUID`, `problem: Problem`, `current_code: str`, `requested_level: int`.
-- **Salida:** `HintResponse` con el texto de la pista, nivel otorgado (1 a 3) y penalización conceptual registrada para la evaluación.
-- **Manejo de errores:** Bloqueo de concurrencia atómico mediante claves de Redis (`hint_lock:{interview_id}`). Si se solicita un nivel no válido o se excede el límite máximo de pistas por fase, devuelve un error descriptivo controlado.
+### 3. `adaptive_hint_generator` (`AdaptiveHintGeneratorTool`)
+- **Implementación:** [`apps/api/src/agent/tools.py`](apps/api/src/agent/tools.py) $\to$ [`apps/api/src/llm/prompts.py`](apps/api/src/llm/prompts.py) (`load_hints`) + estado transaccional `Interview.hint_level`.
+- **Esquema de entrada (`AdaptiveHintGeneratorArgs`):** `requested_level` (`1`, `2` o `3`), `reason`.
+- **Propósito:** Dosificar pistas progresivas multinivel (Nivel 1: conceptual, Nivel 2: enfoque algorítmico, Nivel 3: estructura detallada y casos de borde) actualizando `Interview.hint_level` y registrando la penalización/tope de puntaje correspondiente.
+- **Manejo de límite máximo:** Si el candidato ya alcanzó `hint_level == 3`, devuelve `status="max_level_reached"` (`error_code="MAX_HINT_LEVEL_REACHED"`, `hint_delivered=False`).
 
 ---
 
@@ -327,89 +322,73 @@ cp apps/web/.env.example apps/web/.env.local
 
 ---
 
-## 14. Ejecución del proyecto
+## 14. Ejecución del proyecto y Scripts Reproducibles (S1, S2, S3)
 
 El monorepo cuenta con un [`Makefile`](Makefile) en la raíz que simplifica la orquestación:
 
-### 1. Iniciar servicios de infraestructura
-Inicia los contenedores de PostgreSQL 16 (puerto 5435) y Redis 7 (puerto 6379):
+### 1. Iniciar servicios de infraestructura (PostgreSQL 16 y Redis 7)
 ```bash
 make docker-up
 ```
+*(Opcional: para levantar también el clúster aislado de Judge0 CE en el puerto `2358`, ejecute `docker compose -f infra/judge0/docker-compose.yml up -d`. Si Judge0 CE no está levantado, el sistema opera de forma segura devolviendo `status="unavailable"` sin interrumpir la entrevista).*
 
-### 2. Iniciar el Backend (FastAPI)
-Ejecuta el servidor con recarga en caliente en `http://localhost:8000`:
+### 2. Iniciar el Backend (FastAPI) y Frontend (Next.js)
 ```bash
-make dev-api
+make dev-api   # http://localhost:8000
+make dev-web   # http://localhost:3000
 ```
 
-### 3. Iniciar el Frontend (Next.js)
-Ejecuta el servidor de desarrollo en `http://localhost:3000`:
-```bash
-make dev-web
-```
+### 3. Comandos Reproducibles de Validación contra Grok (`grok-4.6`)
+Con `USE_MOCK_LLM=false` y una `LLM_API_KEY` válida en `.env`:
 
-*(Opcional: para detener los contenedores de infraestructura utilice `make docker-down`).*
+```bash
+# S1: Prueba de humo multi-turno real con Grok, persistencia en PostgreSQL y telemetría de costos
+python3 apps/api/src/scripts/smoke_s1_grok.py
+
+# S2: Ejecución de los 10 escenarios reales de Function Calling (6 normales, 3 fallos controlados, 1 entrada inválida)
+python3 apps/api/src/scripts/run_s2_10_executions.py
+
+# S3: Benchmark estadístico de 32 casos con panel humano doble ciego y evaluación en vivo con Grok
+python3 evals/calibrate.py \
+  --transcripts-dir evals/s3_benchmark \
+  --live-llm \
+  --concurrency 4 \
+  --output-json docs/reports/FINAL_REMEDIATION/s3_benchmark_results.json \
+  --output-md docs/reports/FINAL_REMEDIATION/S3_BENCHMARK_REPORT.md
+```
 
 ---
 
 ## 15. Pruebas y calidad de código
 
-Todas las suites de prueba han sido verificadas en el entorno local del repositorio:
-
 ### Pruebas del Backend (Pytest)
 ```bash
-# Ejecutar suite completa con pytest
-make test-api
+cd apps/api && pytest -q
 ```
-*Resultado actual verificado:* **273 pruebas pasadas**, 1 omitida.
 
-### Pruebas del Frontend (Node.js Test Runner)
+### Pruebas del Frontend (Vitest / Node Test Runner)
 ```bash
-# Ejecutar suite de pruebas de sincronización y renderizado
-make test-web
-# o mediante node:
+cd apps/web && npm run typecheck
 node --test apps/web/tests/*.test.mjs
 ```
-*Resultado actual verificado:* **20 pruebas pasadas** (10 de renderizado Markdown, 10 de sincronización de fases y cierre formal).
 
 ### Linters y comprobación estática de tipos
 ```bash
-# Linter de Backend con Ruff
-apps/api/.venv/bin/ruff check apps/api/src
-
-# Comprobación de tipos en Backend con Mypy
-apps/api/.venv/bin/mypy apps/api/src
-
-# Comprobación de tipos en Frontend con TypeScript
-cd apps/web && pnpm run typecheck
+cd apps/api && ruff check src tests
+cd apps/api && mypy src
 ```
-*Resultado actual verificado:* 0 errores en todos los analizadores.
 
 ---
 
-## 16. Entregables de Sprint 2 (S2)
+## 16. Evidencia de Entregables (S1, S2, S3, H-01, H-02)
 
-Esta sección sintetiza el cumplimiento técnico formal de los requisitos establecidos para el **Sprint 2 (S2)**:
-
-### 1. Tres herramientas reales implementadas e instrumentadas
-- `ProblemSelectorTool`: Filtrado y carga de problemas desde catálogo YAML con fallback ante fallos.
-- `CodeExecutionSandboxTool`: Ejecución segura de código contra Judge0 con contención de tiempo y memoria.
-- `AdaptiveHintGeneratorTool`: Dosificación de pistas con bloqueo de concurrencia en Redis.
-
-### 2. Manejo de errores y resiliencia
-Las tres herramientas capturan excepciones de forma explícita, impidiendo que caídas de servicios externos (como Judge0 o LLM Gateway) afecten el ciclo de vida de la entrevista.
-
-### 3. Telemetría estructurada observable
-Cada llamada de herramienta emite registros estructurados con marcas estándar `[AGENT_TOOL_CALL:START]`, `[AGENT_TOOL_CALL:SUCCESS]` y `[AGENT_TOOL_CALL:ERROR]`, sanitizando automáticamente cualquier credencial o PII.
-
-### 4. Registro de ejecuciones reales
-Las ejecuciones de validación del agente con sus respectivas sesiones e identificadores de entrevista se encuentran auditadas en el sistema.
-
-### 5. Video de demostración técnica
-El video demostrativo que documenta el funcionamiento en vivo de las herramientas, el cierre formal de entrevista y la telemetría del sistema se encuentra disponible en:
-
-> [Video de demostración del agente](https://drive.google.com/drive/folders/1z3b9kK5--gMBmM_he6O93KVLxlNeojIt?usp=sharing)
+Los reportes auditables y artefactos JSON de ejecución real se encuentran en [`docs/reports/FINAL_REMEDIATION/`](docs/reports/FINAL_REMEDIATION/):
+- **S1 (Integración Real Multi-Turno con Grok):** [`S1_GROK_INTEGRATION_REPORT.md`](docs/reports/FINAL_REMEDIATION/S1_GROK_INTEGRATION_REPORT.md) y [`s1_smoke_evidence.json`](docs/reports/FINAL_REMEDIATION/s1_smoke_evidence.json).
+- **S2 (Function Calling y 10 Ejecuciones Reales):** [`S2_FUNCTION_CALLING_REPORT.md`](docs/reports/FINAL_REMEDIATION/S2_FUNCTION_CALLING_REPORT.md) y [`s2_10_executions.json`](docs/reports/FINAL_REMEDIATION/s2_10_executions.json).
+- **H-01 (Contrato WebSocket y Sandbox Aislado):** [`H01_SANDBOX_WEBSOCKET_REPORT.md`](docs/reports/FINAL_REMEDIATION/H01_SANDBOX_WEBSOCKET_REPORT.md).
+- **S3 (Benchmark de 32 Casos con Panel Humano y Grok en Vivo):** [`S3_BENCHMARK_REPORT.md`](docs/reports/FINAL_REMEDIATION/S3_BENCHMARK_REPORT.md) y [`s3_benchmark_results.json`](docs/reports/FINAL_REMEDIATION/s3_benchmark_results.json).
+- **H-02 (Seguridad Multi-Tenant):** [`SECURITY_H02_VALIDATION_REPORT.md`](docs/reports/FINAL_REMEDIATION/SECURITY_H02_VALIDATION_REPORT.md).
+- **Video de demostración técnica:** [Carpeta de demostración en Google Drive](https://drive.google.com/drive/folders/1z3b9kK5--gMBmM_he6O93KVLxlNeojIt?usp=sharing).
 
 ---
 
@@ -418,35 +397,36 @@ El video demostrativo que documenta el funcionamiento en vivo de las herramienta
 ```text
 Evaluador-Tecnico/
 ├── apps/
-│   ├── api/                       # Backend FastAPI (Python 3.12)
+│   ├── api/                       # Backend FastAPI (Python 3.12+)
 │   │   ├── alembic/               # Migraciones de base de datos
-│   │   ├── prompts/               # Prompts del agente y evaluador (v1 y v2)
+│   │   ├── prompts/               # Prompts versionados del agente y evaluador (v1 y v2)
 │   │   ├── src/                   # Código fuente del backend
-│   │   │   ├── agent/             # Lógica del agente conversacional
-│   │   │   ├── core/              # Configuración, base de datos y telemetría
-│   │   │   ├── evaluation/        # Motor de evaluación y rúbrica
-│   │   │   ├── execution/         # Servicio de ejecución de código
-│   │   │   ├── hints/             # Servicio de pistas adaptativas
-│   │   │   ├── problems/          # Selector de problemas del catálogo
-│   │   │   ├── reports/           # Generador de reportes PDF WeasyPrint
-│   │   │   ├── sandbox/           # Cliente de Judge0 y ejecución en contenedor
-│   │   │   └── ws/                # Manejador y despachador de WebSockets
-│   │   └── tests/                 # Suite de pruebas unitarias y de integración
-│   └── web/                       # Frontend Next.js 15 (React 19 / TypeScript)
-│       ├── public/                # Recursos estáticos y service worker MSW
+│   │   │   ├── agent/             # InterviewAgent y AgentToolRuntime (Function Calling S2)
+│   │   │   ├── api/               # Routers REST/WebSocket y esquemas Pydantic v2
+│   │   │   ├── core/              # Configuración, seguridad RBAC y telemetría Anti-Leak
+│   │   │   ├── db/                # Modelos SQLAlchemy 2.0 y sesiones async
+│   │   │   ├── evaluation/        # Motor de evaluación doble juez, cola ARQ y precios
+│   │   │   ├── execution/         # CodeExecutionService y manejo de estado unavailable (H-01)
+│   │   │   ├── problems/          # Catálogo YAML de 12 problemas y ProblemSelector
+│   │   │   ├── reports/           # Generador de reportes PDF WeasyPrint con firma SHA-256
+│   │   │   ├── sandbox/           # Cliente Judge0 CE aislado
+│   │   │   └── scripts/           # Scripts reproducibles S1, S2 y S3
+│   │   └── tests/                 # Suite de pruebas unitarias, multi-tenant y de integración
+│   └── web/                       # Frontend Next.js 15 (React 19 / TypeScript estricto)
 │       ├── src/
 │       │   ├── app/               # Rutas de Next.js (App Router)
-│       │   ├── components/        # Componentes UI (Editor, Chat, Header, Modales)
-│       │   └── lib/               # Hooks de WebSocket, clientes de API y utilidades
-│       └── tests/                 # Pruebas de integración del frontend
+│       │   ├── components/        # Sala de entrevista, Monaco Editor, TestConsole
+│       │   └── lib/               # Hooks WebSocket con reconexión y cliente API tipado
+│       └── tests/                 # Pruebas de frontend
+├── evals/
+│   ├── calibrate.py               # Harness estadístico offline y --live-llm contra Grok
+│   ├── golden_transcripts/        # 20 transcripciones base de regresión rápida
+│   └── s3_benchmark/              # 32 casos S3 con procedencia explícita y panel humano dual
 ├── packages/
-│   └── contracts/                 # Contratos TypeScript generados y esquemas compartidos
-├── docs/                          # Documentación y registros de arquitectura (ADRs)
-│   └── adr/                       # ADR 0001 a ADR 0010
-├── infra/                         # Configuración de Docker Compose para Postgres y Redis
-├── problems/                      # Catálogo de 12 problemas técnicos en formato YAML
-├── Makefile                       # Comandos de automatización del proyecto
-├── .env.example                   # Plantilla de variables de entorno del sistema
+│   └── contracts/                 # Contratos OpenAPI y tipos TypeScript generados
+├── docs/                          # Guías, ADRs y reportes de remediación final
+├── infra/                         # Docker Compose para PostgreSQL, Redis y Judge0 CE
+├── Makefile                       # Comandos de automatización del monorepo
 └── README.md                      # Documentación técnica oficial
 ```
 
@@ -454,20 +434,19 @@ Evaluador-Tecnico/
 
 ## 18. Seguridad y buenas prácticas
 
-- **Anonimización del evaluador (Cumplimiento Ley 1581):** El evaluador no recibe nombres, correos, género ni instituciones académicas del candidato. La identificación se realiza mediante códigos temporales como `CAND-XXXX`.
-- **Aislamiento de código no confiable:** Los envíos del candidato se ejecutan en un sandbox con límites duros de memoria (128 MB), tiempo de CPU (2.0s) y sin privilegios de red o sistema de archivos del servidor anfitrión.
-- **Mitigación de Prompt Injection:** La entrada del candidato en el chat y editor se encapsula en `<untrusted_candidate_input>`, imposibilitando el secuestro de directivas del evaluador.
-- **Autenticación efímera de WebSocket:** Las conexiones en vivo requieren un token efímero de un solo uso generado por el backend y almacenado en Redis con TTL de 60 segundos.
-- **Gestión segura de secretos:** No existen llaves de API, contraseñas o credenciales en el código fuente; todos los valores sensibles son inyectados exclusivamente mediante variables de entorno.
-- **Trazabilidad criptográfica:** Los reportes de evaluación generados incluyen un hash SHA-256 para evitar su alteración tras la emisión.
+- **Aislamiento Multi-Tenant estricto (H-02):** Todos los endpoints de privacidad (`DELETE /privacy/candidates/{id}`), trayectoria (`GET /interviews/{id}/trajectory`) y evaluación verifican pertenencia a `current_user.organization_id`, respondiendo `404 Not Found` ante accesos cruzados entre organizaciones.
+- **Anonimización del evaluador (Cumplimiento Ley 1581):** El evaluador no recibe nombres, correos, género ni instituciones académicas del candidato (`CAND-XXXX`).
+- **Aislamiento de código no confiable:** Los envíos del candidato se ejecutan en Judge0 CE con límites de memoria (`128 MB`), tiempo de CPU (`2.0s`) y procesos (`10`), sin usar `subprocess` local sin aislar.
+- **Mitigación de Prompt Injection:** La entrada del candidato se encapsula en `<untrusted_candidate_input>`, y `AgentToolRuntime` prohíbe sobrescribir claves de contexto (`interview_id`, `organization_id`) desde argumentos de herramientas.
+- **Autenticación efímera de WebSocket:** Las conexiones en vivo requieren un token efímero almacenado en Redis con TTL de 60 segundos.
 
 ---
 
 ## 19. Estado del proyecto
 
-El proyecto se encuentra en estado **funcional y verificado**, cumpliendo con los objetivos y entregables del **Sprint 2 (S2)**:
-- Orquestación del agente y de las 3 herramientas técnicas en backend completada.
-- Sincronización de fases en tiempo real y cierre formal (`WRAPUP` $\to$ `EVALUATE`) validado en frontend y backend.
-- Evaluación automática desacoplada en segundo plano con deduplicación y reporte auditable.
-- Cobertura de pruebas completa con **273 pruebas de backend** y **20 pruebas de frontend** ejecutándose exitosamente.
-- Linters y chequeos de tipos estáticos al 100% sin advertencias.
+El proyecto se encuentra **operativo, auditado y verificado end-to-end contra Grok (`grok-4.6`)**:
+- **S1:** Conversación técnica multi-turno real con retención de contexto, persistencia en PostgreSQL y telemetría de costos verificada.
+- **S2:** Autonomía del agente mediante Function Calling (`tools` / `tool_calls` / `role="tool"`) con 3 herramientas de dominio, validación Pydantic v2 (`extra="forbid"`), reintentos acotados y 10 ejecuciones reales documentadas.
+- **H-01:** Contrato WebSocket y UI alineados para reportar honestamente `status="unavailable"` cuando Judge0 CE no está activo.
+- **H-02:** Aislamiento multi-tenant verificado con pruebas automatizadas de no regresión.
+- **S3:** Benchmark de 32 casos con clasificación explícita de procedencia, evaluación humana de referencia por pares (`evaluator_1`, `evaluator_2`, `consensus`) y calibración estadística en vivo contra Grok.
