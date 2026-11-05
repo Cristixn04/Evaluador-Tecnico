@@ -1,0 +1,73 @@
+{
+  "case_id": "s3_case_32_real-anon-s2-pse-passing-session",
+  "scenario_id": "real-anon-s2-pse-passing-session",
+  "source_interview_id": "506f3994-b067-4a65-b92d-3d9df1a51247",
+  "problem_slug": "pse-payment-reconciliation",
+  "provenance": "synthetic",
+  "provenance_notes": "Sesión interna de smoke test generada en PostgreSQL/Grok (interview_id=506f3994-b067-4a65-b92d-3d9df1a51247). Clasificada honestamente como 'synthetic' (prueba automatizada de plataforma, no candidato humano externo).",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.0,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 4.2,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 5,
+        "algorithmic_reasoning": 4,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 4
+      },
+      "overall_score": 4.2,
+      "recommendation": "hire",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (real_session=506f3994-b067-4a65-b92d-3d9df1a51247, tests=3/3). Puntuación global E1: 4.20 (hire)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    },
+    "consensus_overall_score": 4.2,
+    "consensus_recommendation": "hire"
+  },
+  "turns": [
+    {
+      "turn_id": "t-real-32-1",
+      "speaker": "candidate",
+      "content": "Ya tengo mi solución en Python para conciliación PSE indexando reference -> (amount_cents, status) en ambos lados y ordenando la unión de claves con discrepancia."
+    },
+    {
+      "turn_id": "t-real-32-2",
+      "speaker": "agent",
+      "content": "Tu snapshot se ejecutó en el sandbox. Pasaron 3 de 3 pruebas (all-match, missing-in-ledger, amount-differs). El enfoque con dos mapas reference -> (amount_cents, status) y la unión de claves es coherente con el enunciado."
+    }
+  ],
+  "final_code": "import json, sys\ndata = json.loads(sys.stdin.read())\ngw = {item['reference']: (item['amount_cents'], item['status']) for item in data.get('gateway', [])}\nld = {item['reference']: (item['amount_cents'], item['status']) for item in data.get('ledger', [])}\nmismatches = sorted(ref for ref in (set(gw) | set(ld)) if gw.get(ref) != ld.get(ref))\nprint(json.dumps({'mismatches': mismatches}))\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 3,
+    "total_tests": 3
+  }
+}

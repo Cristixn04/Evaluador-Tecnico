@@ -1,0 +1,83 @@
+{
+  "case_id": "s3_case_31_real-anon-s1-pse-design-session",
+  "scenario_id": "real-anon-s1-pse-design-session",
+  "source_interview_id": "064da846-4f36-4e38-8012-a1cb29b33f08",
+  "problem_slug": "pse-payment-reconciliation",
+  "provenance": "synthetic",
+  "provenance_notes": "Sesión interna de smoke test generada en PostgreSQL/Grok (interview_id=064da846-4f36-4e38-8012-a1cb29b33f08). Clasificada honestamente como 'synthetic' (prueba automatizada de plataforma, no candidato humano externo).",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    2.5,
+    3.6
+  ],
+  "expected_recommendation": "borderline",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 3.0,
+    "recommendation": "borderline",
+    "competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 3,
+        "algorithmic_reasoning": 3,
+        "code_quality": 3,
+        "technical_communication": 3,
+        "complexity_management": 3
+      },
+      "overall_score": 3.0,
+      "recommendation": "borderline",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (real_session=064da846-4f36-4e38-8012-a1cb29b33f08, tests=2/3). Puntuación global E1: 3.00 (borderline)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    },
+    "consensus_overall_score": 3.0,
+    "consensus_recommendation": "borderline"
+  },
+  "turns": [
+    {
+      "turn_id": "t-real-31-1",
+      "speaker": "candidate",
+      "content": "Hola. Estoy revisando el problema de conciliación PSE. En mi diseño quiero asumir que procesamos un lote nocturno de exactamente 420,000 registros y usamos una clave compuesta encabezada por el prefijo 'CUS-ALPHA-99'. ¿Es válido usar un diccionario hash en memoria para ese volumen?"
+    },
+    {
+      "turn_id": "t-real-31-2",
+      "speaker": "agent",
+      "content": "Hola. Estamos en aclaración del enunciado, no en diseño todavía. El problema no fija un lote de 420.000 registros ni una clave compuesta con prefijo CUS-ALPHA-99. Las transacciones llegan con reference, amount_cents y status tal como vienen en el JSON."
+    },
+    {
+      "turn_id": "t-real-31-3",
+      "speaker": "candidate",
+      "content": "Entendido. Además del diccionario en memoria, usaré Decimal('0.01') para comparar los montos en pesos colombianos y un set de códigos vistos para descartar webhooks duplicados en O(1). ¿Qué caso de borde adicional debería contemplar antes de codificar?"
+    },
+    {
+      "turn_id": "t-real-31-4",
+      "speaker": "agent",
+      "content": "Dos supuestos del diseño actual chocan con ese contrato: amount_cents ya viene como entero. ¿Qué ganas comparando con Decimal('0.01') frente a igualdad entera?"
+    }
+  ],
+  "final_code": "def reconcile_draft(gateway, ledger):\n    gw_map = {item['reference']: item for item in gateway}\n    ld_map = {item['reference']: item for item in ledger}\n    return sorted(set(gw_map.keys()) ^ set(ld_map.keys()))\n",
+  "execution_results": {
+    "status": "test_failure",
+    "tests_passed": 2,
+    "total_tests": 3
+  }
+}

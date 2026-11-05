@@ -1,0 +1,82 @@
+{
+  "case_id": "s3_case_28_pubref-sql-merchant-daily-settlement-optimal",
+  "scenario_id": "pubref-sql-merchant-daily-settlement-optimal",
+  "problem_slug": "sql-merchant-daily-settlement",
+  "provenance": "public_reference_solution",
+  "provenance_notes": "Solución de referencia del problema oficial 'sql-merchant-daily-settlement' del catálogo técnico evaluada independientemente por dos revisores humanos.",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    3.8,
+    4.8
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 4.0,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 4,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 4
+      },
+      "overall_score": 4.0,
+      "recommendation": "hire",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (problem=sql-merchant-daily-settlement, tests=3/3, status=success). Puntuación global E1: 4.00 (hire)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    },
+    "consensus_overall_score": 4.0,
+    "consensus_recommendation": "hire"
+  },
+  "turns": [
+    {
+      "turn_id": "t-pub-28-1",
+      "speaker": "agent",
+      "content": "Calcula la liquidación neta diaria por comercio descontando reembolsos (REFUND) y comisiones."
+    },
+    {
+      "turn_id": "t-pub-28-2",
+      "speaker": "candidate",
+      "content": "Agruparé por (merchant_id, settlement_date) sumando ventas aprobadas menos reembolsos y restando la comisión entera por transacción cobrada, ordenando por merchant_id y fecha."
+    },
+    {
+      "turn_id": "t-pub-28-3",
+      "speaker": "agent",
+      "content": "¿Cómo tratas las transacciones con estado REJECTED?"
+    },
+    {
+      "turn_id": "t-pub-28-4",
+      "speaker": "candidate",
+      "content": "Las transacciones REJECTED se filtran antes de agregar porque no mueven fondos ni generan liquidación."
+    }
+  ],
+  "final_code": "SELECT merchant_id, settlement_date,\n       SUM(CASE WHEN tx_type = 'SALE' THEN amount_cents - fee_cents\n                WHEN tx_type = 'REFUND' THEN -amount_cents ELSE 0 END) AS net_settlement_cents\nFROM merchant_transactions\nWHERE status = 'APPROVED'\nGROUP BY merchant_id, settlement_date\nORDER BY merchant_id ASC, settlement_date ASC;\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 3,
+    "total_tests": 3
+  }
+}

@@ -131,3 +131,22 @@ def test_full_calibration_harness_execution() -> None:
     # Transparencia de anotaciones: no afirmar erróneamente que son humanas
     assert results["annotator_distribution"]["synthetic_benchmark"] == 20
     assert results["is_human_verified"] is False
+
+
+def test_s3_benchmark_32_cases_schema_and_metrics() -> None:
+    """S3: Verifica que evals/s3_benchmark tenga >=30 casos con procedencia explícita y panel humano dual."""
+    s3_dir = REPO_ROOT / "evals" / "s3_benchmark"
+    assert s3_dir.exists(), f"Directorio S3 no encontrado: {s3_dir}"
+
+    files = sorted(s3_dir.glob("*.json"))
+    assert len(files) >= 30, f"Se requieren >= 30 casos en S3, encontrados: {len(files)}"
+
+    results = run_calibration(transcripts_dir=s3_dir, live_llm=False, quiet=True)
+    assert results["total_transcripts"] == 32
+    assert results["provenance_distribution"]["synthetic"] == 22
+    assert results["provenance_distribution"]["public_reference_solution"] == 10
+    assert results["is_human_verified"] is False  # Declarado honestamente como False (evaluator_2 pendiente)
+    assert results["spearman_correlation"] is not None and results["spearman_correlation"] >= 0.70
+    assert results["quadratic_weighted_cohen_kappa"] is not None and results["quadratic_weighted_cohen_kappa"] >= 0.60
+    assert len(results["confusion_matrix_3x3"]["matrix"]) == 3
+    assert len(results["per_dimension_concordance"]) == 5

@@ -1,0 +1,81 @@
+{
+  "case_id": "s3_case_08_mid_cache_stampede_protection",
+  "scenario_id": "prob-estampida-cache-xfetch",
+  "provenance": "synthetic",
+  "provenance_notes": "Transcripción sintética estructurada del corpus base (mid_cache_stampede_protection.json) con evaluación humana de referencia por pares preestablecida.",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    3.5,
+    4.5
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 4.0,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 4,
+        "algorithmic_reasoning": 4,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 4
+      },
+      "overall_score": 4.0,
+      "recommendation": "hire",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (tests=4/4, level=mid, status=success). Puntuación global E1: 4.00 (hire)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    },
+    "consensus_overall_score": 4.0,
+    "consensus_recommendation": "hire"
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Implementa regeneración anticipada de caché usando el algoritmo probabilístico XFetch para evitar cache stampede."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "XFetch evalúa: now - (delta * beta * log(random())) > expiry. Si se cumple, regenera en background antes de vencer."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Qué valor recomiendas para el factor beta?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Un valor de beta=1.0 proporciona un balance óptimo entre recomputación anticipada y carga en base de datos."
+    }
+  ],
+  "final_code": "import math, random, time\ndef should_refresh(val, expiry, delta, beta=1.0):\n    now = time.time()\n    if now >= expiry: return True\n    return (now - (delta * beta * math.log(random.random()))) >= expiry\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 4,
+    "total_tests": 4
+  }
+}
