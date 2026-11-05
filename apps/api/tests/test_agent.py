@@ -595,3 +595,190 @@ class TestInterviewAgent:
         with pytest.raises(RuntimeError, match="DB connection failure"):
             await agent._maybe_deliver_hint(sample_interview, InterviewPhase.CODING)
         mock_session.rollback.assert_awaited()
+
+    # Pruebas unitarias y de integración para S2 (Function Calling, validación y seguridad de herramientas)
+
+    @pytest.mark.asyncio
+    async def test_agent_executes_tool_calls_and_synthesizes_final_response(
+        self,
+        mock_session,
+        mock_interview_service,
+        mock_problem_selector,
+        sample_interview,
+        sample_vacancy,
+        sample_problem,
+    ) -> None:
+        import json
+        from unittest.mock import MagicMock
+
+        from sqlalchemy import ScalarResult
+
+        from src.llm.types import ToolCall
+
+        mock_turns_result = MagicMock(spec=ScalarResult)
+        mock_turns_result.all.return_value = []
+        mock_session.scalars.return_value = mock_turns_result
+        mock_session.get = AsyncMock(side_effect=[sample_interview, sample_vacancy, sample_problem])
+
+        call_counter = 0
+
+        async def fake_complete(messages, *, temperature=0.2, max_tokens=None, tools=None, tool_choice=None):
+            nonlocal call_counter
+            call_counter += 1
+            if call_counter == 1:
+                assert tools is not None
+                assert len(tools) == 3
+                return ChatCompletion(
+                    content="",
+                    model="grok-4.6",
+                    usage=TokenUsage(prompt_tokens=100, completion_tokens=20, total_tokens=120),
+                    finish_reason="tool_calls",
+                    tool_calls=[
+                        ToolCall(
+                            id="call-ps-1",
+                            name="problem_selector",
+                            arguments='{"action": "inspect_assigned_problem"}',
+                        )
+                    ],
+                )
+            # En la segunda llamada debe existir un mensaje role="tool" con el resultado
+            tool_msgs = [m for m in messages if m.role == "tool"]
+            assert len(tool_msgs) == 1
+            assert tool_msgs[0].tool_call_id == "call-ps-1"
+            payload = json.loads(tool_msgs[0].content)
+            assert payload["status"] == "success"
+            assert payload["tool"] == "problem_selector"
+            return ChatCompletion(
+                content="El problema asignado ha sido consultado exitosamente.",
+                model="grok-4.6",
+                usage=TokenUsage(prompt_tokens=150, completion_tokens=15, total_tokens=165),
+                finish_reason="stop",
+            )
+
+        fake_llm = AsyncMock()
+        fake_llm.complete = fake_complete
+        agent = InterviewAgent(
+            mock_session,
+            mock_interview_service,
+            mock_problem_selector,
+            prompt_version="v2",
+            llm_client=fake_llm,
+        )
+
+        reply, traces = await agent.generate_reply_with_tools(
+            interview_id=sample_interview.id,
+            user_message="¿Cuál es la estructura del problema actual?",
+        )
+
+        assert "consultado exitosamente" in reply
+        assert len(traces) == 1
+        assert traces[0].tool_name == "problem_selector"
+        assert traces[0].status == "success"
+
+    @pytest.mark.asyncio
+    async def test_tool_runtime_rejects_unknown_tool_invalid_json_and_context_override(
+        self,
+        mock_session,
+        mock_interview_service,
+        mock_problem_selector,
+        sample_interview,
+        sample_vacancy,
+        sample_problem,
+    ) -> None:
+        from src.agent.tools import AgentToolRuntime
+        from src.llm.types import ToolCall
+
+        runtime = AgentToolRuntime(
+            session=mock_session,
+            interview=sample_interview,
+            vacancy=sample_vacancy,
+            problem=sample_problem,
+            interview_service=mock_interview_service,
+            problem_selector=mock_problem_selector,
+        )
+
+        # 1. Herramienta inexistente
+        res_unknown = await runtime.execute_tool_call(
+            ToolCall(id="c1", name="drop_database", arguments="{}")
+        )
+        assert res_unknown["status"] == "error"
+        assert res_unknown["error_code"] == "UNKNOWN_TOOL"
+
+        # 2. JSON malformado
+        res_bad_json = await runtime.execute_tool_call(
+            ToolCall(id="c2", name="problem_selector", arguments="{not-valid-json")
+        )
+        assert res_bad_json["status"] == "error"
+        assert res_bad_json["error_code"] == "INVALID_JSON_ARGUMENTS"
+
+        # 3. Intento de sobrescribir organization_id o interview_id (violación multi-tenant)
+        res_sec = await runtime.execute_tool_call(
+            ToolCall(
+                id="c3",
+                name="problem_selector",
+                arguments='{"action": "inspect_assigned_problem", "organization_id": "other-org"}',
+            )
+        )
+        assert res_sec["status"] == "error"
+        assert res_sec["error_code"] == "CONTEXT_SECURITY_VIOLATION"
+
+        # 4. Argumentos fuera de esquema Pydantic (extra="forbid")
+        res_schema = await runtime.execute_tool_call(
+            ToolCall(
+                id="c4",
+                name="adaptive_hint_generator",
+                arguments='{"requested_level": 99, "reason": "test"}',
+            )
+        )
+        assert res_schema["status"] == "error"
+        assert res_schema["error_code"] == "INVALID_TOOL_ARGUMENTS"
+
+    @pytest.mark.asyncio
+    async def test_tool_runtime_prevents_duplicate_calls_and_retries_transient_errors(
+        self,
+        mock_session,
+        mock_interview_service,
+        mock_problem_selector,
+        sample_interview,
+        sample_vacancy,
+        sample_problem,
+    ) -> None:
+        from src.agent.tools import AgentToolRuntime
+        from src.llm.types import ToolCall
+
+        attempts = 0
+
+        async def flaky_select_one(**kwargs):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise TimeoutError("Temporary DB read timeout")
+            return sample_problem
+
+        mock_problem_selector.select_one = AsyncMock(side_effect=flaky_select_one)
+
+        runtime = AgentToolRuntime(
+            session=mock_session,
+            interview=sample_interview,
+            vacancy=sample_vacancy,
+            problem=sample_problem,
+            interview_service=mock_interview_service,
+            problem_selector=mock_problem_selector,
+            max_retries=1,
+        )
+
+        # Primera llamada: falla en intento 1, se recupera en reintento (attempts == 2)
+        tc = ToolCall(
+            id="call-retry-1",
+            name="problem_selector",
+            arguments='{"action": "search_catalog", "language": "python"}',
+        )
+        res_ok = await runtime.execute_tool_call(tc)
+        assert res_ok["status"] == "success"
+        assert attempts == 2
+        assert runtime.traces[-1].retries == 1
+
+        # Segunda llamada idéntica en el mismo turno: bloqueada por protección anti-bucle
+        res_dup = await runtime.execute_tool_call(tc)
+        assert res_dup["status"] == "error"
+        assert res_dup["error_code"] == "DUPLICATE_TOOL_CALL"
