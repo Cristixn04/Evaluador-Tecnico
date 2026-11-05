@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.evaluation import EvaluationReport
-from src.core.auth import AuthenticatedPrincipal, get_current_user
+from src.core.auth import AuthenticatedPrincipal, get_current_user, require_organization
 from src.db.models import Interview, Snapshot, Vacancy
 from src.db.session import get_db
 from src.evaluation.service import EvaluationService
@@ -51,14 +51,11 @@ async def get_evaluation(
             status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
         )
     _interview, vacancy = row
-    if (
-        vacancy
-        and vacancy.organization_id is not None
-        and vacancy.organization_id != principal.organization_id
-    ):
+    if vacancy is None or vacancy.organization_id is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Organization mismatch"
         )
+    require_organization(vacancy.organization_id, principal)
 
     service = EvaluationService(session)
     try:
@@ -108,14 +105,11 @@ async def get_report_pdf(
             status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
         )
     _interview, vacancy = row
-    if (
-        vacancy
-        and vacancy.organization_id is not None
-        and vacancy.organization_id != principal.organization_id
-    ):
+    if vacancy is None or vacancy.organization_id is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
+            status_code=status.HTTP_403_FORBIDDEN, detail="Organization mismatch"
         )
+    require_organization(vacancy.organization_id, principal)
 
     service = EvaluationService(session)
     try:

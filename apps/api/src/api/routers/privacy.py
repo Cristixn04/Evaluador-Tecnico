@@ -13,9 +13,9 @@ from pydantic import BaseModel, Field
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.core.auth import AuthenticatedPrincipal, get_current_user
+from src.core.auth import AuthenticatedPrincipal, get_current_user, require_organization
 from src.db.enums import InterviewStatus
-from src.db.models import Interview, Invitation, Snapshot, Turn
+from src.db.models import Interview, Invitation, Snapshot, Turn, Vacancy
 from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
 from src.db.session import get_db
 
@@ -133,11 +133,24 @@ async def delete_candidate_data(
             status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
         ) from exc
 
-    interview = await session.get(Interview, interview_id)
-    if not interview:
+    result = await session.execute(
+        select(Interview, Vacancy)
+        .outerjoin(Vacancy, Interview.vacancy_id == Vacancy.id)
+        .where(Interview.id == interview_id)
+    )
+    row = result.first()
+    if not row:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
         )
+    interview, vacancy = row
+
+    if vacancy is None or vacancy.organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organization mismatch",
+        )
+    require_organization(vacancy.organization_id, principal)
 
     # 1. Eliminar evaluaciones vinculadas y sus evidencias/dimensiones dependientes
     eval_res = await session.execute(

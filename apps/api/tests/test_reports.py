@@ -206,6 +206,119 @@ async def test_get_report_pdf_success(db_session):
         assert response.content.startswith(b"%PDF-")
 
 
+@pytest.mark.asyncio
+async def test_get_report_pdf_cross_tenant_forbidden(db_session):
+    """H-02: Usuario de Org B intentando descargar el PDF de Org A recibe 403 Forbidden."""
+    org_a = Organization(name="Report Org A")
+    org_b = Organization(name="Report Org B")
+    db_session.add_all([org_a, org_b])
+    await db_session.flush()
+
+    user_b = User(
+        email="report_user_b@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user_b)
+    await db_session.flush()
+
+    db_session.add(Membership(user_id=user_b.id, organization_id=org_b.id, role=UserRole.RECRUITER))
+    await db_session.flush()
+
+    token_b = create_access_token(
+        user_id=user_b.id,
+        organization_id=org_b.id,
+        role=UserRole.RECRUITER,
+    )
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    vacancy_a = Vacancy(
+        organization_id=org_a.id,
+        title="Vacante Org A PDF",
+        role_category="Backend",
+        seniority=Seniority.SENIOR,
+        raw_description="Descripción",
+    )
+    db_session.add(vacancy_a)
+    await db_session.flush()
+
+    interview_a = Interview(
+        vacancy_id=vacancy_a.id,
+        candidate_email="pdf.orga@test.com",
+        candidate_name="Candidato PDF Org A",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview_a)
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            f"/interviews/{interview_a.id}/report.pdf",
+            headers=headers_b,
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Organization mismatch"
+
+
+@pytest.mark.asyncio
+async def test_get_report_pdf_without_organization_forbidden(db_session):
+    """H-02: Entrevista cuya vacante no tiene organización asociada es denegada con 403."""
+    org = Organization(name="Report Org Valid")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(
+        email="report_orphan_check@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    db_session.add(Membership(user_id=user.id, organization_id=org.id, role=UserRole.RECRUITER))
+    await db_session.flush()
+
+    token = create_access_token(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.RECRUITER,
+    )
+    headers = {"Authorization": f"Bearer {token}"}
+
+    orphan_vacancy = Vacancy(
+        organization_id=None,
+        title="Orphan Vacancy PDF",
+        role_category="Backend",
+        seniority=Seniority.MID,
+        raw_description="Sin organización",
+    )
+    db_session.add(orphan_vacancy)
+    await db_session.flush()
+
+    orphan_interview = Interview(
+        vacancy_id=orphan_vacancy.id,
+        candidate_email="orphan.pdf@test.com",
+        candidate_name="Orphan PDF",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(orphan_interview)
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get(
+            f"/interviews/{orphan_interview.id}/report.pdf",
+            headers=headers,
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Organization mismatch"
+
+
 def test_radar_svg_generation():
     """S-18: El generador produce un SVG vectorial válido con los 5 ejes y polígonos."""
     generator = ReportPdfGenerator()

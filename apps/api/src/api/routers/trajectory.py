@@ -6,7 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.schemas.interview import InterviewTrajectory, TrajectorySnapshot
-from src.core.auth import AuthenticatedPrincipal, get_optional_current_user
+from src.core.auth import AuthenticatedPrincipal, get_current_user, require_organization
 from src.db.models import Interview, Snapshot, Vacancy
 from src.db.session import get_db
 
@@ -20,7 +20,7 @@ router = APIRouter(prefix="/interviews", tags=["Interview Trajectory"])
 )
 async def get_interview_trajectory(
     interview_id: str,
-    principal: AuthenticatedPrincipal | None = Depends(get_optional_current_user),
+    principal: AuthenticatedPrincipal = Depends(get_current_user),
     session: AsyncSession = Depends(get_db),
 ) -> InterviewTrajectory:
     """Obtener la trayectoria cronológica de una entrevista.
@@ -51,15 +51,12 @@ async def get_interview_trajectory(
         )
     interview, vacancy = row
 
-    if (
-        vacancy
-        and vacancy.organization_id is not None
-        and (principal is None or principal.organization_id != vacancy.organization_id)
-    ):
+    if vacancy is None or vacancy.organization_id is None:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Interview not found",
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organization mismatch",
         )
+    require_organization(vacancy.organization_id, principal)
 
     # Cargar snapshots ordenados por fecha de creación (cronológico)
     result = await session.execute(

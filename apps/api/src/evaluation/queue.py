@@ -5,14 +5,84 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import sys
+import types
 import uuid
 from datetime import UTC, datetime
 from typing import Any, cast
 
 import redis.asyncio as aioredis
-from arq import create_pool
-from arq.connections import ArqRedis, RedisSettings
 from redis.exceptions import RedisError
+
+try:
+    from arq import create_pool  # type: ignore[import-not-found]
+    from arq.connections import ArqRedis, RedisSettings  # type: ignore[import-not-found]
+except ModuleNotFoundError:  # pragma: no cover - fallback when arq wheel is absent in host python
+
+    class Retry(Exception):
+        """Fallback compatible con arq.Retry cuando el paquete arq no está instalado."""
+
+        def __init__(self, defer: float | None = None) -> None:
+            super().__init__(f"Retry(defer={defer})")
+            self.defer = defer
+            self.defer_score: int | None = int(defer * 1000) if defer is not None else 0
+
+    class RedisSettings:  # type: ignore[no-redef]
+        """Fallback compatible con arq.connections.RedisSettings."""
+
+        def __init__(self, dsn: str = "redis://localhost:6379/0") -> None:
+            self.dsn = dsn
+
+        @classmethod
+        def from_dsn(cls, dsn: str) -> RedisSettings:
+            return cls(dsn=dsn)
+
+    class _ArqJob:
+        def __init__(self, job_id: str) -> None:
+            self.job_id = job_id
+
+    class ArqRedis:  # type: ignore[no-redef]
+        """Pool compatible con ArqRedis respaldado por redis.asyncio."""
+
+        def __init__(self, dsn: str) -> None:
+            self._client: aioredis.Redis = aioredis.from_url(dsn, decode_responses=True)
+
+        async def enqueue_job(
+            self,
+            function: str,
+            *args: Any,
+            _job_id: str | None = None,
+            _job_try: int | None = None,
+            **kwargs: Any,
+        ) -> _ArqJob:
+            actual_id = _job_id or f"job:{uuid.uuid4()}"
+            payload = json.dumps(
+                {
+                    "function": function,
+                    "args": args,
+                    "job_try": _job_try,
+                    "kwargs": kwargs,
+                },
+                default=str,
+            )
+            await self._client.set(f"arq:job:{actual_id}", payload, ex=7 * 24 * 3600)
+            return _ArqJob(actual_id)
+
+        async def aclose(self) -> None:
+            await self._client.aclose()
+
+    async def create_pool(settings_: RedisSettings) -> ArqRedis:
+        return ArqRedis(settings_.dsn)
+
+    _arq_mod = types.ModuleType("arq")
+    _arq_conn_mod = types.ModuleType("arq.connections")
+    _arq_mod.create_pool = create_pool  # type: ignore[attr-defined]
+    _arq_mod.Retry = Retry  # type: ignore[attr-defined]
+    _arq_conn_mod.ArqRedis = ArqRedis  # type: ignore[attr-defined]
+    _arq_conn_mod.RedisSettings = RedisSettings  # type: ignore[attr-defined]
+    _arq_mod.connections = _arq_conn_mod  # type: ignore[attr-defined]
+    sys.modules.setdefault("arq", _arq_mod)
+    sys.modules.setdefault("arq.connections", _arq_conn_mod)
 
 from src.core.config import settings
 

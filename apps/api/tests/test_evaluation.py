@@ -371,10 +371,13 @@ async def test_endpoint_get_conforme_al_contrato(db_session, mock_judge_llm, sam
     from src.db.enums import UserRole
 
     # Seed a recruiter user and obtain JWT token
-    from src.db.models import Membership, Organization, User
+    from src.db.models import Membership, Organization, User, Vacancy
     org = Organization(name="Org A")
     db_session.add(org)
     await db_session.flush()
+    vacancy = await db_session.get(Vacancy, sample_interview.vacancy_id)
+    assert vacancy is not None
+    vacancy.organization_id = org.id
     user = User(email="recruiter@example.com", hashed_password="$2b$12$KjK.", is_active=True)
     db_session.add(user)
     await db_session.flush()
@@ -493,10 +496,13 @@ async def test_evaluacion_blind_to_pii(db_session, sample_interview):
 
 
 async def test_evaluacion_multi_tenant_isolation(db_session, sample_interview):
-    """Test: Un usuario de Org A no puede acceder a evaluaciones de Org B (404)."""
+    """Test: Un usuario de Org B no puede acceder a evaluaciones, reportes ni trayectorias de Org A (403)."""
+    from sqlalchemy import select
+
     from src.core.security import create_access_token
     from src.db.enums import UserRole
     from src.db.models import Membership, Organization, User, Vacancy
+    from src.db.models.interview import Evaluation as EvaluationModel
 
     # Org A (propietaria de la vacante)
     org_a = Organization(name="Org Propietaria")
@@ -504,6 +510,7 @@ async def test_evaluacion_multi_tenant_isolation(db_session, sample_interview):
     await db_session.flush()
 
     vacancy = await db_session.get(Vacancy, sample_interview.vacancy_id)
+    assert vacancy is not None
     vacancy.organization_id = org_a.id
     await db_session.commit()
 
@@ -528,19 +535,88 @@ async def test_evaluacion_multi_tenant_isolation(db_session, sample_interview):
     async with AsyncClient(
         transport=ASGITransport(app=app), base_url="http://testserver"
     ) as ac:
-        # Org B intentando ver evaluación de Org A
+        # Org B intentando ver evaluación de Org A -> 403 Forbidden
         resp_eval = await ac.get(
             f"/interviews/{sample_interview.id}/evaluation",
             headers={"Authorization": f"Bearer {token_b}"},
         )
-        assert resp_eval.status_code == HTTPStatus.NOT_FOUND
+        assert resp_eval.status_code == HTTPStatus.FORBIDDEN
+        assert resp_eval.json()["detail"] == "Organization mismatch"
 
-        # Org B intentando ver trajectory de Org A
+        # Org B intentando descargar PDF de Org A -> 403 Forbidden
+        resp_pdf = await ac.get(
+            f"/interviews/{sample_interview.id}/report.pdf",
+            headers={"Authorization": f"Bearer {token_b}"},
+        )
+        assert resp_pdf.status_code == HTTPStatus.FORBIDDEN
+        assert resp_pdf.json()["detail"] == "Organization mismatch"
+
+        # Org B intentando ver trajectory de Org A -> 403 Forbidden
         resp_traj = await ac.get(
             f"/interviews/{sample_interview.id}/trajectory",
             headers={"Authorization": f"Bearer {token_b}"},
         )
-        assert resp_traj.status_code == HTTPStatus.NOT_FOUND
+        assert resp_traj.status_code == HTTPStatus.FORBIDDEN
+        assert resp_traj.json()["detail"] == "Organization mismatch"
+
+        # Usuario sin autenticación intentando ver evaluación -> 401 Unauthorized
+        resp_unauth = await ac.get(f"/interviews/{sample_interview.id}/evaluation")
+        assert resp_unauth.status_code == HTTPStatus.UNAUTHORIZED
+
+    # Verificar que el intento rechazado no disparó ni persistió ninguna evaluación
+    eval_in_db = (
+        await db_session.execute(
+            select(EvaluationModel).where(EvaluationModel.interview_id == sample_interview.id)
+        )
+    ).scalar_one_or_none()
+    assert eval_in_db is None
+
+
+async def test_evaluacion_without_organization_denied_safely(db_session, sample_interview):
+    """H-02: Entrevista cuya vacante tiene organization_id=None es denegada con 403."""
+    from sqlalchemy import select
+
+    from src.core.security import create_access_token
+    from src.db.enums import UserRole
+    from src.db.models import Membership, Organization, User, Vacancy
+    from src.db.models.interview import Evaluation as EvaluationModel
+
+    vacancy = await db_session.get(Vacancy, sample_interview.vacancy_id)
+    assert vacancy is not None
+    vacancy.organization_id = None
+
+    org = Organization(name="Org Autenticada")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(email="recruiter_orphan_eval@example.com", hashed_password="$2b$12$KjK.", is_active=True)
+    db_session.add(user)
+    await db_session.flush()
+    db_session.add(Membership(user_id=user.id, organization_id=org.id, role=UserRole.RECRUITER))
+    await db_session.commit()
+
+    token = create_access_token(
+        user_id=user.id,
+        organization_id=org.id,
+        role=UserRole.RECRUITER,
+    )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as ac:
+        resp_eval = await ac.get(
+            f"/interviews/{sample_interview.id}/evaluation",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        assert resp_eval.status_code == HTTPStatus.FORBIDDEN
+        assert resp_eval.json()["detail"] == "Organization mismatch"
+
+    eval_in_db = (
+        await db_session.execute(
+            select(EvaluationModel).where(EvaluationModel.interview_id == sample_interview.id)
+        )
+    ).scalar_one_or_none()
+    assert eval_in_db is None
 
 
 # ==============================================================================

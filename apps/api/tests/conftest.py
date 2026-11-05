@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+import src.evaluation.queue as _eval_queue_compat  # noqa: F401
 from src.core.config import settings
 from src.db.base import Base
 from src.db.models import (

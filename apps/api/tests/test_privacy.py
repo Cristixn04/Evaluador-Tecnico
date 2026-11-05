@@ -142,6 +142,7 @@ async def test_delete_candidate_data(db_session):
     auth_headers = {"Authorization": f"Bearer {token}"}
 
     vacancy = Vacancy(
+        organization_id=org.id,
         title="Deletion Test Vacancy",
         role_category="Backend",
         seniority=Seniority.SENIOR,
@@ -209,6 +210,7 @@ async def test_cascading_deletion_with_evaluations_and_evidences(db_session):
     auth_headers = {"Authorization": f"Bearer {token}"}
 
     vacancy = Vacancy(
+        organization_id=org.id,
         title="Cascading Test Vacancy",
         role_category="Backend",
         seniority=Seniority.MID,
@@ -357,6 +359,237 @@ async def test_delete_candidate_nonexistent_returns_404(db_session):
             headers=auth_headers,
         )
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_delete_candidate_unauthenticated_returns_401_and_preserves_data(db_session):
+    """Usuario sin autenticación recibe 401 y no modifica datos."""
+    org = Organization(name="Unauth Privacy Org")
+    db_session.add(org)
+    await db_session.flush()
+
+    vacancy = Vacancy(
+        organization_id=org.id,
+        title="Unauth Vacancy",
+        role_category="Backend",
+        seniority=Seniority.MID,
+        raw_description="Vacante protegida",
+    )
+    db_session.add(vacancy)
+    await db_session.flush()
+
+    interview = Interview(
+        vacancy_id=vacancy.id,
+        candidate_email="intacto@example.com",
+        candidate_name="Candidato Intacto",
+        access_token="token-intacto-123",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview)
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(f"/privacy/candidates/{interview.id}")
+        assert response.status_code == 401
+
+    await db_session.refresh(interview)
+    assert interview.status == InterviewStatus.COMPLETED
+    assert interview.candidate_name == "Candidato Intacto"
+    assert interview.candidate_email == "intacto@example.com"
+    assert interview.access_token == "token-intacto-123"
+
+
+@pytest.mark.asyncio
+async def test_delete_candidate_cross_tenant_forbidden_and_preserves_data(db_session):
+    """H-02: Usuario de Org B no puede eliminar ni anonimizar datos de Org A (403)."""
+    org_a = Organization(name="Org Propietaria A")
+    org_b = Organization(name="Org Atacante B")
+    db_session.add_all([org_a, org_b])
+    await db_session.flush()
+
+    user_b = User(
+        email="attacker_b@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user_b)
+    await db_session.flush()
+
+    membership_b = Membership(
+        user_id=user_b.id,
+        organization_id=org_b.id,
+        role=UserRole.ADMIN,
+    )
+    db_session.add(membership_b)
+    await db_session.flush()
+
+    token_b = create_access_token(
+        user_id=user_b.id,
+        organization_id=org_b.id,
+        role=UserRole.ADMIN,
+    )
+    headers_b = {"Authorization": f"Bearer {token_b}"}
+
+    vacancy_a = Vacancy(
+        organization_id=org_a.id,
+        title="Vacante Org A",
+        role_category="Backend",
+        seniority=Seniority.SENIOR,
+        raw_description="Vacante exclusiva de Org A",
+    )
+    db_session.add(vacancy_a)
+    await db_session.flush()
+
+    interview_a = Interview(
+        vacancy_id=vacancy_a.id,
+        candidate_email="candidato.orga@example.com",
+        candidate_name="Candidato Org A",
+        access_token="secret-access-token-orga",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(interview_a)
+    await db_session.flush()
+
+    invitation_a = Invitation(
+        vacancy_id=vacancy_a.id,
+        interview_id=interview_a.id,
+        candidate_name="Candidato Org A",
+        candidate_email="candidato.orga@example.com",
+        token_hash="hash_orga_123",
+        token_selector="selector_orga_12",
+        expires_at=datetime.now(UTC) + timedelta(days=7),
+    )
+    db_session.add(invitation_a)
+
+    turn_a = Turn(
+        interview_id=interview_a.id,
+        speaker=TurnSpeaker.CANDIDATE,
+        content="Solución confidencial de Org A",
+    )
+    db_session.add(turn_a)
+
+    snap_a = Snapshot(
+        interview_id=interview_a.id,
+        phase="CODING",
+        code="def org_a_solution(): return 42",
+    )
+    db_session.add(snap_a)
+    await db_session.flush()
+
+    eval_a = Evaluation(
+        interview_id=interview_a.id,
+        overall_score=4.8,
+        recommendation="hire",
+        needs_human_review=False,
+        evaluated_at=datetime.now(UTC),
+    )
+    db_session.add(eval_a)
+    await db_session.flush()
+
+    dim_a = EvaluationDimension(
+        evaluation_id=eval_a.id,
+        name="problem_solving",
+        score=5,
+        reasoning="Excelente",
+    )
+    ev_a = EvaluationEvidence(
+        evaluation_id=eval_a.id,
+        dimension_name="problem_solving",
+        quote="org_a_solution",
+        reasoning="Óptimo",
+        turn_id=turn_a.id,
+        snapshot_id=snap_a.id,
+    )
+    db_session.add_all([dim_a, ev_a])
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            f"/privacy/candidates/{interview_a.id}",
+            headers=headers_b,
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Organization mismatch"
+
+    # Verificar que ningún registro de Org A fue eliminado ni anonimizado
+    await db_session.refresh(interview_a)
+    assert interview_a.status == InterviewStatus.COMPLETED
+    assert interview_a.candidate_name == "Candidato Org A"
+    assert interview_a.candidate_email == "candidato.orga@example.com"
+    assert interview_a.access_token == "secret-access-token-orga"
+
+    await db_session.refresh(invitation_a)
+    assert invitation_a.candidate_name == "Candidato Org A"
+    assert invitation_a.candidate_email == "candidato.orga@example.com"
+
+    assert len((await db_session.execute(select(Turn).where(Turn.interview_id == interview_a.id))).scalars().all()) == 1
+    assert len((await db_session.execute(select(Snapshot).where(Snapshot.interview_id == interview_a.id))).scalars().all()) == 1
+    assert len((await db_session.execute(select(Evaluation).where(Evaluation.interview_id == interview_a.id))).scalars().all()) == 1
+    assert len((await db_session.execute(select(EvaluationDimension).where(EvaluationDimension.evaluation_id == eval_a.id))).scalars().all()) == 1
+    assert len((await db_session.execute(select(EvaluationEvidence).where(EvaluationEvidence.evaluation_id == eval_a.id))).scalars().all()) == 1
+
+
+@pytest.mark.asyncio
+async def test_delete_candidate_without_organization_denied_safely(db_session):
+    """H-02: Recurso cuya vacante tiene organization_id=None es denegado de forma segura (403)."""
+    org = Organization(name="Valid Org")
+    db_session.add(org)
+    await db_session.flush()
+
+    user = User(
+        email="user_valid_org@test.com",
+        hashed_password=hash_password("secret123"),
+        is_active=True,
+    )
+    db_session.add(user)
+    await db_session.flush()
+
+    db_session.add(Membership(user_id=user.id, organization_id=org.id, role=UserRole.ADMIN))
+    await db_session.flush()
+
+    token = create_access_token(user_id=user.id, organization_id=org.id, role=UserRole.ADMIN)
+    auth_headers = {"Authorization": f"Bearer {token}"}
+
+    orphan_vacancy = Vacancy(
+        organization_id=None,
+        title="Orphan Vacancy",
+        role_category="Backend",
+        seniority=Seniority.MID,
+        raw_description="Vacante sin organización",
+    )
+    db_session.add(orphan_vacancy)
+    await db_session.flush()
+
+    orphan_interview = Interview(
+        vacancy_id=orphan_vacancy.id,
+        candidate_email="orphan@example.com",
+        candidate_name="Candidato Huérfano",
+        expires_at=datetime.now(UTC) + timedelta(hours=2),
+        status=InterviewStatus.COMPLETED,
+        phase=InterviewPhase.EVALUATE,
+    )
+    db_session.add(orphan_interview)
+    await db_session.commit()
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.delete(
+            f"/privacy/candidates/{orphan_interview.id}",
+            headers=auth_headers,
+        )
+        assert response.status_code == 403
+        assert response.json()["detail"] == "Organization mismatch"
+
+    await db_session.refresh(orphan_interview)
+    assert orphan_interview.status == InterviewStatus.COMPLETED
+    assert orphan_interview.candidate_name == "Candidato Huérfano"
+    assert orphan_interview.candidate_email == "orphan@example.com"
 
 
 @pytest.mark.asyncio
