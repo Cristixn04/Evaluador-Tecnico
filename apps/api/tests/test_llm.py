@@ -272,3 +272,152 @@ async def test_mock_llm_client_can_be_parsed_by_vacancy_parser() -> None:
     assert profile.primary_language == "python"
     assert "python" in profile.required_skills
     assert "fastapi" in profile.required_skills
+
+
+@pytest.mark.asyncio
+async def test_complete_with_tools_and_tool_calls_roundtrip() -> None:
+    """S2: Verifica serialización de tools/tool_choice/role=tool y parseo de tool_calls."""
+    from src.llm.types import ToolCall
+
+    requests_log: list[dict[str, object]] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        payload = json.loads(request.content.decode("utf-8"))
+        requests_log.append(payload)
+        if len(requests_log) == 1:
+            return httpx.Response(
+                200,
+                json={
+                    "model": "grok-4.6",
+                    "choices": [
+                        {
+                            "finish_reason": "tool_calls",
+                            "message": {
+                                "role": "assistant",
+                                "content": None,
+                                "tool_calls": [
+                                    {
+                                        "id": "call-abc-123",
+                                        "type": "function",
+                                        "function": {
+                                            "name": "problem_selector",
+                                            "arguments": '{"action":"inspect_assigned_problem"}',
+                                        },
+                                    }
+                                ],
+                            },
+                        }
+                    ],
+                    "usage": {"prompt_tokens": 25, "completion_tokens": 12, "total_tokens": 37},
+                },
+            )
+        return httpx.Response(
+            200,
+            json={
+                "model": "grok-4.6",
+                "choices": [
+                    {
+                        "finish_reason": "stop",
+                        "message": {
+                            "role": "assistant",
+                            "content": "El problema tiene 4 casos de prueba.",
+                        },
+                    }
+                ],
+                "usage": {"prompt_tokens": 45, "completion_tokens": 10, "total_tokens": 55},
+            },
+        )
+
+    http_client = httpx.AsyncClient(
+        base_url="https://api.reto.pltk.mx/v1",
+        transport=httpx.MockTransport(handler),
+    )
+    client = OpenAICompatibleClient(
+        api_key="test-key",
+        base_url="https://api.reto.pltk.mx/v1",
+        model="grok-4.6",
+        client=http_client,
+    )
+    tools_schema = [
+        {
+            "type": "function",
+            "function": {
+                "name": "problem_selector",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }
+    ]
+
+    first = await client.complete(
+        [ChatMessage(role="user", content="Consulta el problema")],
+        tools=tools_schema,
+        tool_choice="auto",
+    )
+    assert first.finish_reason == "tool_calls"
+    assert first.content == ""
+    assert len(first.tool_calls) == 1
+    assert first.tool_calls[0] == ToolCall(
+        id="call-abc-123",
+        name="problem_selector",
+        arguments='{"action":"inspect_assigned_problem"}',
+    )
+    assert requests_log[0]["tools"] == tools_schema
+    assert requests_log[0]["tool_choice"] == "auto"
+
+    second = await client.complete(
+        [
+            ChatMessage(role="user", content="Consulta el problema"),
+            ChatMessage(role="assistant", content="", tool_calls=first.tool_calls),
+            ChatMessage(
+                role="tool",
+                tool_call_id="call-abc-123",
+                name="problem_selector",
+                content='{"status":"success","total_tests":4}',
+            ),
+        ],
+        tools=tools_schema,
+    )
+    assert second.finish_reason == "stop"
+    assert "4 casos" in second.content
+    sent_msgs = requests_log[1]["messages"]
+    assert isinstance(sent_msgs, list)
+    assert sent_msgs[1]["tool_calls"][0]["id"] == "call-abc-123"  # type: ignore[index]
+    assert sent_msgs[2]["role"] == "tool"  # type: ignore[index]
+    assert sent_msgs[2]["tool_call_id"] == "call-abc-123"  # type: ignore[index]
+    await http_client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_complete_invalid_tool_calls_raises_invalid_response() -> None:
+    """S2: Verifica rechazo de payloads malformados en tool_calls."""
+    async def handler(_: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "model": "grok-4.6",
+                "choices": [
+                    {
+                        "finish_reason": "tool_calls",
+                        "message": {
+                            "role": "assistant",
+                            "content": None,
+                            "tool_calls": [{"id": "", "function": {"name": ""}}],
+                        },
+                    }
+                ],
+            },
+        )
+
+    http_client = httpx.AsyncClient(
+        base_url="https://api.reto.pltk.mx/v1",
+        transport=httpx.MockTransport(handler),
+    )
+    client = OpenAICompatibleClient(
+        api_key="test-key",
+        base_url="https://api.reto.pltk.mx/v1",
+        model="grok-4.6",
+        client=http_client,
+    )
+    with pytest.raises(LLMInvalidResponseError, match="id is missing or invalid"):
+        await client.complete([ChatMessage(role="user", content="test")])
+    await http_client.aclose()

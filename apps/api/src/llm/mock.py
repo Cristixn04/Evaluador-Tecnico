@@ -39,7 +39,10 @@ class MockLLMClient:
         messages: list[ChatMessage],
         *,
         model: str | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
     ) -> ChatCompletion:
+        _ = (tools, tool_choice)
         self.history.append(list(messages))
         if self._error is not None:
             raise self._error
