@@ -120,6 +120,8 @@ class Judge0Adapter:
             "memory_limit": effective_memory_mb * 1000,
             "max_processes_and_or_threads": self._max_processes_and_or_threads,
             "enable_network": False,
+            "enable_per_process_and_thread_time_limit": True,
+            "enable_per_process_and_thread_memory_limit": True,
         }
         if request.expected_output is not None:
             payload["expected_output"] = request.expected_output
