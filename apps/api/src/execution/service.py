@@ -9,8 +9,14 @@ from src.core.telemetry import tool_telemetry
 from src.db.enums import TurnSpeaker
 from src.db.models import Interview, Problem, Snapshot, Turn
 from src.interview.service import InterviewService
+from src.sandbox.exceptions import (
+    SandboxInvalidResponseError,
+    SandboxProviderError,
+    SandboxTimeoutError,
+    SandboxUnavailableError,
+)
 from src.sandbox.factory import create_code_runner
-from src.sandbox.types import ExecutionStatus, RunRequest
+from src.sandbox.types import CodeRunner, ExecutionStatus, RunRequest
 
 
 class CodeExecutionError(Exception):
@@ -33,10 +39,11 @@ class CodeExecutionService:
         self,
         session: AsyncSession,
         interview_service: InterviewService,
+        sandbox_runner: CodeRunner | None = None,
     ) -> None:
         self._session = session
         self._interview_service = interview_service
-        self._runner = create_code_runner()
+        self._runner = sandbox_runner if sandbox_runner is not None else create_code_runner()
 
     async def execute_code(
         self,
@@ -85,36 +92,15 @@ class CodeExecutionService:
                     runner_available = False
 
             if not runner_available:
-                # Si el sandbox no está disponible, no simular resultados: registrar unavailable
-                snapshot = Snapshot(
+                return await self._record_unavailable(
                     interview_id=interview_id,
-                    code=code,
                     phase=interview.phase.value,
+                    code=code,
                     language=language,
-                    reason="run",
-                    tests_passed=None,
                     total_tests=len(problem_spec.tests),
-                    execution_status="unavailable",
+                    telemetry=telemetry,
+                    reason_detail="Judge0 CE sandbox is currently unavailable. Code execution could not be verified in real time.",
                 )
-                self._session.add(snapshot)
-                turn = Turn(
-                    interview_id=interview_id,
-                    speaker=TurnSpeaker.CANDIDATE,
-                    content=f"[Code execution attempt - sandbox unavailable]\n```{language}\n{code}\n```",
-                )
-                self._session.add(turn)
-                await self._session.flush()
-
-                telemetry.error("Judge0 sandbox unavailable", status="unavailable")
-                return {
-                    "status": "unavailable",
-                    "stdout": None,
-                    "stderr": "Judge0 CE sandbox is currently unavailable. Code execution could not be verified in real time.",
-                    "execution_time_ms": 0,
-                    "tests_passed": None,
-                    "total_tests": len(problem_spec.tests),
-                    "test_details": [],
-                }
 
             # Ejecutar pruebas reales vinculadas al problema en Judge0
             tests_passed = 0
@@ -127,54 +113,76 @@ class CodeExecutionService:
             stdout_str: str | None = None
             stderr_str: str | None = None
 
-            if total_tests == 0:
-                # Si no hay tests especificados, ejecutar código una vez
-                run_request = RunRequest(
-                    language=language,
-                    source=code,
-                    timeout_ms=problem_spec.limits.timeout_ms,
-                    memory_mb=problem_spec.limits.memory_mb,
-                )
-                result = await self._runner.run(run_request)
-                ws_status = self.STATUS_MAP.get(result.status, "runtime_error")
-                execution_time_ms = int(result.time_seconds * 1000) if result.time_seconds else 0
-                stdout_str = result.stdout
-                stderr_str = result.stderr
-            else:
-                for tc in problem_spec.tests:
-                    run_req = RunRequest(
+            try:
+                if total_tests == 0:
+                    # Si no hay tests especificados, ejecutar código una vez
+                    run_request = RunRequest(
                         language=language,
                         source=code,
-                        stdin=tc.input,
-                        expected_output=tc.expected_output,
                         timeout_ms=problem_spec.limits.timeout_ms,
                         memory_mb=problem_spec.limits.memory_mb,
                     )
-                    res = await self._runner.run(run_req)
-                    if res.time_seconds:
-                        total_time_seconds += res.time_seconds
-                    if res.stdout:
-                        final_stdout.append(res.stdout)
-                    if res.stderr:
-                        final_stderr.append(res.stderr)
+                    result = await self._runner.run(run_request)
+                    ws_status = self.STATUS_MAP.get(result.status, "runtime_error")
+                    execution_time_ms = int(result.time_seconds * 1000) if result.time_seconds else 0
+                    stdout_str = result.stdout
+                    stderr_str = result.stderr or result.compile_output or None
+                else:
+                    for tc in problem_spec.tests:
+                        run_req = RunRequest(
+                            language=language,
+                            source=code,
+                            stdin=tc.input,
+                            expected_output=tc.expected_output,
+                            timeout_ms=problem_spec.limits.timeout_ms,
+                            memory_mb=problem_spec.limits.memory_mb,
+                        )
+                        res = await self._runner.run(run_req)
+                        if res.time_seconds:
+                            total_time_seconds += res.time_seconds
+                        if res.stdout:
+                            final_stdout.append(res.stdout)
+                        err_out = res.stderr or res.compile_output
+                        if err_out:
+                            final_stderr.append(err_out)
 
-                    status_mapped = self.STATUS_MAP.get(res.status, "runtime_error")
-                    passed = (status_mapped == "success")
-                    if passed:
-                        tests_passed += 1
-                    elif worst_status == "success":
-                        worst_status = status_mapped
+                        status_mapped = self.STATUS_MAP.get(res.status, "runtime_error")
+                        passed = status_mapped == "success"
+                        if passed:
+                            tests_passed += 1
+                        elif worst_status == "success":
+                            worst_status = status_mapped
 
-                    test_details.append({
-                        "test_name": tc.id,
-                        "passed": passed,
-                        "message": "Passed" if passed else (res.stderr or status_mapped),
-                    })
+                        test_details.append({
+                            "test_name": tc.id,
+                            "passed": passed,
+                            "message": "Passed" if passed else (err_out or status_mapped),
+                        })
 
-                ws_status = "success" if (tests_passed == total_tests) else worst_status
+                    ws_status = "success" if (tests_passed == total_tests) else worst_status
+                    execution_time_ms = int(total_time_seconds * 1000)
+                    stdout_str = "\n".join(final_stdout) if final_stdout else None
+                    stderr_str = "\n".join(final_stderr) if final_stderr else None
+            except (SandboxUnavailableError, SandboxProviderError) as exc:
+                return await self._record_unavailable(
+                    interview_id=interview_id,
+                    phase=interview.phase.value,
+                    code=code,
+                    language=language,
+                    total_tests=total_tests,
+                    telemetry=telemetry,
+                    reason_detail=f"Judge0 sandbox provider unavailable: {exc}",
+                )
+            except SandboxTimeoutError as exc:
+                ws_status = "timeout"
+                execution_time_ms = problem_spec.limits.timeout_ms
+                stdout_str = "\n".join(final_stdout) if final_stdout else None
+                stderr_str = str(exc) or "Execution timed out in sandbox"
+            except SandboxInvalidResponseError as exc:
+                ws_status = "runtime_error"
                 execution_time_ms = int(total_time_seconds * 1000)
                 stdout_str = "\n".join(final_stdout) if final_stdout else None
-                stderr_str = "\n".join(final_stderr) if final_stderr else None
+                stderr_str = f"Malformed response from execution provider: {exc}"
 
             # Persistir snapshot con resultados reales de ejecución
             snapshot = Snapshot(
@@ -225,5 +233,49 @@ class CodeExecutionService:
             telemetry.error(exc, status="runtime_error")
             raise
 
+    async def _record_unavailable(
+        self,
+        *,
+        interview_id: UUID,
+        phase: str,
+        code: str,
+        language: str,
+        total_tests: int,
+        telemetry: object,
+        reason_detail: str,
+    ) -> dict:
+        snapshot = Snapshot(
+            interview_id=interview_id,
+            code=code,
+            phase=phase,
+            language=language,
+            reason="run",
+            tests_passed=None,
+            total_tests=total_tests,
+            execution_status="unavailable",
+        )
+        self._session.add(snapshot)
+        turn = Turn(
+            interview_id=interview_id,
+            speaker=TurnSpeaker.CANDIDATE,
+            content=f"[Code execution attempt - sandbox unavailable]\n```{language}\n{code}\n```",
+        )
+        self._session.add(turn)
+        await self._session.flush()
+
+        if hasattr(telemetry, "error"):
+            telemetry.error("Judge0 sandbox unavailable", status="unavailable")
+        return {
+            "status": "unavailable",
+            "stdout": None,
+            "stderr": reason_detail,
+            "execution_time_ms": 0,
+            "tests_passed": None,
+            "total_tests": total_tests,
+            "test_details": [],
+        }
+
     async def close(self) -> None:
-        await self._runner.aclose()
+        aclose_fn = getattr(self._runner, "aclose", None)
+        if callable(aclose_fn):
+            await aclose_fn()

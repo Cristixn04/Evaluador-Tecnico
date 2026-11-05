@@ -16,6 +16,20 @@ export interface ChatMessage {
   timestamp: number;
 }
 
+export type ExtendedExecutionStatus =
+  | ServerCodeExecutionResultMessage["status"]
+  | "unavailable";
+
+export type ExtendedCodeExecutionResultMessage = Omit<
+  ServerCodeExecutionResultMessage,
+  "status" | "stdout" | "stderr" | "tests_passed"
+> & {
+  status: ExtendedExecutionStatus;
+  stdout: string | null;
+  stderr: string | null;
+  tests_passed: number | null;
+};
+
 interface UseInterviewSocketProps {
   interviewId: string;
   token: string;
@@ -49,7 +63,7 @@ export function useInterviewSocket({
         : "connecting"
   );
   const [timeRemaining, setTimeRemaining] = useState(2700); // 45 minutos por defecto
-  const [testResult, setTestResult] = useState<ServerCodeExecutionResultMessage | null>(null);
+  const [testResult, setTestResult] = useState<ExtendedCodeExecutionResultMessage | null>(null);
   const [isRunningTests, setIsRunningTests] = useState(false);
 
   const socketRef = useRef<WebSocket | null>(null);

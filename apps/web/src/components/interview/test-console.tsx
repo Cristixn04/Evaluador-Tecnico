@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { ServerCodeExecutionResultMessage } from "@evaluador/contracts";
+import type { ExtendedCodeExecutionResultMessage } from "@/lib/hooks/use-interview-socket";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Terminal, Check, AlertTriangle, Clock } from "lucide-react";
 
 interface TestConsoleProps {
-  result: ServerCodeExecutionResultMessage | null;
+  result: ExtendedCodeExecutionResultMessage | null;
   isRunning: boolean;
 }
 
@@ -38,10 +38,18 @@ export function TestConsole({ result, isRunning }: TestConsoleProps) {
             <span>Resultados de Tests</span>
             {result && (
               <Badge
-                variant={result.status === "success" ? "secondary" : "destructive"}
+                variant={
+                  result.status === "success"
+                    ? "secondary"
+                    : result.status === "unavailable"
+                      ? "outline"
+                      : "destructive"
+                }
                 className="text-[10px] h-4 px-1"
               >
-                {result.tests_passed}/{result.total_tests}
+                {result.status === "unavailable" || result.tests_passed === null
+                  ? `No disp. (${result.total_tests})`
+                  : `${result.tests_passed}/${result.total_tests}`}
               </Badge>
             )}
           </button>
@@ -108,21 +116,30 @@ export function TestConsole({ result, isRunning }: TestConsoleProps) {
               className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs font-medium ${
                 result.status === "success"
                   ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300"
-                  : "bg-red-950/40 border-red-800/60 text-red-300"
+                  : result.status === "unavailable"
+                    ? "bg-amber-950/40 border-amber-800/60 text-amber-300"
+                    : "bg-red-950/40 border-red-800/60 text-red-300"
               }`}
             >
               {result.status === "success" ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                   <span>
-                    ¡Excelente trabajo! Has superado todos los casos de prueba ({result.tests_passed}/{result.total_tests}).
+                    ¡Excelente trabajo! Has superado todos los casos de prueba ({result.tests_passed ?? 0}/{result.total_tests}).
+                  </span>
+                </>
+              ) : result.status === "unavailable" ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span>
+                    El entorno de ejecución (sandbox Judge0) no está disponible actualmente. Tu código fue guardado, pero las pruebas ({result.total_tests}) no pudieron ejecutarse en tiempo real.
                   </span>
                 </>
               ) : (
                 <>
                   <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
                   <span>
-                    Algunos casos de prueba fallaron ({result.tests_passed}/{result.total_tests}). Revisa tu lógica de depuración.
+                    Algunos casos de prueba fallaron ({result.tests_passed ?? 0}/{result.total_tests}). Revisa tu lógica de depuración.
                   </span>
                 </>
               )}

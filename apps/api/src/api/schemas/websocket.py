@@ -77,11 +77,18 @@ class ServerPhaseChangedMessage(BaseModel):
 
 class ServerCodeExecutionResultMessage(BaseModel):
     type: Literal["code_execution_result"]
-    status: Literal["success", "test_failure", "compile_error", "timeout", "runtime_error"]
-    stdout: str
-    stderr: str
+    status: Literal[
+        "success",
+        "test_failure",
+        "compile_error",
+        "timeout",
+        "runtime_error",
+        "unavailable",
+    ]
+    stdout: str | None = None
+    stderr: str | None = None
     execution_time_ms: int
-    tests_passed: int
+    tests_passed: int | None = None
     total_tests: int
     test_details: list[dict] | None = None
 

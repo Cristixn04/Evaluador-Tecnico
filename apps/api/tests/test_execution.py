@@ -313,3 +313,57 @@ class TestCodeExecutionService:
         from src.db.models import Snapshot, Turn
         assert any(isinstance(obj, Snapshot) for obj in added_objects)
         assert any(isinstance(obj, Turn) for obj in added_objects)
+
+    @pytest.mark.asyncio
+    async def test_h01_sandbox_unavailable_returns_unavailable_contract(
+        self, execution_service, sample_interview, sample_problem
+    ) -> None:
+        """H-01: Cuando Judge0 no está disponible, retorna status='unavailable' con stdout=None y tests_passed=None."""
+        from src.api.schemas.websocket import ServerCodeExecutionResultMessage
+
+        execution_service._session.get = AsyncMock(side_effect=[sample_interview, sample_problem])
+        execution_service._runner.check_availability = AsyncMock(return_value=False)
+
+        with patch("src.problems.loader.load_default_catalog", return_value=[sample_problem._spec]):
+            result = await execution_service.execute_code(
+                interview_id=sample_interview.id,
+                code="print(1+2)",
+                language="python",
+            )
+
+        assert result["status"] == "unavailable"
+        assert result["stdout"] is None
+        assert result["tests_passed"] is None
+        assert result["total_tests"] == 2
+        assert result["test_details"] == []
+
+        # Verificar que el esquema WebSocket valide sin lanzar ValidationError
+        ws_msg = ServerCodeExecutionResultMessage(type="code_execution_result", **result)
+        assert ws_msg.status == "unavailable"
+        assert ws_msg.stdout is None
+        assert ws_msg.tests_passed is None
+
+    @pytest.mark.asyncio
+    async def test_h01_sandbox_exception_during_run_returns_unavailable(
+        self, execution_service, sample_interview, sample_problem
+    ) -> None:
+        """H-01: Si Judge0 lanza SandboxUnavailableError en mitad de run(), retorna status='unavailable'."""
+        from src.sandbox.exceptions import SandboxUnavailableError
+
+        execution_service._session.get = AsyncMock(side_effect=[sample_interview, sample_problem])
+        execution_service._runner.check_availability = AsyncMock(return_value=True)
+        execution_service._runner.run = AsyncMock(
+            side_effect=SandboxUnavailableError("Judge0 connection refused")
+        )
+
+        with patch("src.problems.loader.load_default_catalog", return_value=[sample_problem._spec]):
+            result = await execution_service.execute_code(
+                interview_id=sample_interview.id,
+                code="print(1+2)",
+                language="python",
+            )
+
+        assert result["status"] == "unavailable"
+        assert result["stdout"] is None
+        assert result["tests_passed"] is None
+        assert "Judge0 connection refused" in (result["stderr"] or "")

@@ -888,3 +888,44 @@ class TestWebSocketMultiTurnConversation:
                 assert agent_turns[0].content == "Respuesta recuperada del turno 2"
 
         asyncio.run(verify_db())
+
+    def test_h01_code_execution_unavailable_over_websocket_does_not_crash(
+        self, app, interview_with_ws_token, monkeypatch
+    ) -> None:
+        """H-01: Cuando CodeExecutionService retorna status='unavailable' con stdout=None y tests_passed=None,
+        el router WebSocket emite code_execution_result válido sin lanzar ValidationError.
+        """
+        from src.execution.service import CodeExecutionService
+
+        interview, ws_token = interview_with_ws_token
+
+        async def fake_execute_unavailable(self, interview_id, code, language):
+            return {
+                "status": "unavailable",
+                "stdout": None,
+                "stderr": "Judge0 sandbox service is currently unavailable.",
+                "execution_time_ms": 0,
+                "tests_passed": None,
+                "total_tests": 4,
+                "test_details": [],
+            }
+
+        monkeypatch.setattr(CodeExecutionService, "execute_code", fake_execute_unavailable)
+
+        client = TestClient(app)
+        with client.websocket_connect(
+            f"/ws/interview/{interview.id}?token={ws_token}"
+        ) as ws:
+            ws.receive_json()  # initial phase_changed
+            ws.send_json({
+                "type": "run_code",
+                "code": "print('hello')",
+                "language": "python",
+            })
+            res = ws.receive_json()
+            assert res["type"] == "code_execution_result"
+            assert res["status"] == "unavailable"
+            assert res["stdout"] is None
+            assert res["tests_passed"] is None
+            assert res["total_tests"] == 4
+            assert "unavailable" in (res["stderr"] or "")
