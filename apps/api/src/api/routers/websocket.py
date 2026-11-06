@@ -45,22 +45,47 @@ async def get_ws_interview_id(
 async def websocket_interview(
     websocket: WebSocket,
     interview_id: UUID,
+    token: str | None = Query(default=None),
     session: AsyncSession = Depends(get_db),
-    validated_interview_id: UUID = Depends(get_ws_interview_id),
 ) -> None:
-    # Verify interview_id matches token
+    # 1. Reject if token is missing
+    if not token:
+        await websocket.accept()
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Missing token")
+        return
+
+    # 2. Validate token
+    try:
+        validated_interview_id = await ws_token_service.validate_ws_token(token)
+    except WSTokenExpiredError:
+        await websocket.accept()
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Token expired")
+        return
+    except WSTokenRevokedError:
+        await websocket.accept()
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Token revoked")
+        return
+    except (WSTokenInvalidError, WSTokenError):
+        await websocket.accept()
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Invalid token")
+        return
+
+    # 3. Verify interview_id matches token
     if interview_id != validated_interview_id:
+        await websocket.accept()
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Session ID mismatch")
         return
 
-    # Load interview to verify it exists
+    # 4. Load interview to verify it exists
     from src.db.models import Interview
+
     interview = await session.get(Interview, interview_id)
     if not interview:
+        await websocket.accept()
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason="Interview not found")
         return
 
-    # Connect
+    # 5. Connect
     await connection_manager.connect(interview_id, websocket)
 
     # Initialize services

@@ -116,21 +116,42 @@ class TestWebSocketHandshake:
     def test_invalid_jwt_rejected(
         self, app, interview_with_ws_token
     ) -> None:
-        """Test that invalid JWT is rejected."""
+        """Test that invalid JWT is rejected with code 1008."""
         interview, _ = interview_with_ws_token
         client = TestClient(app)
-        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
-            f"/ws/interview/{interview.id}?token=invalid-jwt"
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}?token=invalid-jwt"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
         ):
-            pass
+            ws.receive_json()
         # Should disconnect with policy violation (code 1008)
         assert exc_info.value.code == 1008
+        assert exc_info.value.reason == "Invalid token"
+
+    def test_missing_token_rejected(
+        self, app, interview_with_ws_token
+    ) -> None:
+        """Test that connection with missing token is rejected with code 1008."""
+        interview, _ = interview_with_ws_token
+        client = TestClient(app)
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
+        ):
+            ws.receive_json()
+        assert exc_info.value.code == 1008
+        assert exc_info.value.reason == "Missing token"
 
     async def test_expired_jwt_rejected(
         self, app, db_session, vacancy
     ) -> None:
-        """Test that expired JWT is rejected."""
+        """Test that expired JWT is rejected with code 1008."""
         from src.core.ws_tokens import ws_token_service
+
         interview = Interview(
             vacancy_id=vacancy.id,
             candidate_email="expired@example.com",
@@ -148,27 +169,34 @@ class TestWebSocketHandshake:
         await db_session.commit()
 
         client = TestClient(app)
-        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
-            f"/ws/interview/{interview.id}?token={ws_token}"
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}?token={ws_token}"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
         ):
-            pass
+            ws.receive_json()
         assert exc_info.value.code == 1008
 
     async def test_revoked_jwt_rejected(
         self, app, interview_with_ws_token
     ) -> None:
-        """Test that revoked JWT is rejected."""
+        """Test that revoked JWT is rejected with code 1008."""
         interview, ws_token = interview_with_ws_token
 
         # Revoke the token
         await ws_token_service.revoke_ws_token(ws_token)
 
         client = TestClient(app)
-        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
-            f"/ws/interview/{interview.id}?token={ws_token}"
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}?token={ws_token}"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
         ):
-            pass
+            ws.receive_json()
         assert exc_info.value.code == 1008
+        assert exc_info.value.reason == "Token revoked"
 
     async def test_session_id_mismatch_rejected(
         self, app, interview_with_ws_token, db_session, vacancy
@@ -190,11 +218,15 @@ class TestWebSocketHandshake:
         await db_session.commit()
 
         client = TestClient(app)
-        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
-            f"/ws/interview/{other.id}?token={ws_token}"
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{other.id}?token={ws_token}"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
         ):
-            pass
+            ws.receive_json()
         assert exc_info.value.code == 1008
+        assert exc_info.value.reason == "Session ID mismatch"
 
     def test_nonexistent_interview_rejected(
         self, app, interview_with_ws_token
@@ -204,10 +236,13 @@ class TestWebSocketHandshake:
         fake_id = uuid4()
 
         client = TestClient(app)
-        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
-            f"/ws/interview/{fake_id}?token={ws_token}"
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{fake_id}?token={ws_token}"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
         ):
-            pass
+            ws.receive_json()
         assert exc_info.value.code == 1008
 
     def test_second_connection_replaces_first(
@@ -271,11 +306,64 @@ class TestWebSocketHandshake:
         await ws_token_service.revoke_all_for_session(interview.id)
 
         client = TestClient(app)
-        with pytest.raises(WebSocketDisconnect) as exc_info, client.websocket_connect(
-            f"/ws/interview/{interview.id}?token={ws_token}"
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}?token={ws_token}"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
         ):
-            pass
+            ws.receive_json()
         assert exc_info.value.code == 1008
+        assert exc_info.value.reason == "Token revoked"
+
+    def test_no_application_messages_accepted_before_auth(
+        self, app, interview_with_ws_token
+    ) -> None:
+        """Test that an unauthenticated connection cannot execute application commands."""
+        interview, _ = interview_with_ws_token
+        client = TestClient(app)
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}?token=invalid-token"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect) as exc_info,
+        ):
+            ws.send_json({"type": "ping", "client_timestamp": 12345})
+            ws.receive_json()
+        assert exc_info.value.code == 1008
+
+    async def test_no_persistence_on_rejected_connection(
+        self, app, interview_with_ws_token, db_session
+    ) -> None:
+        """Test that zero snapshots or turns are persisted for a rejected connection."""
+        from sqlalchemy import select
+
+        from src.db.models import Snapshot, Turn
+
+        interview, _ = interview_with_ws_token
+        client = TestClient(app)
+        with (
+            client.websocket_connect(
+                f"/ws/interview/{interview.id}?token=invalid-token"
+            ) as ws,
+            pytest.raises(WebSocketDisconnect),
+        ):
+            ws.receive_json()
+
+        # Query database to confirm no snapshots or turns were created
+        snaps = (
+            await db_session.execute(
+                select(Snapshot).where(Snapshot.interview_id == interview.id)
+            )
+        ).scalars().all()
+        assert len(snaps) == 0
+
+        turns = (
+            await db_session.execute(
+                select(Turn).where(Turn.interview_id == interview.id)
+            )
+        ).scalars().all()
+        assert len(turns) == 0
 
 
 class TestWebSocketMessages:
