@@ -94,7 +94,7 @@ async def test_timeout_and_retry_then_success() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         calls["count"] += 1
         if calls["count"] == 1:
-            raise httpx.ReadTimeout("timed out")
+            raise httpx.ConnectTimeout("connection timed out")
         return httpx.Response(200, json=_completion_body())
 
     http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
@@ -108,6 +108,31 @@ async def test_timeout_and_retry_then_success() -> None:
     result = await client.complete([ChatMessage(role="user", content="hola")])
     assert result.content == "ok"
     assert calls["count"] == 2
+    await http_client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_read_timeout_prohibits_retry_and_is_uncertain() -> None:
+    calls = {"count": 0}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        calls["count"] += 1
+        raise httpx.ReadTimeout("read timed out")
+
+    http_client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    client = OpenAICompatibleClient(
+        api_key="test-key",
+        base_url="https://api.reto.pltk.mx/v1",
+        model="grok-4.6",
+        max_retries=3,
+        client=http_client,
+    )
+    with pytest.raises(LLMTimeoutError) as exc_info:
+        await client.complete([ChatMessage(role="user", content="hola")])
+
+    assert exc_info.value.is_uncertain is True
+    # CRÍTICO: Debe haberse ejecutado exactamente 1 intento (sin reintentos)
+    assert calls["count"] == 1
     await http_client.aclose()
 
 

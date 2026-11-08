@@ -21,6 +21,7 @@ async def test_initial_migration_is_registered() -> None:
     script = ScriptDirectory.from_config(config)
     revisions = list(script.walk_revisions())
     assert [item.revision for item in revisions] == [
+        "s4_load_runs_and_tasks",
         "s3_add_llm_usage_records",
         "merge_evaluation_invitations",
         "9e72f0a31071",
@@ -37,7 +38,7 @@ async def test_initial_migration_is_registered() -> None:
         "0002_auth_s03",
         "0001_initial_s02",
     ]
-    assert script.get_heads() == ["s3_add_llm_usage_records"]
+    assert script.get_heads() == ["s4_load_runs_and_tasks"]
 
 
 async def _public_tables(engine) -> set[str]:
@@ -112,12 +113,14 @@ async def test_alembic_upgrade_and_downgrade() -> None:
             "evaluation_dimensions",
             "evaluation_evidence",
             "llm_usage_records",
+            "s4_load_runs",
+            "s4_task_executions",
         }
         async with engine.connect() as connection:
             version = (
                 await connection.execute(text("SELECT version_num FROM alembic_version"))
             ).scalar_one()
-            assert version == "s3_add_llm_usage_records"
+            assert version == "s4_load_runs_and_tasks"
     finally:
         await engine.dispose()
 

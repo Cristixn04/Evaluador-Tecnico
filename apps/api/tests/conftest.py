@@ -90,12 +90,14 @@ async def isolate_database_and_engine(database_url: str) -> AsyncGenerator[None,
                     "Aborting execution immediately to prevent data destruction."
                 )
 
+            await connection.execute(text("DROP TABLE IF EXISTS s4_task_executions, s4_load_runs CASCADE;"))
             await connection.run_sync(Base.metadata.create_all)
             await connection.execute(
                 text(
                     "TRUNCATE TABLE organizations, users, memberships, vacancies, problems, "
                     "interviews, turns, snapshots, invitations, evaluations, "
-                    "evaluation_dimensions, evaluation_evidence, llm_usage_records RESTART IDENTITY CASCADE;"
+                    "evaluation_dimensions, evaluation_evidence, llm_usage_records, "
+                    "s4_task_executions, s4_load_runs RESTART IDENTITY CASCADE;"
                 )
             )
             await connection.commit()
