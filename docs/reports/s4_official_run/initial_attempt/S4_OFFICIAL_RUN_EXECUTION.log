@@ -1,0 +1,2413 @@
+2026-11-07 07:33:27,739 [INFO] evaluador.s4.lock: Acquired PostgreSQL advisory lock for run '02444adc-4c30-4d2e-9887-71df2e1a17e8' (key: -8174799366729950260).
+2026-11-07 07:33:27,790 [INFO] evaluador.s4.cli: Encolando 1000 tareas técnicas deterministas...
+2026-11-07 07:33:29,431 [INFO] evaluador.s4.cli: Corrida 02444adc-4c30-4d2e-9887-71df2e1a17e8 inicializada y activada con éxito.
+2026-11-07 07:33:29,457 [INFO] evaluador.s4.cli: Iniciando bucle autónomo del worker...
+2026-11-07 07:34:00,307 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 1: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:34:00,320 [ERROR] evaluador.s4.worker: Error executing task 1
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:34:43,314 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 2: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:34:43,320 [ERROR] evaluador.s4.worker: Error executing task 2
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:35:26,323 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 3: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:35:26,331 [ERROR] evaluador.s4.worker: Error executing task 3
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:36:09,552 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 4: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:36:09,560 [ERROR] evaluador.s4.worker: Error executing task 4
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:36:50,073 [INFO] httpx: HTTP Request: POST https://api.reto.pltk.mx/v1/chat/completions "HTTP/1.1 200 OK"
+2026-11-07 07:36:50,170 [INFO] httpx: HTTP Request: POST http://localhost:2358/submissions?base64_encoded=false&wait=false "HTTP/1.1 201 Created"
+2026-11-07 07:36:50,186 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/97f820f0-18b0-44ed-a240-bd63960c1822?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:36:50,392 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/97f820f0-18b0-44ed-a240-bd63960c1822?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:36:50,597 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/97f820f0-18b0-44ed-a240-bd63960c1822?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:36:50,802 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/97f820f0-18b0-44ed-a240-bd63960c1822?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:36:51,007 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/97f820f0-18b0-44ed-a240-bd63960c1822?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:36:51,217 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/97f820f0-18b0-44ed-a240-bd63960c1822?base64_encoded=false "HTTP/1.1 400 Bad Request"
+2026-11-07 07:36:51,217 [INFO] evaluador.s4.agent_executor: Sandbox infrastructure failure for task 5: Judge0 poll error (400)
+2026-11-07 07:37:05,571 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.7s remaining in cycle 1/3
+2026-11-07 07:37:07,573 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.7s remaining in cycle 1/3
+2026-11-07 07:37:09,575 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.7s remaining in cycle 1/3
+2026-11-07 07:37:11,577 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.7s remaining in cycle 1/3
+2026-11-07 07:37:13,579 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.6s remaining in cycle 1/3
+2026-11-07 07:37:15,581 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.6s remaining in cycle 1/3
+2026-11-07 07:37:17,583 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.6s remaining in cycle 1/3
+2026-11-07 07:37:19,585 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.6s remaining in cycle 1/3
+2026-11-07 07:37:21,588 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 1/3).
+2026-11-07 07:37:52,350 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 6: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:37:52,358 [ERROR] evaluador.s4.worker: Error executing task 6
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:38:04,808 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.6s remaining in cycle 2/3
+2026-11-07 07:38:06,810 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.6s remaining in cycle 2/3
+2026-11-07 07:38:08,812 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.6s remaining in cycle 2/3
+2026-11-07 07:38:10,814 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.6s remaining in cycle 2/3
+2026-11-07 07:38:12,816 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.6s remaining in cycle 2/3
+2026-11-07 07:38:14,818 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.5s remaining in cycle 2/3
+2026-11-07 07:38:16,820 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.5s remaining in cycle 2/3
+2026-11-07 07:38:18,822 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.5s remaining in cycle 2/3
+2026-11-07 07:38:20,824 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.5s remaining in cycle 2/3
+2026-11-07 07:38:22,826 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 2/3).
+2026-11-07 07:38:53,277 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 7: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:38:53,283 [ERROR] evaluador.s4.worker: Error executing task 7
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:39:06,047 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 3/3
+2026-11-07 07:39:08,049 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 3/3
+2026-11-07 07:39:10,051 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 3/3
+2026-11-07 07:39:12,053 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 3/3
+2026-11-07 07:39:14,055 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 3/3
+2026-11-07 07:39:16,057 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 3/3
+2026-11-07 07:39:18,059 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 3/3
+2026-11-07 07:39:20,061 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 3/3
+2026-11-07 07:39:22,063 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 3/3
+2026-11-07 07:39:24,065 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 3/3).
+2026-11-07 07:39:41,607 [INFO] httpx: HTTP Request: POST https://api.reto.pltk.mx/v1/chat/completions "HTTP/1.1 200 OK"
+2026-11-07 07:39:41,624 [INFO] httpx: HTTP Request: POST http://localhost:2358/submissions?base64_encoded=false&wait=false "HTTP/1.1 201 Created"
+2026-11-07 07:39:41,630 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/63d99623-e474-4102-a9d3-cfa6faf06c74?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:39:41,835 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/63d99623-e474-4102-a9d3-cfa6faf06c74?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:39:42,040 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/63d99623-e474-4102-a9d3-cfa6faf06c74?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:39:42,246 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/63d99623-e474-4102-a9d3-cfa6faf06c74?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:39:42,453 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/63d99623-e474-4102-a9d3-cfa6faf06c74?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:39:42,661 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/63d99623-e474-4102-a9d3-cfa6faf06c74?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:40:37,723 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 9: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:40:37,734 [ERROR] evaluador.s4.worker: Error executing task 9
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:41:30,298 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 10: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:41:30,303 [ERROR] evaluador.s4.worker: Error executing task 10
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:42:05,791 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 11: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:42:05,794 [ERROR] evaluador.s4.worker: Error executing task 11
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:42:49,006 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 12: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:42:49,011 [ERROR] evaluador.s4.worker: Error executing task 12
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:43:32,218 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 13: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:43:32,222 [ERROR] evaluador.s4.worker: Error executing task 13
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:43:44,983 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 1/3
+2026-11-07 07:43:46,985 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 1/3
+2026-11-07 07:43:48,987 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 1/3
+2026-11-07 07:43:50,989 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 1/3
+2026-11-07 07:43:52,991 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 1/3
+2026-11-07 07:43:54,993 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 1/3
+2026-11-07 07:43:56,995 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 1/3
+2026-11-07 07:43:58,997 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 1/3
+2026-11-07 07:44:00,999 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 1/3
+2026-11-07 07:44:03,001 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 1/3).
+2026-11-07 07:44:33,455 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 14: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:44:33,459 [ERROR] evaluador.s4.worker: Error executing task 14
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:44:46,223 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 2/3
+2026-11-07 07:44:48,225 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 2/3
+2026-11-07 07:44:50,227 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 2/3
+2026-11-07 07:44:52,229 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 2/3
+2026-11-07 07:44:54,231 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 2/3
+2026-11-07 07:44:56,233 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 2/3
+2026-11-07 07:44:58,235 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 2/3
+2026-11-07 07:45:00,237 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 2/3
+2026-11-07 07:45:02,239 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 2/3
+2026-11-07 07:45:04,241 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 2/3).
+2026-11-07 07:45:34,898 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 15: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:45:34,903 [ERROR] evaluador.s4.worker: Error executing task 15
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:45:47,465 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.4s remaining in cycle 3/3
+2026-11-07 07:45:49,467 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.4s remaining in cycle 3/3
+2026-11-07 07:45:51,469 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.4s remaining in cycle 3/3
+2026-11-07 07:45:53,471 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.4s remaining in cycle 3/3
+2026-11-07 07:45:55,473 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.4s remaining in cycle 3/3
+2026-11-07 07:45:57,475 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.4s remaining in cycle 3/3
+2026-11-07 07:45:59,477 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.4s remaining in cycle 3/3
+2026-11-07 07:46:01,480 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.4s remaining in cycle 3/3
+2026-11-07 07:46:03,481 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.4s remaining in cycle 3/3
+2026-11-07 07:46:05,483 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 3/3).
+2026-11-07 07:46:31,118 [INFO] httpx: HTTP Request: POST https://api.reto.pltk.mx/v1/chat/completions "HTTP/1.1 200 OK"
+2026-11-07 07:46:31,153 [INFO] httpx: HTTP Request: POST http://localhost:2358/submissions?base64_encoded=false&wait=false "HTTP/1.1 201 Created"
+2026-11-07 07:46:31,160 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/4f91d41d-cef2-4b64-ae31-635b3fd62443?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:46:31,365 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/4f91d41d-cef2-4b64-ae31-635b3fd62443?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:46:31,570 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/4f91d41d-cef2-4b64-ae31-635b3fd62443?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:46:31,775 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/4f91d41d-cef2-4b64-ae31-635b3fd62443?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:46:31,980 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/4f91d41d-cef2-4b64-ae31-635b3fd62443?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:46:32,186 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/4f91d41d-cef2-4b64-ae31-635b3fd62443?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:47:19,148 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 17: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:47:19,152 [ERROR] evaluador.s4.worker: Error executing task 17
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:48:02,464 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 18: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:48:02,468 [ERROR] evaluador.s4.worker: Error executing task 18
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:48:41,378 [INFO] httpx: HTTP Request: POST https://api.reto.pltk.mx/v1/chat/completions "HTTP/1.1 200 OK"
+2026-11-07 07:48:41,393 [INFO] httpx: HTTP Request: POST http://localhost:2358/submissions?base64_encoded=false&wait=false "HTTP/1.1 201 Created"
+2026-11-07 07:48:41,400 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/3e9fd5dd-760f-430e-96d6-1b978a42c661?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:48:41,604 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/3e9fd5dd-760f-430e-96d6-1b978a42c661?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:48:41,809 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/3e9fd5dd-760f-430e-96d6-1b978a42c661?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:48:42,014 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/3e9fd5dd-760f-430e-96d6-1b978a42c661?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:48:42,220 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/3e9fd5dd-760f-430e-96d6-1b978a42c661?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:48:42,429 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/3e9fd5dd-760f-430e-96d6-1b978a42c661?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:49:28,791 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 20: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:49:28,795 [ERROR] evaluador.s4.worker: Error executing task 20
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:49:41,591 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 1/3
+2026-11-07 07:49:43,593 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 1/3
+2026-11-07 07:49:45,595 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 1/3
+2026-11-07 07:49:47,597 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 1/3
+2026-11-07 07:49:49,599 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 1/3
+2026-11-07 07:49:51,601 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 1/3
+2026-11-07 07:49:53,603 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 1/3
+2026-11-07 07:49:55,605 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 1/3
+2026-11-07 07:49:57,607 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 1/3
+2026-11-07 07:49:59,609 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 1/3).
+2026-11-07 07:50:30,029 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 21: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:50:30,033 [ERROR] evaluador.s4.worker: Error executing task 21
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:50:42,828 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 2/3
+2026-11-07 07:50:44,830 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 2/3
+2026-11-07 07:50:46,832 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 2/3
+2026-11-07 07:50:48,834 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 2/3
+2026-11-07 07:50:50,836 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 2/3
+2026-11-07 07:50:52,838 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 2/3
+2026-11-07 07:50:54,840 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 2/3
+2026-11-07 07:50:56,842 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 2/3
+2026-11-07 07:50:58,844 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 2/3
+2026-11-07 07:51:00,846 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 2/3).
+2026-11-07 07:51:31,250 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 22: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:51:31,255 [ERROR] evaluador.s4.worker: Error executing task 22
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:51:44,067 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 3/3
+2026-11-07 07:51:46,069 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 3/3
+2026-11-07 07:51:48,072 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 3/3
+2026-11-07 07:51:50,073 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 3/3
+2026-11-07 07:51:52,075 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 3/3
+2026-11-07 07:51:54,077 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 3/3
+2026-11-07 07:51:56,079 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 3/3
+2026-11-07 07:51:58,081 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 3/3
+2026-11-07 07:52:00,084 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 3/3
+2026-11-07 07:52:02,086 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 3/3).
+2026-11-07 07:52:22,164 [INFO] httpx: HTTP Request: POST https://api.reto.pltk.mx/v1/chat/completions "HTTP/1.1 200 OK"
+2026-11-07 07:52:22,183 [INFO] httpx: HTTP Request: POST http://localhost:2358/submissions?base64_encoded=false&wait=false "HTTP/1.1 201 Created"
+2026-11-07 07:52:22,190 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/9aa3be1c-abee-4927-a219-a751ace6046b?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:52:22,395 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/9aa3be1c-abee-4927-a219-a751ace6046b?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:52:22,600 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/9aa3be1c-abee-4927-a219-a751ace6046b?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:52:22,805 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/9aa3be1c-abee-4927-a219-a751ace6046b?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:52:23,011 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/9aa3be1c-abee-4927-a219-a751ace6046b?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:52:23,218 [INFO] httpx: HTTP Request: GET http://localhost:2358/submissions/9aa3be1c-abee-4927-a219-a751ace6046b?base64_encoded=false "HTTP/1.1 200 OK"
+2026-11-07 07:53:15,725 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 24: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:53:15,730 [ERROR] evaluador.s4.worker: Error executing task 24
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:53:28,536 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 1/3
+2026-11-07 07:53:30,538 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 1/3
+2026-11-07 07:53:32,540 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 1/3
+2026-11-07 07:53:34,542 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 1/3
+2026-11-07 07:53:36,544 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 1/3
+2026-11-07 07:53:38,546 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 1/3
+2026-11-07 07:53:40,548 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 1/3
+2026-11-07 07:53:42,550 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 1/3
+2026-11-07 07:53:44,552 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 1/3
+2026-11-07 07:53:46,554 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 1/3).
+2026-11-07 07:54:17,065 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 25: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:54:17,070 [ERROR] evaluador.s4.worker: Error executing task 25
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:54:29,767 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.3s remaining in cycle 2/3
+2026-11-07 07:54:31,768 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.3s remaining in cycle 2/3
+2026-11-07 07:54:33,770 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.3s remaining in cycle 2/3
+2026-11-07 07:54:35,772 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.3s remaining in cycle 2/3
+2026-11-07 07:54:37,774 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.3s remaining in cycle 2/3
+2026-11-07 07:54:39,776 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.3s remaining in cycle 2/3
+2026-11-07 07:54:41,778 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.3s remaining in cycle 2/3
+2026-11-07 07:54:43,780 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.3s remaining in cycle 2/3
+2026-11-07 07:54:45,782 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.3s remaining in cycle 2/3
+2026-11-07 07:54:47,784 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 2/3).
+2026-11-07 07:55:18,201 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 26: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:55:18,205 [ERROR] evaluador.s4.worker: Error executing task 26
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:55:31,007 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 17.2s remaining in cycle 3/3
+2026-11-07 07:55:33,009 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 15.2s remaining in cycle 3/3
+2026-11-07 07:55:35,012 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 13.2s remaining in cycle 3/3
+2026-11-07 07:55:37,013 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 11.2s remaining in cycle 3/3
+2026-11-07 07:55:39,015 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 9.2s remaining in cycle 3/3
+2026-11-07 07:55:41,018 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 7.2s remaining in cycle 3/3
+2026-11-07 07:55:43,019 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 5.2s remaining in cycle 3/3
+2026-11-07 07:55:45,021 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 3.2s remaining in cycle 3/3
+2026-11-07 07:55:47,023 [INFO] evaluador.s4.worker: [WATCHDOG-COOLDOWN] Cooling down: 1.2s remaining in cycle 3/3
+2026-11-07 07:55:49,026 [INFO] evaluador.s4.worker: [WATCHDOG-PROBING] Cooldown of 30.0s completed. Entering probing state (cycle 3/3).
+2026-11-07 07:56:19,745 [WARNING] evaluador.s4.agent_executor: LLM call failed for task 27: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:56:19,749 [ERROR] evaluador.s4.worker: Error executing task 27
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 101, in map_httpcore_exceptions
+    yield
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 394, in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 256, in handle_async_request
+    raise exc from None
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection_pool.py", line 236, in handle_async_request
+    response = await connection.handle_async_request(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        pool_request.request
+        ^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/connection.py", line 103, in handle_async_request
+    return await self._connection.handle_async_request(request)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 136, in handle_async_request
+    raise exc
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 106, in handle_async_request
+    ) = await self._receive_response_headers(**kwargs)
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 177, in _receive_response_headers
+    event = await self._receive_event(timeout=timeout)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_async/http11.py", line 217, in _receive_event
+    data = await self._network_stream.read(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        self.READ_NUM_BYTES, timeout=timeout
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_backends/anyio.py", line 32, in read
+    with map_exceptions(exc_map):
+         ~~~~~~~~~~~~~~^^^^^^^^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpcore/_exceptions.py", line 14, in map_exceptions
+    raise to_exc(exc) from exc
+httpcore.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 136, in complete
+    response = await self._client.post(url, json=payload, headers=headers)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1859, in post
+    return await self.request(
+           ^^^^^^^^^^^^^^^^^^^
+    ...<13 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1540, in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1629, in send
+    response = await self._send_handling_auth(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1657, in _send_handling_auth
+    response = await self._send_handling_redirects(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ...<3 lines>...
+    )
+    ^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1694, in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_client.py", line 1730, in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 393, in handle_async_request
+    with map_httpcore_exceptions():
+         ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/usr/lib/python3.14/contextlib.py", line 162, in __exit__
+    self.gen.throw(value)
+    ~~~~~~~~~~~~~~^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/.venv/lib/python3.14/site-packages/httpx/_transports/default.py", line 118, in map_httpcore_exceptions
+    raise mapped_exc(message) from exc
+httpx.ReadTimeout
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/worker.py", line 237, in execute_task
+    exec_output = await self.executor(task, task_def, record_call_callback, reserve_turn_cost_cb)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/s4/agent_executor.py", line 87, in real_executor
+    completion = await resolved_llm.complete(messages=messages)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/papisamu/Documentos/Evaluador-Tecnico/apps/api/src/llm/openai_compatible.py", line 149, in complete
+    raise LLMTimeoutError(
+    ...<2 lines>...
+    ) from exc
+src.llm.exceptions.LLMTimeoutError: LLM read timed out after 30.0s (payload already sent; billing uncertain)
+2026-11-07 07:56:32,258 [INFO] evaluador.s4.cli: Bucle finalizado. Tareas completadas: 4/1000. Costo: $0.1006 USD.
+2026-11-07 07:56:32,380 [INFO] evaluador.s4.cli: Evidencia JSON escrita en: /home/papisamu/Documentos/Evaluador-Tecnico/docs/reports/s4_official_run/S4_OFFICIAL_RUN_SUMMARY.json
+2026-11-07 07:56:32,381 [INFO] evaluador.s4.cli: Evidencia CSV escrita en: /home/papisamu/Documentos/Evaluador-Tecnico/docs/reports/s4_official_run/S4_OFFICIAL_RUN_TASKS.csv
+2026-11-07 07:56:32,384 [INFO] evaluador.s4.cli: Evidencia CSV de llamadas LLM escrita en: /home/papisamu/Documentos/Evaluador-Tecnico/docs/reports/s4_official_run/S4_OFFICIAL_RUN_LLM_CALLS.csv
+2026-11-07 07:56:32,385 [INFO] evaluador.s4.lock: Released PostgreSQL advisory lock for run '02444adc-4c30-4d2e-9887-71df2e1a17e8' (key: -8174799366729950260).
