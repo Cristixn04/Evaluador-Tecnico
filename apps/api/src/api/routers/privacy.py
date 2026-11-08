@@ -1,0 +1,203 @@
+"""Endpoints para el cumplimiento de la Ley 1581 de 2012 (Habeas Data Colombia).
+
+Garantiza los derechos de acceso, rectificación, supresión y revocatoria
+de consentimiento de los candidatos evaluados.
+"""
+
+from __future__ import annotations
+
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from src.core.auth import AuthenticatedPrincipal, get_current_user, require_organization
+from src.db.enums import InterviewStatus
+from src.db.models import Interview, Invitation, Snapshot, Turn, Vacancy
+from src.db.models.interview import Evaluation, EvaluationDimension, EvaluationEvidence
+from src.db.session import get_db
+
+router = APIRouter(prefix="/privacy", tags=["Privacy & Ley 1581"])
+
+
+class RevokeConsentRequest(BaseModel):
+    invitation_token: str = Field(..., description="Token de invitación del candidato")
+    reason: str | None = Field(default=None, description="Motivo opcional de la revocatoria")
+
+
+class RevokeConsentResponse(BaseModel):
+    status: str
+    message: str
+    revoked_at: str
+
+
+class DataDeletionResponse(BaseModel):
+    status: str
+    records_deleted: int
+    message: str
+
+
+@router.get(
+    "/policy",
+    summary="Consultar política de tratamiento de datos personales (Ley 1581 de 2012)",
+)
+async def get_privacy_policy():
+    """Retorna los términos de tratamiento de datos personales y derechos del titular.
+
+    Conforme a la Ley Estatutaria 1581 de 2012 y el Decreto 1377 de 2013 de Colombia:
+    - Derecho a conocer, actualizar y rectificar datos personales.
+    - Derecho a solicitar prueba de la autorización otorgada.
+    - Derecho a revocar la autorización o solicitar la supresión del dato.
+    - Garantía de anonimización en el proceso de evaluación técnica con IA.
+    """
+    return {
+        "regulatory_framework": "Ley 1581 de 2012 y Decreto 1377 de 2013 (Colombia)",
+        "purpose": "Evaluación técnica automatizada ciega a datos demográficos e identificación personal",
+        "rights": [
+            "Conocer, actualizar y rectificar sus datos personales ante los responsables del tratamiento.",
+            "Solicitar prueba de la autorización otorgada.",
+            "Ser informado del uso dado a sus datos.",
+            "Presentar quejas ante la Superintendencia de Industria y Comercio (SIC).",
+            "Revocar la autorización y/o solicitar la supresión del dato cuando no se respeten los principios legales.",
+        ],
+        "guarantees": {
+            "blind_evaluation": True,
+            "pii_decoupled": True,
+            "automated_deletion_available": True,
+        },
+    }
+
+
+@router.post(
+    "/consent/revoke",
+    response_model=RevokeConsentResponse,
+    summary="Revocar consentimiento de tratamiento de datos (Candidato)",
+)
+async def revoke_consent(
+    payload: RevokeConsentRequest,
+    session: AsyncSession = Depends(get_db),
+) -> RevokeConsentResponse:
+    """Permite al candidato revocar voluntariamente su consentimiento.
+
+    Al revocar el consentimiento, la entrevista se marca como cancelada y
+    sus datos se bloquean para futuros procesamientos de evaluación.
+    """
+    token_selector = payload.invitation_token[:16]
+
+    res = await session.execute(
+        select(Invitation).where(Invitation.token_selector == token_selector)
+    )
+    invitation = res.scalars().first()
+    if not invitation:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invitación no encontrada o token inválido.",
+        )
+
+    # Cancelar cualquier entrevista asociada
+    if invitation.interview_id:
+        interview = await session.get(Interview, invitation.interview_id)
+        if interview:
+            interview.status = InterviewStatus.CANCELLED
+            await session.commit()
+
+    from datetime import UTC, datetime
+
+    return RevokeConsentResponse(
+        status="revoked",
+        message="Consentimiento revocado con éxito conforme a la Ley 1581 de 2012. No se realizarán más evaluaciones.",
+        revoked_at=datetime.now(UTC).isoformat(),
+    )
+
+
+@router.delete(
+    "/candidates/{id}",
+    response_model=DataDeletionResponse,
+    summary="Supresión de datos del candidato (Derecho al olvido Ley 1581)",
+)
+async def delete_candidate_data(
+    id: str,
+    principal: AuthenticatedPrincipal = Depends(get_current_user),
+    session: AsyncSession = Depends(get_db),
+) -> DataDeletionResponse:
+    """Elimina o purga de forma segura los registros y telemetría de una entrevista/candidato.
+
+    Requiere permisos de administrador o reclutador de la organización.
+    """
+    try:
+        interview_id = UUID(id)
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
+        ) from exc
+
+    result = await session.execute(
+        select(Interview, Vacancy)
+        .outerjoin(Vacancy, Interview.vacancy_id == Vacancy.id)
+        .where(Interview.id == interview_id)
+    )
+    row = result.first()
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Interview not found"
+        )
+    interview, vacancy = row
+
+    if vacancy is None or vacancy.organization_id is None:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Organization mismatch",
+        )
+    require_organization(vacancy.organization_id, principal)
+
+    # 1. Eliminar evaluaciones vinculadas y sus evidencias/dimensiones dependientes
+    eval_res = await session.execute(
+        select(Evaluation).where(Evaluation.interview_id == interview_id)
+    )
+    evaluations = list(eval_res.scalars().all())
+    deleted_evals = len(evaluations)
+    deleted_evidences = 0
+    deleted_dimensions = 0
+    for ev in evaluations:
+        res_evid = await session.execute(
+            delete(EvaluationEvidence).where(EvaluationEvidence.evaluation_id == ev.id)
+        )
+        deleted_evidences += int(getattr(res_evid, "rowcount", 0) or 0)
+        res_dim = await session.execute(
+            delete(EvaluationDimension).where(EvaluationDimension.evaluation_id == ev.id)
+        )
+        deleted_dimensions += int(getattr(res_dim, "rowcount", 0) or 0)
+        await session.delete(ev)
+
+    # 2. Eliminar turns y snapshots vinculados
+    res_turns = await session.execute(delete(Turn).where(Turn.interview_id == interview_id))
+    deleted_turns = int(getattr(res_turns, "rowcount", 0) or 0)
+    res_snapshots = await session.execute(delete(Snapshot).where(Snapshot.interview_id == interview_id))
+    deleted_snapshots = int(getattr(res_snapshots, "rowcount", 0) or 0)
+
+    # 3. Anonimizar y revocar datos personales en Interview e Invitations
+    interview.status = InterviewStatus.CANCELLED
+    interview.candidate_name = f"CAND-ANON-{interview.id.hex[:6].upper()}"
+    interview.candidate_email = f"anon-{interview.id.hex[:6].lower()}@privacidad.local"
+    interview.access_token = None
+
+    res_inv = await session.execute(
+        select(Invitation).where(Invitation.interview_id == interview_id)
+    )
+    for inv in res_inv.scalars().all():
+        inv.candidate_name = f"CAND-ANON-{inv.id.hex[:6].upper()}"
+        inv.candidate_email = f"anon-{inv.id.hex[:6].lower()}@privacidad.local"
+
+    await session.commit()
+
+    total_records = (
+        deleted_turns + deleted_snapshots + deleted_evals + deleted_dimensions + deleted_evidences
+    )
+
+    return DataDeletionResponse(
+        status="deleted",
+        records_deleted=total_records,
+        message="Datos y evaluaciones suprimidos conforme al derecho de cancelación de la Ley 1581 de 2012.",
+    )

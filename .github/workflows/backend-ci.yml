@@ -1,0 +1,138 @@
+name: Backend CI
+
+on:
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - "apps/api/**"
+      - "problems/**"
+      - "evals/**"
+      - "infra/**"
+      - ".github/workflows/backend-ci.yml"
+      - "Makefile"
+      - "justfile"
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - "apps/api/**"
+      - "problems/**"
+      - "evals/**"
+      - "infra/**"
+      - ".github/workflows/backend-ci.yml"
+      - "Makefile"
+      - "justfile"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Ruff & Mypy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        working-directory: apps/api
+        run: uv sync --dev
+
+      - name: Run Ruff check
+        working-directory: apps/api
+        run: uv run ruff check src tests
+
+      - name: Run Mypy
+        working-directory: apps/api
+        run: uv run mypy src
+
+  test-and-calibration:
+    name: Pytest Suite & Calibration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: evaluador
+          POSTGRES_PASSWORD: evaluador_password_dev
+          POSTGRES_DB: evaluador_db
+        ports:
+          - 5435:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql+asyncpg://evaluador:evaluador_password_dev@localhost:5435/evaluador_db
+      REDIS_URL: redis://localhost:6379/0
+      USE_MOCK_LLM: "true"
+      ENVIRONMENT: "test"
+      LLM_API_KEY: "mock-llm-ci-key"
+      SECRET_KEY: "mock-secret-key-for-jwt-ci-tests-only"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies for WeasyPrint
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            libffi-dev \
+            libpango-1.0-0 \
+            libpangoft2-1.0-0 \
+            libgdk-pixbuf-2.0-0 \
+            libcairo2 \
+            shared-mime-info \
+            fonts-dejavu-core
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python 3.12
+        run: uv python install 3.12
+
+      - name: Install Python dependencies
+        working-directory: apps/api
+        run: uv sync --dev
+
+      - name: Run Alembic migrations
+        working-directory: apps/api
+        run: uv run alembic upgrade head
+
+      - name: Run Pytest test suite
+        working-directory: apps/api
+        run: uv run pytest -v
+
+      - name: Run Calibration harness check
+        working-directory: apps/api
+        run: uv run python ../evals/calibrate.py

@@ -1,0 +1,82 @@
+{
+  "case_id": "s3_case_30_pubref-frontend-optimistic-cart-optimal",
+  "scenario_id": "pubref-frontend-optimistic-cart-optimal",
+  "problem_slug": "frontend-optimistic-cart-reducer",
+  "provenance": "public_reference_solution",
+  "provenance_notes": "Solución de referencia del problema oficial 'frontend-optimistic-cart-reducer' del catálogo técnico evaluada independientemente por dos revisores humanos.",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.0,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 4.4,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 5,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 5,
+        "algorithmic_reasoning": 4,
+        "code_quality": 5,
+        "technical_communication": 4,
+        "complexity_management": 4
+      },
+      "overall_score": 4.4,
+      "recommendation": "hire",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (problem=frontend-optimistic-cart-reducer, tests=3/3, status=success). Puntuación global E1: 4.40 (hire)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 5,
+      "technical_communication": 4,
+      "complexity_management": 4
+    },
+    "consensus_overall_score": 4.4,
+    "consensus_recommendation": "hire"
+  },
+  "turns": [
+    {
+      "turn_id": "t-pub-30-1",
+      "speaker": "agent",
+      "content": "Implementa el reductor de carrito con actualizaciones optimistas y rollback exacto por mutation_id cuando falla el servidor."
+    },
+    {
+      "turn_id": "t-pub-30-2",
+      "speaker": "candidate",
+      "content": "Guardaré cada mutación optimista pendiente en un mapa pendingMutations[mutation_id] = delta. Si llega MUTATION_CONFIRMED se retira del mapa; si llega MUTATION_FAILED se revierte únicamente el delta de ese mutation_id sin afectar mutaciones posteriores."
+    },
+    {
+      "turn_id": "t-pub-30-3",
+      "speaker": "agent",
+      "content": "¿Por qué es mejor revertir el delta por mutation_id en lugar de restaurar un snapshot completo del estado previo?"
+    },
+    {
+      "turn_id": "t-pub-30-4",
+      "speaker": "candidate",
+      "content": "Porque si el usuario realizó otra mutación M2 después de M1 y falla M1, restaurar un snapshot anterior a M1 borraría indebidamente el cambio válido de M2."
+    }
+  ],
+  "final_code": "function reduceOptimisticCart(payload) {\n  const qty = {};\n  const pending = {};\n  for (const act of payload.actions || []) {\n    if (act.type === 'ADD_OPTIMISTIC') {\n      qty[act.sku] = (qty[act.sku] || 0) + act.delta;\n      pending[act.mutation_id] = { sku: act.sku, delta: act.delta };\n    } else if (act.type === 'MUTATION_CONFIRMED') {\n      delete pending[act.mutation_id];\n    } else if (act.type === 'MUTATION_FAILED' && pending[act.mutation_id]) {\n      const p = pending[act.mutation_id];\n      qty[p.sku] = Math.max(0, (qty[p.sku] || 0) - p.delta);\n      delete pending[act.mutation_id];\n    }\n  }\n  return { items: qty };\n}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 3,
+    "total_tests": 3
+  }
+}

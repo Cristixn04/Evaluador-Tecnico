@@ -1,10 +1,14 @@
 {
   "name": "evaluador-tecnico-monorepo",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev:web": "pnpm --filter @evaluador/web dev",
     "build:web": "pnpm --filter @evaluador/web build",
+    "lint:web": "pnpm --filter @evaluador/web lint",
+    "typecheck:web": "pnpm --filter @evaluador/web typecheck",
+    "test:web": "pnpm --filter @evaluador/web test",
+    "test:e2e:web": "pnpm --filter @evaluador/web test:e2e",
     "contracts:generate": "pnpm --filter @evaluador/contracts generate-types"
   }
 }

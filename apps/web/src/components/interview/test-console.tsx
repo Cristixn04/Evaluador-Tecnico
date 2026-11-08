@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import type { ServerCodeExecutionResultMessage } from "@evaluador/contracts";
+import type { ExtendedCodeExecutionResultMessage } from "@/lib/hooks/use-interview-socket";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, XCircle, Terminal, Check, AlertTriangle, Clock } from "lucide-react";
 
 interface TestConsoleProps {
-  result: ServerCodeExecutionResultMessage | null;
+  result: ExtendedCodeExecutionResultMessage | null;
   isRunning: boolean;
 }
 
@@ -14,14 +14,22 @@ export function TestConsole({ result, isRunning }: TestConsoleProps) {
   const [activeTab, setActiveTab] = useState<"tests" | "output">("tests");
 
   return (
-    <div className="h-full flex flex-col bg-[#181818] border-t border-[#333333] text-neutral-200 text-xs">
+    <div
+      role="region"
+      aria-label="Consola de ejecución de código y resultados de pruebas"
+      className="h-full flex flex-col bg-[#181818] border-t border-[#333333] text-neutral-200 text-xs"
+    >
       {/* Console Top Header */}
       <div className="h-9 px-4 bg-[#202020] border-b border-[#303030] flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
+        <div role="tablist" aria-label="Vistas de la consola" className="flex items-center gap-2">
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === "tests"}
+            aria-controls="console-panel-tests"
+            id="console-tab-tests"
             onClick={() => setActiveTab("tests")}
-            className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1.5 ${
+            className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary ${
               activeTab === "tests"
                 ? "bg-[#2d2d2d] text-white font-medium"
                 : "text-neutral-400 hover:text-white"
@@ -30,39 +38,61 @@ export function TestConsole({ result, isRunning }: TestConsoleProps) {
             <span>Resultados de Tests</span>
             {result && (
               <Badge
-                variant={result.status === "success" ? "secondary" : "destructive"}
+                variant={
+                  result.status === "success"
+                    ? "secondary"
+                    : result.status === "unavailable"
+                      ? "outline"
+                      : "destructive"
+                }
                 className="text-[10px] h-4 px-1"
               >
-                {result.tests_passed}/{result.total_tests}
+                {result.status === "unavailable" || result.tests_passed === null
+                  ? `No disp. (${result.total_tests})`
+                  : `${result.tests_passed}/${result.total_tests}`}
               </Badge>
             )}
           </button>
 
           <button
             type="button"
+            role="tab"
+            aria-selected={activeTab === "output"}
+            aria-controls="console-panel-output"
+            id="console-tab-output"
             onClick={() => setActiveTab("output")}
-            className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1.5 ${
+            className={`px-2 py-1 rounded text-xs transition-colors flex items-center gap-1.5 focus-visible:ring-2 focus-visible:ring-primary ${
               activeTab === "output"
                 ? "bg-[#2d2d2d] text-white font-medium"
                 : "text-neutral-400 hover:text-white"
             }`}
           >
-            <Terminal className="h-3 w-3" />
+            <Terminal className="h-3 w-3" aria-hidden="true" />
             <span>Terminal Salida</span>
           </button>
         </div>
 
         {/* Execution Time */}
         {result && (
-          <div className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono">
-            <Clock className="h-3 w-3" />
+          <div
+            role="status"
+            aria-label={`Tiempo de ejecución: ${result.execution_time_ms} milisegundos`}
+            className="flex items-center gap-1 text-[11px] text-neutral-400 font-mono"
+          >
+            <Clock className="h-3 w-3" aria-hidden="true" />
             <span>{result.execution_time_ms} ms</span>
           </div>
         )}
       </div>
 
       {/* Console Body */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div
+        role="tabpanel"
+        id={`console-panel-${activeTab}`}
+        aria-labelledby={`console-tab-${activeTab}`}
+        aria-live="polite"
+        className="flex-1 overflow-y-auto p-4"
+      >
         {isRunning ? (
           <div className="h-full flex items-center justify-center text-neutral-400 space-x-2 animate-pulse">
             <div className="h-2 w-2 rounded-full bg-emerald-500 animate-ping" />
@@ -86,21 +116,30 @@ export function TestConsole({ result, isRunning }: TestConsoleProps) {
               className={`p-2.5 rounded-lg border flex items-center gap-2 text-xs font-medium ${
                 result.status === "success"
                   ? "bg-emerald-950/40 border-emerald-800/60 text-emerald-300"
-                  : "bg-red-950/40 border-red-800/60 text-red-300"
+                  : result.status === "unavailable"
+                    ? "bg-amber-950/40 border-amber-800/60 text-amber-300"
+                    : "bg-red-950/40 border-red-800/60 text-red-300"
               }`}
             >
               {result.status === "success" ? (
                 <>
                   <CheckCircle2 className="h-4 w-4 text-emerald-400 shrink-0" />
                   <span>
-                    ¡Excelente trabajo! Has superado todos los casos de prueba ({result.tests_passed}/{result.total_tests}).
+                    ¡Excelente trabajo! Has superado todos los casos de prueba ({result.tests_passed ?? 0}/{result.total_tests}).
+                  </span>
+                </>
+              ) : result.status === "unavailable" ? (
+                <>
+                  <AlertTriangle className="h-4 w-4 text-amber-400 shrink-0" />
+                  <span>
+                    El entorno de ejecución (sandbox Judge0) no está disponible actualmente. Tu código fue guardado, pero las pruebas ({result.total_tests}) no pudieron ejecutarse en tiempo real.
                   </span>
                 </>
               ) : (
                 <>
                   <AlertTriangle className="h-4 w-4 text-red-400 shrink-0" />
                   <span>
-                    Algunos casos de prueba fallaron ({result.tests_passed}/{result.total_tests}). Revisa tu lógica de depuración.
+                    Algunos casos de prueba fallaron ({result.tests_passed ?? 0}/{result.total_tests}). Revisa tu lógica de depuración.
                   </span>
                 </>
               )}

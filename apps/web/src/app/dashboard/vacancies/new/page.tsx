@@ -259,7 +259,7 @@ export default function NewVacancyPage() {
             ) : !analyzedVacancy ? (
               <div className="py-16 text-center text-muted-foreground text-xs space-y-2 border rounded-lg border-dashed">
                 <Sparkles className="h-8 w-8 mx-auto opacity-30 text-primary" />
-                <p>Haz clic en "Analizar con IA" para estructurar los requerimientos.</p>
+                <p>Haz clic en &quot;Analizar con IA&quot; para estructurar los requerimientos.</p>
               </div>
             ) : (
               <div className="space-y-4 animate-in fade-in duration-300">

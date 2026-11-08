@@ -14,7 +14,7 @@ import { ChatPanel } from "@/components/interview/chat-panel";
 import { CodeEditor } from "@/components/interview/code-editor";
 import { TestConsole } from "@/components/interview/test-console";
 import { api } from "@/lib/api/client";
-import type { CodeLanguage } from "@evaluador/contracts";
+import type { CodeLanguage, InterviewPhase } from "@evaluador/contracts";
 import {
   ShieldCheck,
   Sparkles,
@@ -29,12 +29,14 @@ import {
 
 function InterviewContent() {
   const searchParams = useSearchParams();
-  const token = searchParams.get("token") || "cand-demo-token-123";
+  const token = searchParams.get("token") || "";
   const [sessionData, setSessionData] = useState<any>(null);
   const [isVerifying, setIsVerifying] = useState(true);
   const [verificationError, setVerificationError] = useState<string | null>(null);
 
   const [hasConsented, setHasConsented] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(false);
+  const [telemetryPill, setTelemetryPill] = useState<string | null>(null);
   const [activeLeftTab, setActiveLeftTab] = useState<"chat" | "problem">("chat");
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState<CodeLanguage>("python");
@@ -52,6 +54,18 @@ function InterviewContent() {
         setSessionData(data);
         if (data.problem?.language) {
           setLanguage(data.problem.language as CodeLanguage);
+        }
+        // Rehidratar consentimiento si fue otorgado previamente o la entrevista ya está en curso en el servidor
+        if (typeof window !== "undefined") {
+          const storedConsent = localStorage.getItem(`evaluador_consent_${token}`) === "true";
+          if (
+            (storedConsent || data.current_phase !== "INTRO") &&
+            data.status === "in_progress" &&
+            data.current_phase !== "INTRO"
+          ) {
+            setHasConsented(true);
+            localStorage.setItem(`evaluador_consent_${token}`, "true");
+          }
         }
       } catch (err: any) {
         setVerificationError(
@@ -80,13 +94,13 @@ function InterviewContent() {
     token,
     candidateMaskedId,
     problemTitle: problemData.title,
-    initialPhase: "INTRO",
+    initialPhase: (sessionData?.current_phase as InterviewPhase) || "INTRO",
     wsUrl: sessionData?.ws_url,
     wsToken: sessionData?.ws_token,
   });
 
   // Hook de snapshots automáticos de la trayectoria
-  const { triggerImmediateSnapshot } = useDebouncedSnapshot({
+  const { triggerImmediateSnapshot, syncCurrentCode } = useDebouncedSnapshot({
     code,
     language,
     enabled: hasConsented,
@@ -98,47 +112,72 @@ function InterviewContent() {
     debounceMs: 3500,
   });
 
-  // Monitoreo ético de integridad (blur y pegado masivo)
+  // Monitoreo ético de integridad (blur, focus, pegado masivo y tab_switch bajo Ley 1581)
   useEffect(() => {
     if (!hasConsented) return;
 
     const handleBlur = () => {
       socket.sendIntegrityEvent("blur");
       triggerImmediateSnapshot("blur");
+      setTelemetryPill("Foco fuera de la ventana registrado");
+      setTimeout(() => setTelemetryPill(null), 3000);
     };
 
     const handleFocus = () => {
       socket.sendIntegrityEvent("focus");
     };
 
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        socket.sendIntegrityEvent("tab_switch");
+        setTelemetryPill("Cambio de pestaña registrado");
+        setTimeout(() => setTelemetryPill(null), 3000);
+      }
+    };
+
     const handlePaste = (e: ClipboardEvent) => {
       const text = e.clipboardData?.getData("text") || "";
       if (text.length > 150) {
         socket.sendIntegrityEvent("paste_large", { pasted_length: text.length });
+        setTelemetryPill(`Pegado de código detectado (${text.length} caracteres)`);
+        setTimeout(() => setTelemetryPill(null), 3500);
+      } else if (text.length > 0) {
+        socket.sendIntegrityEvent("paste", { pasted_length: text.length });
       }
     };
 
     window.addEventListener("blur", handleBlur);
     window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     window.addEventListener("paste", handlePaste);
 
     return () => {
       window.removeEventListener("blur", handleBlur);
       window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("paste", handlePaste);
     };
   }, [hasConsented, socket, triggerImmediateSnapshot]);
 
   // Manejar inicio de la entrevista tras aceptar consentimiento (Fase INTRO -> PROBLEM)
   const handleStartInterview = () => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(`evaluador_consent_${token}`, "true");
+    }
     setHasConsented(true);
     setActiveLeftTab("problem");
     socket.requestPhaseTransition("PROBLEM");
   };
 
+  // Manejar transición de fase con snapshot inmediato de trazabilidad
+  const handlePhaseTransition = (nextPhase: InterviewPhase) => {
+    triggerImmediateSnapshot("phase_transition");
+    socket.requestPhaseTransition(nextPhase);
+  };
+
   // Manejar ejecución de pruebas
   const handleRunTests = () => {
-    triggerImmediateSnapshot("run");
+    syncCurrentCode();
     socket.runCode(code, language);
   };
 
@@ -246,15 +285,91 @@ function InterviewContent() {
                   <strong>Garantía de Equidad (Ley 1581):</strong> Tus datos personales (nombre, género, foto, universidad) no son visibles para el agente evaluador. La sesión es calificada con base exclusiva en evidencia técnica defendible.
                 </span>
               </div>
+
+              {/* Checkbox de Consentimiento Informado Explicito */}
+              <div className="pt-2 border-t border-border/60">
+                <label className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border/80 cursor-pointer hover:bg-muted/60 transition-colors">
+                  <input
+                    id="consent-checkbox"
+                    type="checkbox"
+                    aria-label="Autorización expresa de tratamiento de datos bajo Ley 1581 de 2012"
+                    checked={consentAccepted}
+                    onChange={(e) => setConsentAccepted(e.target.checked)}
+                    className="mt-1 h-4 w-4 rounded border-slate-700 text-primary focus:ring-primary cursor-pointer accent-primary shrink-0"
+                  />
+                  <span className="text-xs text-muted-foreground leading-relaxed">
+                    Autorizo expresamente el tratamiento de mis datos de desempeño y telemetría de sesión bajo la <strong>Ley Estatutaria 1581 de 2012 (Colombia)</strong> para fines de evaluación técnica ciega y generación de reporte auditable. Entiendo que puedo revocar este consentimiento o solicitar la supresión de mis datos en cualquier momento.
+                  </span>
+                </label>
+              </div>
             </CardContent>
 
             <CardFooter className="pt-2">
-              <Button size="lg" className="w-full gap-2 text-sm font-semibold" onClick={handleStartInterview}>
+              <Button
+                id="start-interview-btn"
+                size="lg"
+                className="w-full gap-2 text-sm font-semibold"
+                onClick={handleStartInterview}
+                disabled={!consentAccepted}
+              >
                 <span>Entiendo las Reglas y Deseo Comenzar</span>
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </CardFooter>
           </Card>
+        </div>
+      </div>
+    );
+  }
+
+  // 1.5 Pantalla de Entrevista Concluida / Evaluación Pendiente (Fase EVALUATE)
+  if (socket.phase === "EVALUATE") {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <InterviewHeader
+          phase={socket.phase}
+          candidateMaskedId={candidateMaskedId}
+          timeRemainingSeconds={0}
+          connectionStatus={socket.connectionStatus}
+          onTransitionPhase={handlePhaseTransition}
+          availableTransitions={[]}
+        />
+        <div className="flex-1 flex flex-col items-center justify-center p-6 bg-gradient-to-b from-background to-muted/20">
+          <div className="w-full max-w-lg space-y-6">
+            <Card className="border-border/80 shadow-2xl">
+              <CardHeader className="text-center space-y-3 pb-2">
+                <div className="h-14 w-14 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center mx-auto border border-emerald-500/20">
+                  <CheckCircle2 className="h-8 w-8" />
+                </div>
+                <CardTitle className="text-2xl font-bold tracking-tight">
+                  Entrevista Finalizada
+                </CardTitle>
+                <CardDescription className="text-sm">
+                  Has completado y entregado formalmente tu sesión de evaluación técnica.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4 text-center text-sm">
+                <div className="p-4 rounded-lg bg-muted/40 border border-border/60 space-y-1.5">
+                  <span className="font-semibold text-foreground text-xs uppercase tracking-wider block">
+                    Estado de la Evaluación
+                  </span>
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    Tu solución, snapshots de código y turnos de interacción han sido asegurados. La evaluación está pendiente de revisión por el equipo técnico.
+                  </p>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Identificador anónimo: <strong className="font-mono text-foreground">{candidateMaskedId}</strong>
+                </div>
+              </CardContent>
+              <CardFooter className="flex justify-center pt-2">
+                <Link href="/">
+                  <Button variant="outline" size="sm">
+                    Volver al inicio
+                  </Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          </div>
         </div>
       </div>
     );
@@ -269,17 +384,30 @@ function InterviewContent() {
         candidateMaskedId={candidateMaskedId}
         timeRemainingSeconds={socket.timeRemaining}
         connectionStatus={socket.connectionStatus}
-        onTransitionPhase={socket.requestPhaseTransition}
+        onTransitionPhase={handlePhaseTransition}
+        availableTransitions={socket.availableTransitions}
       />
+
+      {/* Notificación de Telemetría Ética */}
+      {telemetryPill && (
+        <div className="absolute top-16 right-6 z-50 px-3.5 py-1.5 rounded-lg bg-slate-900/90 border border-cyan-800/80 text-xs text-cyan-300 font-mono flex items-center gap-2 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2">
+          <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" />
+          <span>{telemetryPill}</span>
+        </div>
+      )}
 
       {/* Main Split-Screen Workspace */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* Left Panel: Chat & Problem Tabs (45% width) */}
         <div className="w-full md:w-[45%] lg:w-[42%] flex flex-col border-r border-border/50 h-full overflow-hidden bg-card/30">
           {/* Tab Selector */}
-          <div className="h-10 px-4 bg-muted/20 border-b border-border/40 flex items-center gap-2 shrink-0">
+          <div role="tablist" aria-label="Paneles de contenido" className="h-10 px-4 bg-muted/20 border-b border-border/40 flex items-center gap-2 shrink-0">
             <button
+              id="tab-chat"
+              role="tab"
               type="button"
+              aria-selected={activeLeftTab === "chat"}
+              aria-controls="panel-left-content"
               onClick={() => setActiveLeftTab("chat")}
               className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 activeLeftTab === "chat"
@@ -287,15 +415,19 @@ function InterviewContent() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <MessageSquare className="h-3.5 w-3.5" />
+              <MessageSquare className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Chat con el Evaluador</span>
               {socket.isStreaming && (
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" aria-hidden="true" />
               )}
             </button>
 
             <button
+              id="tab-problem"
+              role="tab"
               type="button"
+              aria-selected={activeLeftTab === "problem"}
+              aria-controls="panel-left-content"
               onClick={() => setActiveLeftTab("problem")}
               className={`px-3 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1.5 ${
                 activeLeftTab === "problem"
@@ -303,13 +435,18 @@ function InterviewContent() {
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              <FileText className="h-3.5 w-3.5" />
+              <FileText className="h-3.5 w-3.5" aria-hidden="true" />
               <span>Enunciado del Problema</span>
             </button>
           </div>
 
           {/* Panel Content */}
-          <div className="flex-1 overflow-hidden">
+          <div
+            id="panel-left-content"
+            role="tabpanel"
+            aria-labelledby={activeLeftTab === "chat" ? "tab-chat" : "tab-problem"}
+            className="flex-1 overflow-hidden"
+          >
             {activeLeftTab === "chat" ? (
               <ChatPanel
                 messages={socket.messages}

@@ -4,6 +4,7 @@ from hashlib import sha256
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.core.telemetry import tool_telemetry
 from src.db.enums import Difficulty, Seniority
 from src.db.models import Problem
 from src.problems.schemas import ProblemSpec
@@ -47,6 +48,17 @@ class ProblemSelector:
         stmt = self._filtered_statement(skills=skills, seniority=seniority, language=language)
         result = await self._session.scalars(stmt)
         matches = list(result.all())
+        if not matches:
+            count = await self._session.scalar(select(func.count(Problem.id)))
+            if count == 0:
+                from src.problems.loader import DEFAULT_CATALOG_DIR, ProblemLoader
+                specs = ProblemLoader(DEFAULT_CATALOG_DIR).load()
+                for spec in specs:
+                    self._session.add(spec_to_problem(spec))
+                await self._session.flush()
+                result = await self._session.scalars(stmt)
+                matches = list(result.all())
+
         preferred = _normalize_skills(preferred_skills or ())
         if not preferred:
             return matches
@@ -68,19 +80,38 @@ class ProblemSelector:
         preferred_skills: Sequence[str] | None = None,
         seed: str | None = None,
     ) -> Problem | None:
-        matches = await self.search(
-            skills=skills,
-            seniority=seniority,
-            language=language,
-            preferred_skills=preferred_skills,
+        telemetry = tool_telemetry("problem_selector", "select_one")
+        telemetry.start(
+            seniority=seniority.value if seniority else "any",
+            language=language or "any",
+            skills_count=len(skills) if skills else 0,
         )
-        if not matches:
-            return None
-        if seed is None:
-            return matches[0]
-        digest = sha256(seed.encode("utf-8")).digest()
-        index = int.from_bytes(digest[:8], "big") % len(matches)
-        return matches[index]
+        try:
+            matches = await self.search(
+                skills=skills,
+                seniority=seniority,
+                language=language,
+                preferred_skills=preferred_skills,
+            )
+            if not matches:
+                telemetry.error("No problem matches criteria")
+                return None
+            if seed is None:
+                selected = matches[0]
+            else:
+                digest = sha256(seed.encode("utf-8")).digest()
+                index = int.from_bytes(digest[:8], "big") % len(matches)
+                selected = matches[index]
+
+            telemetry.success(
+                problem_id=str(selected.id)[:8],
+                difficulty=selected.difficulty.value if hasattr(selected.difficulty, "value") else str(selected.difficulty),
+                title=selected.title,
+            )
+            return selected
+        except Exception as exc:
+            telemetry.error(exc)
+            raise
 
     def _filtered_statement(
         self,

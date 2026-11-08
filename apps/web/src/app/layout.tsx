@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { MswProvider } from "@/components/providers/msw-provider";
+import { WebVitals } from "@/components/providers/web-vitals";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Toaster } from "@/components/ui/toaster";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -13,9 +16,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark" suppressHydrationWarning>
       <body className="min-h-screen bg-background font-sans antialiased text-foreground">
-        <MswProvider>{children}</MswProvider>
+        <ThemeProvider defaultTheme="dark">
+          <WebVitals />
+          <MswProvider>{children}</MswProvider>
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

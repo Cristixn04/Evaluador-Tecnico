@@ -2,7 +2,14 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.routers.auth import router as auth_router
+from src.api.routers.evaluation import router as evaluation_router
+from src.api.routers.invitations import router as invitations_router
+from src.api.routers.organizations import router as organizations_router
+from src.api.routers.privacy import router as privacy_router
+from src.api.routers.sessions import router as sessions_router
+from src.api.routers.trajectory import router as trajectory_router
 from src.api.routers.vacancies import router as vacancies_router
+from src.api.routers.websocket import router as websocket_router
 from src.core.config import settings
 
 app = FastAPI(
@@ -27,7 +34,14 @@ app.add_middleware(
 )
 
 app.include_router(auth_router)
+app.include_router(organizations_router)
 app.include_router(vacancies_router)
+app.include_router(invitations_router)
+app.include_router(sessions_router)
+app.include_router(websocket_router)
+app.include_router(trajectory_router)
+app.include_router(evaluation_router)
+app.include_router(privacy_router)
 
 
 @app.get("/health", tags=["Health"])

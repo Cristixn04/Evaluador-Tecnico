@@ -5,6 +5,10 @@ export type CreateVacancyRequest = components["schemas"]["CreateVacancyRequest"]
 export type InvitationResponse = components["schemas"]["InvitationResponse"];
 export type CreateInvitationRequest = components["schemas"]["CreateInvitationRequest"];
 export type AnonymousCandidateSession = components["schemas"]["AnonymousCandidateSession"];
+export type EvaluationReport = components["schemas"]["EvaluationReport"];
+export type InterviewSummary = components["schemas"]["InterviewSummary"];
+export type InterviewTrajectory = components["schemas"]["InterviewTrajectory"];
+export type TrajectorySnapshot = components["schemas"]["TrajectorySnapshot"];
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
@@ -80,6 +84,70 @@ class ApiClient {
       },
     });
     if (!res.ok) throw new Error("Sesión inválida o expirada");
+    return res.json();
+  }
+
+  // 6. Obtener evaluación y reporte defendible de una entrevista
+  async getEvaluation(interviewId: string): Promise<EvaluationReport> {
+    const res = await fetch(`${API_BASE_URL}/interviews/${interviewId}/evaluation`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al obtener la evaluación de la entrevista");
+    return res.json();
+  }
+
+  // 7. Obtener la trayectoria cronológica de código para el reproductor
+  async getInterviewTrajectory(interviewId: string): Promise<InterviewTrajectory> {
+    const res = await fetch(`${API_BASE_URL}/interviews/${interviewId}/trajectory`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al obtener la trayectoria de la entrevista");
+    return res.json();
+  }
+
+  // 8. Listar entrevistas de una organización
+  async listOrganizationInterviews(organizationId: string): Promise<InterviewSummary[]> {
+    const res = await fetch(`${API_BASE_URL}/organizations/${organizationId}/interviews`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al listar las entrevistas");
+    return res.json();
+  }
+
+  // 9. Descargar reporte defendible en PDF (WeasyPrint con hash SHA-256)
+  async downloadReportPdf(interviewId: string): Promise<Blob> {
+    const res = await fetch(`${API_BASE_URL}/interviews/${interviewId}/report.pdf`, {
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al generar el reporte en PDF");
+    return res.blob();
+  }
+
+  // 10. Consultar política de privacidad Ley 1581
+  async getPrivacyPolicy() {
+    const res = await fetch(`${API_BASE_URL}/privacy/policy`);
+    if (!res.ok) throw new Error("Error al obtener la política de privacidad");
+    return res.json();
+  }
+
+  // 11. Revocar consentimiento informado (Habeas Data)
+  async revokeConsent(invitationToken: string, reason?: string) {
+    const res = await fetch(`${API_BASE_URL}/privacy/consent/revoke`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ invitation_token: invitationToken, reason }),
+    });
+    if (!res.ok) throw new Error("Error al revocar el consentimiento");
+    return res.json();
+  }
+
+  // 12. Supresión de datos de candidato (Derecho al olvido Ley 1581)
+  async deleteCandidateData(interviewId: string) {
+    const res = await fetch(`${API_BASE_URL}/privacy/candidates/${interviewId}`, {
+      method: "DELETE",
+      headers: this.getHeaders(),
+    });
+    if (!res.ok) throw new Error("Error al suprimir los datos del candidato");
     return res.json();
   }
 }

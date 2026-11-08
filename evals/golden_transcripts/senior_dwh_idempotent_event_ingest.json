@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-ingesta-idempotente-eventos",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.2,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.8,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 5,
+      "technical_communication": 5,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Diseña un pipeline de ingesta para transacciones con deduplicación por ventana de 10 minutos y garantía exactly-once."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Utilizaré una clave de idempotencia hash(uuid, timestamp) almacenada en Redis con TTL de 10 minutos más confirmación atómica en DB."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Cómo gestionas condiciones de carrera cuando dos eventos idénticos llegan en milisegundos concurrentes?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Uso SETNX con valor de locking y control de versión optimista (OCC) en la tabla relacional con restricción UNIQUE compuesta."
+    }
+  ],
+  "final_code": "async def ingest_transaction(tx_id, payload, cache, db):\n    lock_acquired = await cache.set(f'lock:tx:{tx_id}', '1', ex=600, nx=True)\n    if not lock_acquired:\n        return {'status': 'duplicate_ignored'}\n    try:\n        return await db.insert_once(tx_id, payload)\n    except UniqueViolation:\n        return {'status': 'already_processed'}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 6,
+    "total_tests": 6
+  }
+}

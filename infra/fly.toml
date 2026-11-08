@@ -1,0 +1,41 @@
+# Fly.io deployment configuration for Evaluador Técnico Backend API
+# Monorepo context: build context should be root, using infra/Dockerfile.api
+
+app = "evaluador-tecnico-api"
+primary_region = "bog"
+
+[build]
+  dockerfile = "infra/Dockerfile.api"
+
+[deploy]
+  # release_command se ejecuta en una máquina efímera aislada antes de desplegar
+  # nuevas instancias. Esto previene condiciones de carrera o migraciones concurrentes
+  # durante escalado horizontal en Fly.io.
+  release_command = "alembic upgrade head"
+
+[env]
+  # Se desactiva AUTO_MIGRATE en runtime de las instancias puesto que
+  # el release_command ya aplicó las migraciones de forma atómica.
+  AUTO_MIGRATE = "0"
+  PYTHONUNBUFFERED = "1"
+  PORT = "8000"
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "15s"
+    interval = "20s"
+    method = "GET"
+    path = "/health"
+    protocol = "http"
+    timeout = "5s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1024mb"

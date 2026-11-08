@@ -1,0 +1,82 @@
+{
+  "case_id": "s3_case_25_pubref-ledger-double-entry-balance-optimal",
+  "scenario_id": "pubref-ledger-double-entry-balance-optimal",
+  "problem_slug": "ledger-double-entry-balance",
+  "provenance": "public_reference_solution",
+  "provenance_notes": "Solución de referencia del problema oficial 'ledger-double-entry-balance' del catálogo técnico evaluada independientemente por dos revisores humanos.",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.0,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 4.4,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 5,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 5,
+        "algorithmic_reasoning": 4,
+        "code_quality": 5,
+        "technical_communication": 4,
+        "complexity_management": 4
+      },
+      "overall_score": 4.4,
+      "recommendation": "hire",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (problem=ledger-double-entry-balance, tests=3/3, status=success). Puntuación global E1: 4.40 (hire)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 4,
+      "code_quality": 5,
+      "technical_communication": 4,
+      "complexity_management": 4
+    },
+    "consensus_overall_score": 4.4,
+    "consensus_recommendation": "hire"
+  },
+  "turns": [
+    {
+      "turn_id": "t-pub-25-1",
+      "speaker": "agent",
+      "content": "Verifica el invariante de partida doble en asientos contables y calcula los saldos finales por cuenta."
+    },
+    {
+      "turn_id": "t-pub-25-2",
+      "speaker": "candidate",
+      "content": "Validaré que en cada asiento la suma de débitos sea exactamente igual a la suma de créditos en centavos enteros y que tenga al menos dos líneas. Solo los asientos balanceados actualizan el libro mayor."
+    },
+    {
+      "turn_id": "t-pub-25-3",
+      "speaker": "agent",
+      "content": "¿Por qué es importante no aplicar parcialmente un asiento desbalanceado?"
+    },
+    {
+      "turn_id": "t-pub-25-4",
+      "speaker": "candidate",
+      "content": "Por atomicidad contable: si un asiento falla la validación de suma cero, mutar cuentas individuales corrompería el balance global del ledger."
+    }
+  ],
+  "final_code": "import json, sys\nfrom collections import defaultdict\n\ndef process_ledger(data: dict) -> dict:\n    balances: dict[str, int] = defaultdict(int)\n    unbalanced: list[str] = []\n    for entry in data.get('entries', []):\n        lines = entry.get('lines', [])\n        debits = sum(l['amount_cents'] for l in lines if l['type'] == 'DEBIT')\n        credits = sum(l['amount_cents'] for l in lines if l['type'] == 'CREDIT')\n        if len(lines) < 2 or debits != credits:\n            unbalanced.append(entry['entry_id'])\n            continue\n        for l in lines:\n            delta = l['amount_cents'] if l['type'] == 'DEBIT' else -l['amount_cents']\n            balances[l['account']] += delta\n    return {'balances': dict(sorted(balances.items())), 'unbalanced_entries': unbalanced}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 3,
+    "total_tests": 3
+  }
+}

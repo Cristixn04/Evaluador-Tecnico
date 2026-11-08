@@ -1,0 +1,82 @@
+{
+  "case_id": "s3_case_24_pubref-token-bucket-rate-limiter-partial",
+  "scenario_id": "pubref-token-bucket-rate-limiter-partial",
+  "problem_slug": "token-bucket-rate-limiter",
+  "provenance": "public_reference_solution",
+  "provenance_notes": "Solución de referencia del problema oficial 'token-bucket-rate-limiter' del catálogo técnico evaluada independientemente por dos revisores humanos.",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    2.5,
+    3.6
+  ],
+  "expected_recommendation": "borderline",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 3.0,
+    "recommendation": "borderline",
+    "competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 3,
+        "algorithmic_reasoning": 3,
+        "code_quality": 3,
+        "technical_communication": 3,
+        "complexity_management": 3
+      },
+      "overall_score": 3.0,
+      "recommendation": "borderline",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (problem=token-bucket-rate-limiter, tests=2/3, status=test_failure). Puntuación global E1: 3.00 (borderline)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 3,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 3
+    },
+    "consensus_overall_score": 3.0,
+    "consensus_recommendation": "borderline"
+  },
+  "turns": [
+    {
+      "turn_id": "t-pub-24-1",
+      "speaker": "agent",
+      "content": "Simula un limitador de tasa Token Bucket por cliente con capacidad máxima y tasa de recarga por segundo."
+    },
+    {
+      "turn_id": "t-pub-24-2",
+      "speaker": "candidate",
+      "content": "Voy a guardar los tokens actuales y el último timestamp de cada cliente. Al llegar un request calculo elapsed * refill_rate y lo sumo hasta capacity."
+    },
+    {
+      "turn_id": "t-pub-24-3",
+      "speaker": "agent",
+      "content": "En tu código truncas elapsed a entero antes de multiplicar por refill_rate, lo que falla un caso con recarga fraccionaria. ¿Lo notaste?"
+    },
+    {
+      "turn_id": "t-pub-24-4",
+      "speaker": "candidate",
+      "content": "Tienes razón, usé división entera // en vez de flotante para los segundos transcurridos, por eso pasaron 2 de 3 pruebas."
+    }
+  ],
+  "final_code": "import json, sys\ndef simulate_bucket(data: dict) -> dict:\n    cap = float(data['capacity'])\n    rate = float(data['refill_rate'])\n    state = {}\n    decisions = []\n    for req in data.get('requests', []):\n        cid, ts = req['client_id'], int(req['timestamp'])\n        tokens, last_ts = state.get(cid, (cap, ts))\n        tokens = min(cap, tokens + ((ts - last_ts) // 1) * rate)\n        if tokens >= 1.0:\n            decisions.append(True)\n            state[cid] = (tokens - 1.0, ts)\n        else:\n            decisions.append(False)\n            state[cid] = (tokens, ts)\n    return {'decisions': decisions}\n",
+  "execution_results": {
+    "status": "test_failure",
+    "tests_passed": 2,
+    "total_tests": 3
+  }
+}

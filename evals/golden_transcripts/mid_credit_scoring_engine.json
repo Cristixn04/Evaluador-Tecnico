@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-motor-scoring-crediticio",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    3.6,
+    4.4
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.1,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Calcula el puntaje de crédito (300 a 950) basado en mora, endeudamiento y consultas recientes en Datacrédito."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Definiré un árbol de ponderaciones: 40% historial de pagos, 30% uso de cupo, 20% antigüedad y 10% consultas."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Qué ocurre si el candidato no tiene historial crediticio (bancarización cero)?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Se debe retornar un indicador especial de 'sin_historial' y aplicar reglas alternativas con ingresos demostrables."
+    }
+  ],
+  "final_code": "def evaluate_credit_score(profile):\n    if profile.get('is_unbanked'):\n        return {'score': None, 'tier': 'unscored', 'requires_manual_underwriting': True}\n    base = 500\n    if profile.get('has_default'): base -= 150\n    base += min(200, profile.get('ontime_payments_months', 0) * 5)\n    return {'score': max(300, min(950, base)), 'tier': 'approved' if base >= 650 else 'rejected'}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 4,
+    "total_tests": 4
+  }
+}

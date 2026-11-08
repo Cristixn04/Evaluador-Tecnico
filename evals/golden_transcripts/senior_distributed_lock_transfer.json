@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-transferencia-concurrente-bloqueos",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.4,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 4.9,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 5,
+      "technical_communication": 5,
+      "complexity_management": 5
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Diseña una transferencia entre cuentas A y B evitando condiciones de carrera y deadlocks cuando ocurren transferencias cruzadas bidireccionales."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Para evitar deadlocks, ordenaré siempre los IDs de las cuentas alfabéticamente antes de solicitar los locks (lock ordering protocol)."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Y para la persistencia transaccional en Postgres?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Utilizaré SELECT ... FOR UPDATE en orden estricto min(A,B), max(A,B) dentro del bloque de transacción ACID con nivel READ COMMITTED."
+    }
+  ],
+  "final_code": "async def transfer_balance(session, account_a_id, account_b_id, amount):\n    first_id, second_id = sorted([account_a_id, account_b_id])\n    await session.execute('SELECT * FROM accounts WHERE id = :id FOR UPDATE', {'id': first_id})\n    await session.execute('SELECT * FROM accounts WHERE id = :id FOR UPDATE', {'id': second_id})\n    # Débito y crédito atómicos sin riesgo de interbloqueo\n    return {'status': 'transferred'}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 6,
+    "total_tests": 6
+  }
+}

@@ -19,6 +19,18 @@ class InterviewStatus(StrEnum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
     EVALUATED = "evaluated"
+    CANCELLED = "cancelled"
+
+
+class InterviewPhase(StrEnum):
+    INTRO = "INTRO"
+    PROBLEM = "PROBLEM"
+    CLARIFY = "CLARIFY"
+    DESIGN = "DESIGN"
+    CODING = "CODING"
+    PROBE = "PROBE"
+    WRAPUP = "WRAPUP"
+    EVALUATE = "EVALUATE"
 
 
 class TurnSpeaker(StrEnum):

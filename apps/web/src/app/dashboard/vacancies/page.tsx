@@ -2,11 +2,13 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "@/components/ui/use-toast";
 import { api, type Vacancy, type InvitationResponse } from "@/lib/api/client";
 import {
   Briefcase,
@@ -56,17 +58,41 @@ export default function VacanciesPage() {
         candidate_email: candidateEmail,
       });
       setGeneratedInvitation(inv);
+      toast({
+        title: "Invitación Generada Exitosamente",
+        description: `Enlace seguro para candidato anonimizado (${inv.masked_candidate_id})`,
+        variant: "success",
+      });
     } catch (err) {
       console.error(err);
+      toast({
+        title: "Error al generar invitación",
+        description: "No se pudo crear el enlace seguro. Intenta nuevamente.",
+        variant: "destructive",
+      });
     } finally {
       setInvitingLoading(false);
     }
   };
 
+  const getCandidateAccessUrl = (invitation: InvitationResponse | null) => {
+    if (!invitation?.access_url) return "";
+    if (invitation.access_url.startsWith("http")) return invitation.access_url;
+    const origin = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+    return `${origin}${invitation.access_url.startsWith("/") ? "" : "/"}${invitation.access_url}`;
+  };
+
+  const candidateAccessUrl = getCandidateAccessUrl(generatedInvitation);
+
   const handleCopyLink = () => {
-    if (generatedInvitation?.access_url) {
-      navigator.clipboard.writeText(generatedInvitation.access_url);
+    if (candidateAccessUrl) {
+      navigator.clipboard.writeText(candidateAccessUrl);
       setCopied(true);
+      toast({
+        title: "Enlace Copiado",
+        description: "El enlace de acceso para el candidato fue copiado al portapapeles.",
+        variant: "success",
+      });
       setTimeout(() => setCopied(false), 2000);
     }
   };
@@ -114,8 +140,14 @@ export default function VacanciesPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {vacancies.map((vacancy) => (
-            <Card key={vacancy.id} className="border-border/70 hover:border-border transition-all">
+          {vacancies.map((vacancy, index) => (
+            <motion.div
+              key={vacancy.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.2, delay: index * 0.04 }}
+            >
+              <Card className="border-border/70 hover:border-border transition-all">
               <CardHeader className="pb-3">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                   <div className="space-y-1">
@@ -181,8 +213,9 @@ export default function VacanciesPage() {
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
+          </motion.div>
+        ))}
+      </div>
       )}
 
       {/* Modal / Overlay de Invitación de Candidato */}
@@ -271,7 +304,7 @@ export default function VacanciesPage() {
                   <div className="flex items-center gap-2">
                     <Input
                       readOnly
-                      value={generatedInvitation.access_url}
+                      value={candidateAccessUrl}
                       className="font-mono text-xs bg-muted/30"
                     />
                     <Button
@@ -288,7 +321,7 @@ export default function VacanciesPage() {
 
                 <div className="pt-4 flex items-center justify-between">
                   <a
-                    href={generatedInvitation.access_url}
+                    href={candidateAccessUrl}
                     target="_blank"
                     rel="noreferrer"
                     className="text-xs text-primary hover:underline flex items-center gap-1 font-medium"

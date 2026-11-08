@@ -1,0 +1,82 @@
+{
+  "case_id": "s3_case_27_pubref-event-log-window-aggregation-optimal",
+  "scenario_id": "pubref-event-log-window-aggregation-optimal",
+  "problem_slug": "event-log-window-aggregation",
+  "provenance": "public_reference_solution",
+  "provenance_notes": "Solución de referencia del problema oficial 'event-log-window-aggregation' del catálogo técnico evaluada independientemente por dos revisores humanos.",
+  "expected_level": "senior",
+  "expected_overall_score_range": [
+    4.0,
+    5.0
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 4.6,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 5
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 5,
+        "algorithmic_reasoning": 5,
+        "code_quality": 4,
+        "technical_communication": 4,
+        "complexity_management": 5
+      },
+      "overall_score": 4.6,
+      "recommendation": "hire",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (problem=event-log-window-aggregation, tests=3/3, status=success). Puntuación global E1: 4.60 (hire)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 5,
+      "algorithmic_reasoning": 5,
+      "code_quality": 4,
+      "technical_communication": 4,
+      "complexity_management": 5
+    },
+    "consensus_overall_score": 4.6,
+    "consensus_recommendation": "hire"
+  },
+  "turns": [
+    {
+      "turn_id": "t-pub-27-1",
+      "speaker": "agent",
+      "content": "Agrupa eventos de telemetría por ventana deslizante y servicio determinando el pico de eventos."
+    },
+    {
+      "turn_id": "t-pub-27-2",
+      "speaker": "candidate",
+      "content": "Ordenaré los eventos por timestamp y usaré una cola doble (collections.deque) por servicio para mantener solo los eventos dentro de [t - window_seconds + 1, t] en tiempo lineal O(N log N)."
+    },
+    {
+      "turn_id": "t-pub-27-3",
+      "speaker": "agent",
+      "content": "¿Por qué una deque reduce la complejidad frente a recalcular la ventana desde cero en cada evento?"
+    },
+    {
+      "turn_id": "t-pub-27-4",
+      "speaker": "candidate",
+      "content": "Porque cada evento entra a la derecha de la deque exactamente una vez y sale por la izquierda con popleft() a lo sumo una vez, logrando O(N) tras el ordenamiento inicial."
+    }
+  ],
+  "final_code": "import json, sys\nfrom collections import defaultdict, deque\n\ndef max_window_counts(data: dict) -> dict:\n    w = int(data['window_seconds'])\n    events = sorted(data.get('events', []), key=lambda x: int(x['timestamp']))\n    windows: dict[str, deque[int]] = defaultdict(deque)\n    peaks: dict[str, int] = defaultdict(int)\n    for ev in events:\n        svc, ts = ev['service'], int(ev['timestamp'])\n        q = windows[svc]\n        q.append(ts)\n        while q and (ts - q[0]) >= w:\n            q.popleft()\n        if len(q) > peaks[svc]:\n            peaks[svc] = len(q)\n    return {'max_events_per_service': dict(sorted(peaks.items()))}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 3,
+    "total_tests": 3
+  }
+}

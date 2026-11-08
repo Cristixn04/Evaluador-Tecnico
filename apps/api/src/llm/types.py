@@ -1,13 +1,24 @@
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
-Role = Literal["system", "user", "assistant"]
+Role = Literal["system", "user", "assistant", "tool"]
+
+
+@dataclass(frozen=True, slots=True)
+class ToolCall:
+    id: str
+    name: str
+    arguments: str
+    type: str = "function"
 
 
 @dataclass(frozen=True, slots=True)
 class ChatMessage:
     role: Role
     content: str
+    tool_calls: tuple[ToolCall, ...] | list[ToolCall] | None = None
+    tool_call_id: str | None = None
+    name: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,6 +33,10 @@ class ChatCompletion:
     content: str
     model: str
     usage: TokenUsage
+    tool_calls: list[ToolCall] | None = None
+    finish_reason: str | None = None
+    request_id: str | None = None
+    gateway_metadata: dict[str, str] | None = None
 
 
 class LLMClient(Protocol):
@@ -30,4 +45,9 @@ class LLMClient(Protocol):
         messages: list[ChatMessage],
         *,
         model: str | None = None,
+        tools: list[dict[str, Any]] | None = None,
+        tool_choice: str | dict[str, Any] | None = None,
+        max_tokens: int | None = None,
     ) -> ChatCompletion: ...
+
+    async def aclose(self) -> None: ...

@@ -15,7 +15,6 @@ from src.core.security import (
 )
 from src.db.enums import UserRole
 from src.db.models import Membership, Organization, User
-from src.db.session import get_db
 from src.main import app
 
 
@@ -84,10 +83,7 @@ async def _seed_user(
 
 
 async def _login_client(db_session: AsyncSession) -> AsyncClient:
-    async def override_get_db():
-        yield db_session
-
-    app.dependency_overrides[get_db] = override_get_db
+    # db_session fixture already overrides get_db
     return AsyncClient(transport=ASGITransport(app=app), base_url="http://testserver")
 
 
@@ -99,18 +95,16 @@ async def test_login_success(db_session: AsyncSession) -> None:
         password="secret123",
         role=UserRole.RECRUITER,
     )
+    await db_session.commit()
     assert org is not None
     assert membership is not None
 
     client = await _login_client(db_session)
-    try:
-        async with client:
-            response = await client.post(
-                "/auth/login",
-                json={"email": "recruiter@example.com", "password": "secret123"},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/auth/login",
+            json={"email": "recruiter@example.com", "password": "secret123"},
+        )
     assert response.status_code == 200
     body = response.json()
     assert body["token_type"] == "bearer"
@@ -122,15 +116,13 @@ async def test_login_success(db_session: AsyncSession) -> None:
 @pytest.mark.asyncio
 async def test_login_wrong_password(db_session: AsyncSession) -> None:
     await _seed_user(db_session, email="recruiter@example.com", password="secret123")
+    await db_session.commit()
     client = await _login_client(db_session)
-    try:
-        async with client:
-            response = await client.post(
-                "/auth/login",
-                json={"email": "recruiter@example.com", "password": "nope"},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/auth/login",
+            json={"email": "recruiter@example.com", "password": "nope"},
+        )
     assert response.status_code == 401
 
 
@@ -142,15 +134,13 @@ async def test_login_inactive_user(db_session: AsyncSession) -> None:
         password="secret123",
         is_active=False,
     )
+    await db_session.commit()
     client = await _login_client(db_session)
-    try:
-        async with client:
-            response = await client.post(
-                "/auth/login",
-                json={"email": "inactive@example.com", "password": "secret123"},
-            )
-    finally:
-        app.dependency_overrides.clear()
+    async with client:
+        response = await client.post(
+            "/auth/login",
+            json={"email": "inactive@example.com", "password": "secret123"},
+        )
     assert response.status_code == 403
 
 

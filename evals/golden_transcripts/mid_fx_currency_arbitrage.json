@@ -1,0 +1,50 @@
+{
+  "scenario_id": "prob-conversion-divisas-trm",
+  "expected_level": "mid",
+  "expected_overall_score_range": [
+    3.4,
+    4.2
+  ],
+  "expected_recommendation": "hire",
+  "benchmark_annotation": {
+    "annotator_type": "synthetic_benchmark",
+    "annotator_notes": "Anotación provisional sintética calibrada con rúbrica técnica estándar.",
+    "overall_score": 3.9,
+    "recommendation": "hire",
+    "competencies": {
+      "problem_solving": 4,
+      "algorithmic_reasoning": 4,
+      "code_quality": 3,
+      "technical_communication": 4,
+      "complexity_management": 4
+    }
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Calcula el spread cambiario entre TRM spot y tasa ofrecida aplicando comisión escalonada por volumen."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Definiré rangos: 0-1k USD 1.5% spread, 1k-10k 1.0%, >10k 0.6%."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "¿Cómo garantizas que la cotización respete la ventana de validez de 60 segundos?"
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Generaré un quote_id con timestamp UNIX y firma HMAC para verificar que no haya expirado en la ejecución."
+    }
+  ],
+  "final_code": "def calculate_fx_quote(usd_amount, trm_spot):\n    spread_pct = 0.015 if usd_amount < 1000 else (0.010 if usd_amount <= 10000 else 0.006)\n    effective_rate = trm_spot * (1 + spread_pct)\n    cop_total = round(usd_amount * effective_rate, 2)\n    return {'effective_rate': effective_rate, 'cop_total': cop_total}\n",
+  "execution_results": {
+    "status": "success",
+    "tests_passed": 4,
+    "total_tests": 4
+  }
+}

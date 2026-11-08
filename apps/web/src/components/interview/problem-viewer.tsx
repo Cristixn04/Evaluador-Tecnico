@@ -15,7 +15,11 @@ interface ProblemViewerProps {
 
 export function ProblemViewer({ problem }: ProblemViewerProps) {
   return (
-    <div className="h-full overflow-y-auto p-5 space-y-5 text-sm">
+    <div
+      role="region"
+      aria-label="Enunciado y especificaciones del problema técnico"
+      className="h-full overflow-y-auto p-5 space-y-5 text-sm"
+    >
       {/* Title & Metadata */}
       <div className="space-y-2">
         <div className="flex items-center gap-2">

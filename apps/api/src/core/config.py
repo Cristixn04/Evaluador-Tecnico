@@ -6,6 +6,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "Evaluador Técnico de Candidatos"
     VERSION: str = "0.1.0"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Entorno de ejecución (development, staging, production)",
+    )
 
     # Base de Datos PostgreSQL
     DATABASE_URL: str = Field(
@@ -20,13 +24,17 @@ class Settings(BaseSettings):
     )
 
     # LLM Gateway (Grok / OpenAI compatible)
+    USE_MOCK_LLM: bool = Field(
+        default=False,
+        description="Activa cliente LLM simulado para desarrollo y pruebas locales",
+    )
     LLM_API_KEY: str = Field(default="mock-llm-key", description="Clave API del proveedor LLM")
     LLM_BASE_URL: str = Field(
         default="https://api.reto.pltk.mx/v1",
         description="URL base del proveedor compatible con OpenAI",
     )
     LLM_MODEL: str = Field(default="grok-4.6", description="Modelo LLM a utilizar")
-    LLM_TIMEOUT_SECONDS: float = Field(default=30.0, description="Timeout de llamadas al LLM")
+    LLM_TIMEOUT_SECONDS: float = Field(default=90.0, description="Timeout de llamadas al LLM")
     LLM_MAX_RETRIES: int = Field(
         default=2,
         description="Reintentos ante errores transitorios del LLM",
@@ -44,6 +52,10 @@ class Settings(BaseSettings):
         description="Intervalo de polling de submissions Judge0",
     )
     JUDGE0_MAX_POLLS: int = Field(default=50, description="Máximo de polls por submission")
+    JUDGE0_MAX_PROCESSES_AND_OR_THREADS: int = Field(
+        default=10,
+        description="Límite máximo de procesos/hilos por submission para mitigar fork bombs",
+    )
 
     # Seguridad JWT
     JWT_SECRET_KEY: str = Field(
@@ -52,6 +64,20 @@ class Settings(BaseSettings):
     )
     JWT_ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24
+
+    # Umbrales de observabilidad y alertas de latencia (en milisegundos)
+    LLM_LATENCY_ALERT_MS: float = Field(
+        default=5000.0,
+        description="Umbral de alerta de latencia para llamadas LLM en milisegundos (5s para interacción conversacional fluida)",
+    )
+    SANDBOX_LATENCY_ALERT_MS: float = Field(
+        default=3000.0,
+        description="Umbral de alerta de latencia para ejecuciones en Sandbox en milisegundos (3s acorde a límites de ejecución)",
+    )
+    WEBSOCKET_LATENCY_ALERT_MS: float = Field(
+        default=1000.0,
+        description="Umbral de alerta de latencia para procesamiento en WebSocket en milisegundos (1s para responsividad en tiempo real)",
+    )
 
     model_config = SettingsConfigDict(
         env_file=".env",

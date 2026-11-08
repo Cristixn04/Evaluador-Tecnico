@@ -1,0 +1,108 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: evaluador-prod-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-evaluador}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evaluador_prod_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-evaluador_db}
+    volumes:
+      - postgres_prod_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-evaluador} -d ${POSTGRES_DB:-evaluador_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evaluador_internal
+
+  redis:
+    image: redis:7-alpine
+    container_name: evaluador-prod-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-redis_prod_secret}
+    volumes:
+      - redis_prod_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-redis_prod_secret}", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - evaluador_internal
+
+  judge0:
+    image: judge0/judge0:v1.13.1
+    container_name: evaluador-prod-judge0
+    restart: unless-stopped
+    environment:
+      REDIS_HOST: redis
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redis_prod_secret}
+      POSTGRES_HOST: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-evaluador}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-evaluador_prod_secret}
+      POSTGRES_DB: judge0_db
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - evaluador_internal
+
+  api:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.api
+    container_name: evaluador-prod-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-evaluador}:${POSTGRES_PASSWORD:-evaluador_prod_secret}@postgres:5432/${POSTGRES_DB:-evaluador_db}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-redis_prod_secret}@redis:6379/0
+      JUDGE0_BASE_URL: http://judge0:2358
+      LLM_API_KEY: ${LLM_API_KEY:-mock-llm-key}
+      LLM_BASE_URL: ${LLM_BASE_URL:-https://api.reto.pltk.mx/v1}
+      LLM_MODEL: ${LLM_MODEL:-grok-4.6}
+      SECRET_KEY: ${SECRET_KEY:-super_secret_jwt_key_evaluador_2026}
+      ENVIRONMENT: production
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - evaluador_internal
+      - evaluador_public
+
+  web:
+    build:
+      context: ..
+      dockerfile: infra/Dockerfile.web
+    container_name: evaluador-prod-web
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8000}
+      NODE_ENV: production
+    ports:
+      - "3000:3000"
+    depends_on:
+      - api
+    networks:
+      - evaluador_internal
+      - evaluador_public
+
+volumes:
+  postgres_prod_data:
+  redis_prod_data:
+
+networks:
+  evaluador_internal:
+    internal: true
+  evaluador_public:
+    driver: bridge

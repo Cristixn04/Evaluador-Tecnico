@@ -6,7 +6,7 @@
   "main": "index.ts",
   "types": "index.ts",
   "scripts": {
-    "generate-types": "pnpm dlx openapi-typescript openapi.json -o types.generated.ts"
+    "generate-types": "openapi-typescript openapi.json -o types.generated.ts"
   },
   "devDependencies": {
     "openapi-typescript": "^7.6.1"

@@ -1,0 +1,58 @@
+# Multi-stage production Dockerfile for Evaluador Técnico Frontend (Next.js)
+FROM node:20-alpine AS base
+
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
+WORKDIR /app
+
+# Etapa de dependencias
+FROM base AS deps
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY packages/contracts/package.json ./packages/contracts/
+COPY apps/web/package.json ./apps/web/
+
+RUN pnpm install --frozen-lockfile
+
+# Etapa de compilación
+FROM base AS builder
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/packages/contracts/node_modules ./packages/contracts/node_modules
+COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.json* ./
+COPY packages/contracts ./packages/contracts
+COPY apps/web ./apps/web
+
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_ENV=production
+
+RUN pnpm --filter @evaluador/contracts build || true
+RUN pnpm --filter @evaluador/web build
+
+# Etapa final de ejecución
+FROM base AS runner
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+COPY --from=builder /app/package.json /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/packages/contracts ./packages/contracts
+COPY --from=builder /app/apps/web ./apps/web
+
+USER nextjs
+
+EXPOSE 3000
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:3000/ || exit 1
+
+CMD ["pnpm", "--filter", "@evaluador/web", "start"]

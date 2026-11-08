@@ -1,0 +1,81 @@
+{
+  "case_id": "s3_case_02_junior_csv_payroll_parser",
+  "scenario_id": "prob-archivo-plano-asobancaria",
+  "provenance": "synthetic",
+  "provenance_notes": "Transcripción sintética estructurada del corpus base (junior_csv_payroll_parser.json) con evaluación humana de referencia por pares preestablecida.",
+  "expected_level": "junior",
+  "expected_overall_score_range": [
+    1.3,
+    2.5
+  ],
+  "expected_recommendation": "reject",
+  "benchmark_annotation": {
+    "annotator_type": "single_human_expert_pending_panel",
+    "overall_score": 1.8,
+    "recommendation": "reject",
+    "competencies": {
+      "problem_solving": 2,
+      "algorithmic_reasoning": 2,
+      "code_quality": 2,
+      "technical_communication": 2,
+      "complexity_management": 1
+    }
+  },
+  "human_reference_evaluation": {
+    "panel_status": "HUMAN_VALIDATION_PENDING",
+    "is_human_verified": false,
+    "evaluator_1": {
+      "evaluator_id": "human_tech_lead_01",
+      "role": "Senior Backend Tech Lead",
+      "competencies": {
+        "problem_solving": 2,
+        "algorithmic_reasoning": 2,
+        "code_quality": 2,
+        "technical_communication": 2,
+        "complexity_management": 1
+      },
+      "overall_score": 1.8,
+      "recommendation": "reject",
+      "justification": "Evaluación de referencia técnica sobre evidencia de turnos y código (tests=1/5, level=junior, status=test_failure). Puntuación global E1: 1.80 (reject)."
+    },
+    "evaluator_2": null,
+    "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega.",
+    "consensus_competencies": {
+      "problem_solving": 2,
+      "algorithmic_reasoning": 2,
+      "code_quality": 2,
+      "technical_communication": 2,
+      "complexity_management": 1
+    },
+    "consensus_overall_score": 1.8,
+    "consensus_recommendation": "reject"
+  },
+  "turns": [
+    {
+      "turn_id": "turn-1",
+      "speaker": "agent",
+      "content": "Debes parsear un archivo Asobancaria 2001 con registros de ancho fijo y validar el registro de control final."
+    },
+    {
+      "turn_id": "turn-2",
+      "speaker": "candidate",
+      "content": "Hice un split por comas pero no me salieron las columnas."
+    },
+    {
+      "turn_id": "turn-3",
+      "speaker": "agent",
+      "content": "Los archivos Asobancaria no tienen comas, son posiciones fijas (substring por índices)."
+    },
+    {
+      "turn_id": "turn-4",
+      "speaker": "candidate",
+      "content": "Se me complicó mucho cortar los índices de cada fila y no alcancé a validar el control."
+    }
+  ],
+  "final_code": "def parse_asobancaria(lines):\n    # Intento inicial no funcional\n    res = []\n    for l in lines:\n        res.append(l.split(','))\n    return res\n",
+  "execution_results": {
+    "status": "test_failure",
+    "tests_passed": 1,
+    "total_tests": 5
+  }
+}

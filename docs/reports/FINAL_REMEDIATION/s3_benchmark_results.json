@@ -1,0 +1,2169 @@
+{
+  "executed_at": "2026-11-04T23:29:14.739562+00:00",
+  "live_llm": true,
+  "total_transcripts": 32,
+  "passed_in_range": 20,
+  "in_range_rate_pct": 62.5,
+  "spearman_correlation": 0.6102,
+  "quadratic_weighted_cohen_kappa": 0.5402,
+  "mae": 0.6062,
+  "recommendation_accuracy_pct": 53.12,
+  "needs_human_review_rate_pct": 18.75,
+  "model_error_rate_pct": 0.0,
+  "annotator_distribution": {
+    "single_human_expert_pending_panel": 32
+  },
+  "provenance_distribution": {
+    "synthetic": 22,
+    "public_reference_solution": 10
+  },
+  "stratified_by_provenance": {
+    "public_reference_solution": {
+      "count": 10,
+      "passed_in_range": 10,
+      "in_range_rate_pct": 100.0,
+      "spearman_r": 0.9816,
+      "quadratic_weighted_kappa": 1.0,
+      "mae": 0.26,
+      "recommendation_accuracy_pct": 100.0
+    },
+    "synthetic": {
+      "count": 22,
+      "passed_in_range": 10,
+      "in_range_rate_pct": 45.45,
+      "spearman_r": 0.3169,
+      "quadratic_weighted_kappa": 0.2731,
+      "mae": 0.7636,
+      "recommendation_accuracy_pct": 31.82
+    },
+    "non_synthetic_combined": {
+      "count": 10,
+      "passed_in_range": 10,
+      "in_range_rate_pct": 100.0,
+      "spearman_r": 0.9816,
+      "quadratic_weighted_kappa": 1.0,
+      "mae": 0.26,
+      "recommendation_accuracy_pct": 100.0
+    }
+  },
+  "is_human_verified": false,
+  "calibration_passed": false,
+  "confidence_intervals_95": {
+    "spearman_r": [
+      0.2927,
+      0.8259
+    ],
+    "quadratic_weighted_kappa": [
+      0.2,
+      0.7372
+    ],
+    "mae": [
+      0.4437,
+      0.7937
+    ],
+    "recommendation_accuracy_pct": [
+      36.45,
+      69.13
+    ]
+  },
+  "inter_human_concordance": {
+    "spearman_r": null,
+    "quadratic_weighted_kappa": null,
+    "mae": null,
+    "recommendation_agreement_pct": null
+  },
+  "confusion_matrix_3x3": {
+    "labels": [
+      "reject",
+      "borderline",
+      "hire"
+    ],
+    "matrix": [
+      [
+        3,
+        0,
+        0
+      ],
+      [
+        2,
+        5,
+        2
+      ],
+      [
+        0,
+        11,
+        9
+      ]
+    ]
+  },
+  "per_dimension_concordance": {
+    "problem_solving": {
+      "spearman_r": 0.6363,
+      "mae": 0.625,
+      "within_1_point_pct": 87.5
+    },
+    "algorithmic_reasoning": {
+      "spearman_r": 0.6607,
+      "mae": 0.625,
+      "within_1_point_pct": 93.75
+    },
+    "code_quality": {
+      "spearman_r": 0.4596,
+      "mae": 0.5312,
+      "within_1_point_pct": 90.62
+    },
+    "technical_communication": {
+      "spearman_r": 0.566,
+      "mae": 0.8438,
+      "within_1_point_pct": 81.25
+    },
+    "complexity_management": {
+      "spearman_r": 0.6177,
+      "mae": 0.5938,
+      "within_1_point_pct": 96.88
+    }
+  },
+  "discrepancy_distribution": {
+    "le_0_25": 12,
+    "le_0_25_pct": 37.5,
+    "bt_0_25_0_50": 6,
+    "bt_0_25_0_50_pct": 18.75,
+    "bt_0_50_1_00": 8,
+    "bt_0_50_1_00_pct": 25.0,
+    "gt_1_00": 6,
+    "gt_1_00_pct": 18.75
+  },
+  "cost_and_tokens_summary": {
+    "total_prompt_tokens": 96247,
+    "total_completion_tokens": 26395,
+    "total_tokens": 238729,
+    "total_cost_usd": 0.87716,
+    "mean_cost_usd": 0.027411
+  },
+  "latency_summary_ms": {
+    "mean_ms": 68378.45,
+    "min_ms": 29785.36,
+    "p50_ms": 66615.65,
+    "p90_ms": 83042.55,
+    "p95_ms": 120251.16,
+    "max_ms": 173032.65
+  },
+  "cases": [
+    {
+      "case_id": "s3_case_01_junior_colombian_holidays_calendar",
+      "file": "01_synthetic_junior_colombian_holidays_calendar.json",
+      "scenario_id": "prob-festivos-ley-emiliani",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        2.1,
+        3.2
+      ],
+      "benchmark_score": 2.6,
+      "expected_rec": "borderline",
+      "predicted_score": 2.6,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.0,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 2.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_01_junior_colombian_holidays_calendar",
+        "scenario_id": "prob-festivos-ley-emiliani",
+        "predicted_score": 2.6,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 2,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 2
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Voy a crear una lista estática de fechas para el año 2026 y chequear si cae sábado o domingo.",
+            "turn_id": "turn-2",
+            "reasoning": "Comprende parcialmente el problema (excluir fines de semana y algunos festivos) pero no descompone ni aborda los festivos trasladables de la Ley Emiliani, que es el núcleo del enunciado; la solución queda incompleta (3/6 tests)."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 2,
+            "evidence_quote": "if date_obj.weekday() in (5, 6):\n        return False\n    fixed_holidays = {(1, 1), (5, 1), (7, 20), (8, 7), (12, 8), (12, 25)}\n    return (date_obj.month, date_obj.day) not in fixed_holidays",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa estructuras básicas (weekday y un set de fechas fijas) sin algoritmo de traslado al lunes ni Computus; el sandbox queda en test_failure (3/6) y no hay evidencia de diagnóstico ni adaptación sistemática."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 74555.4,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2969,
+          "completion_tokens": 853,
+          "total_tokens": 8170,
+          "cost_usd": 0.02764
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_02_junior_csv_payroll_parser",
+      "file": "02_synthetic_junior_csv_payroll_parser.json",
+      "scenario_id": "prob-archivo-plano-asobancaria",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        1.3,
+        2.5
+      ],
+      "benchmark_score": 1.8,
+      "expected_rec": "reject",
+      "predicted_score": 1.6,
+      "predicted_rec": "reject",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 1.8,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_02_junior_csv_payroll_parser",
+        "scenario_id": "prob-archivo-plano-asobancaria",
+        "predicted_score": 1.6,
+        "predicted_rec": "reject",
+        "predicted_competencies": {
+          "problem_solving": 2,
+          "algorithmic_reasoning": 1,
+          "code_quality": 2,
+          "technical_communication": 2,
+          "complexity_management": 1
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 2,
+            "evidence_quote": "Hice un split por comas pero no me salieron las columnas.",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato interpreta el archivo de ancho fijo como CSV delimitado por comas y, tras la aclaración, no reformula ni completa la solución."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 1,
+            "evidence_quote": "def parse_asobancaria(lines):\n    # Intento inicial no funcional\n    res = []\n    for l in lines:\n        res.append(l.split(','))\n    return res",
+            "turn_id": "snap-final-1",
+            "reasoning": "El código usa split por comas en lugar de recortes por índices; no hay estructura ni validación del registro de control; 1/5 pruebas superadas."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 29785.36,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2909,
+          "completion_tokens": 638,
+          "total_tokens": 5241,
+          "cost_usd": 0.024115
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_03_junior_daviplata_otp_validator",
+      "file": "03_synthetic_junior_daviplata_otp_validator.json",
+      "scenario_id": "prob-daviplata-otp-retries",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        2.5,
+        3.6
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 3.8,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.8,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_03_junior_daviplata_otp_validator",
+        "scenario_id": "prob-daviplata-otp-retries",
+        "predicted_score": 3.8,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "if time.time() > session['expires_at']:\n        return False, 'expired'\n    if session['attempts'] >= 3:\n        return False, 'locked'\n    session['attempts'] += 1\n    valid = hmac.compare_digest(session['code'], input_code)\n    return valid, 'ok' if valid else 'invalid'",
+            "turn_id": "snap-final-1",
+            "reasoning": "La solución final cubre las tres restricciones del enunciado (expiración, tope de 3 intentos y verificación del código) y las pruebas del sandbox pasaron 4/4. El razonamiento verbal inicial fue básico, coherente con una solución correcta de nivel junior."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "Usaré hmac.compare_digest para comparar en tiempo constante.",
+            "turn_id": "turn-4",
+            "reasoning": "Elige una comparación en tiempo constante adecuada al riesgo de timing attacks y la aplica en el código final. No hubo tests fallidos que depurar; el flujo de chequeos es correcto y suficiente para el problema."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 44770.76,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2941,
+          "completion_tokens": 822,
+          "total_tokens": 6339,
+          "cost_usd": 0.027035
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_04_junior_iva_calculator",
+      "file": "04_synthetic_junior_iva_calculator.json",
+      "scenario_id": "prob-retencion-iva",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        2.0,
+        3.3
+      ],
+      "benchmark_score": 2.8,
+      "expected_rec": "borderline",
+      "predicted_score": 2.6,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 2.8,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_04_junior_iva_calculator",
+        "scenario_id": "prob-retencion-iva",
+        "predicted_score": 2.6,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 3,
+          "code_quality": 3,
+          "technical_communication": 2,
+          "complexity_management": 2
+        },
+        "needs_human_review": true,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Hola, haré un cálculo simple multiplicando el valor por 0.025 si es mayor a 1000000.",
+            "turn_id": "turn-2",
+            "reasoning": "Comprende parcialmente el problema (tarifa del 2.5% y umbral), pero parte de un umbral arbitrario de 1.000.000. En snap-final-1 mejora a valor_uvt * 27, lo que muestra avance, aunque la solución sigue incompleta (3/5 pruebas)."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "def calcular_retefuente(monto_pesos, valor_uvt=47065):\n    base_minima = valor_uvt * 27\n    if monto_pesos >= base_minima:\n        return monto_pesos * 0.025\n    return 0.0",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa lógica condicional básica correcta en estructura, pero no implementa el redondeo legal ni evidencia diagnóstico de los 2 tests fallidos (estado test_failure, 3/5)."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 51421.81,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2926,
+          "completion_tokens": 837,
+          "total_tokens": 6473,
+          "cost_usd": 0.027185
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_05_junior_luhn_card_validation",
+      "file": "05_synthetic_junior_luhn_card_validation.json",
+      "scenario_id": "prob-luhn-tarjetas",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        2.5,
+        3.8
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 3.8,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.8,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_05_junior_luhn_card_validation",
+        "scenario_id": "prob-luhn-tarjetas",
+        "predicted_score": 3.8,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Duplicaré los dígitos en posiciones pares contando de derecha a izquierda y sumaré los dígitos.",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato comprende el núcleo de Luhn (recorrido derecha-izquierda, duplicar posiciones pares y sumar) y lo concreta en una implementación que pasa 5/5 pruebas."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "parity = len(digits) % 2\n    for i, d in enumerate(digits):\n        if i % 2 == parity:\n            d = d * 2\n            if d > 9: d -= 9\n        checksum += d\n    return checksum % 10 == 0",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa la paridad de la longitud para duplicar desde la derecha sin invertir, aplica resta de 9 si d*2>9 y verifica módulo 10; el algoritmo es correcto y adecuado. No hay tests fallidos que depurar."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 57375.26,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2980,
+          "completion_tokens": 645,
+          "total_tokens": 7080,
+          "cost_usd": 0.024575
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_06_junior_password_entropy_checker",
+      "file": "06_synthetic_junior_password_entropy_checker.json",
+      "scenario_id": "prob-entropia-contrasenas-bancarias",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        2.5,
+        3.5
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 3.4,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.4,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_06_junior_password_entropy_checker",
+        "scenario_id": "prob-entropia-contrasenas-bancarias",
+        "predicted_score": 3.4,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Usaré expresiones regulares para verificar cada tipo de caracter y un regex para '1234' o 'abcd'.",
+            "turn_id": "turn-2",
+            "reasoning": "Comprende parcialmente el enunciado de validación: cubre clases de caracteres pero reduce las secuencias triviales a dos patrones fijos y no menciona la longitud mínima de 12. La solución queda incompleta respecto a las restricciones bancarias pedidas."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "Uso la fórmula L * log2(R) donde R es el tamaño del conjunto de caracteres posibles.",
+            "turn_id": "turn-4",
+            "reasoning": "Aplica el estimador estándar L·log2(R) y en snap-final-1 construye R por clases presentes (26+26+10+32) con max(pool,1). Las pruebas 4/4 pasan; para seniority junior el enfoque es adecuado aunque no sea la entropía de Shannon por frecuencias."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 60595.47,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2989,
+          "completion_tokens": 847,
+          "total_tokens": 7142,
+          "cost_usd": 0.02765
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_07_junior_payroll_edge_case",
+      "file": "07_synthetic_junior_payroll_edge_case.json",
+      "scenario_id": "prob-nomina-colombiana",
+      "provenance": "synthetic",
+      "expected_level": "junior",
+      "expected_score_range": [
+        2.5,
+        3.5
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 2.2,
+      "predicted_rec": "reject",
+      "score_discrepancy": 0.8,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_07_junior_payroll_edge_case",
+        "scenario_id": "prob-nomina-colombiana",
+        "predicted_score": 2.2,
+        "predicted_rec": "reject",
+        "predicted_competencies": {
+          "problem_solving": 2,
+          "algorithmic_reasoning": 2,
+          "code_quality": 3,
+          "technical_communication": 2,
+          "complexity_management": 2
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 2,
+            "evidence_quote": "Ah, no lo había tomado en cuenta, se me olvidó esa condición.",
+            "turn_id": "turn-4",
+            "reasoning": "El enunciado pedía auxilio de transporte bajo 2 SMMLV; el candidato admite olvidarlo y el código final sigue sin implementarlo, dejando la solución incompleta."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 2,
+            "evidence_quote": "def calcular_nomina(salario_base, dias_trabajados):\n    salud = salario_base * 0.04\n    pension = salario_base * 0.04\n    # Falta auxilio de transporte proporcional a dias trabajados\n    neto = salario_base - salud - pension\n    return neto",
+            "turn_id": "snap-final-1",
+            "reasoning": "Solo aplica restas fijas del 4%; no hay condicional ni uso de dias_trabajados. Los tests quedaron 2/4 en test_failure sin diagnóstico ni adaptación."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 52272.37,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2942,
+          "completion_tokens": 730,
+          "total_tokens": 6801,
+          "cost_usd": 0.02566
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_08_mid_cache_stampede_protection",
+      "file": "08_synthetic_mid_cache_stampede_protection.json",
+      "scenario_id": "prob-estampida-cache-xfetch",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.5,
+        4.5
+      ],
+      "benchmark_score": 4.0,
+      "expected_rec": "hire",
+      "predicted_score": 3.6,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.4,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_08_mid_cache_stampede_protection",
+        "scenario_id": "prob-estampida-cache-xfetch",
+        "predicted_score": 3.6,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "XFetch evalúa: now - (delta * beta * log(random())) > expiry. Si se cumple, regenera en background antes de vencer.",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato comprende el problema de cache stampede y descompone XFetch en la condición de refresco anticipado; la solución del snapshot final es correcta (4/4 pruebas) aunque se limita a la decisión y no a un flujo completo de regeneración en background."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "return (now - (delta * beta * math.log(random.random()))) >= expiry",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa el algoritmo probabilístico adecuado (log uniforme y umbral sobre expiry) y el código es correcto; sandbox success 4/4 sin fallos previos, sin penalizar la ausencia de depuración."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 69651.2,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2930,
+          "completion_tokens": 719,
+          "total_tokens": 7736,
+          "cost_usd": 0.025435
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_09_mid_credit_scoring_engine",
+      "file": "09_synthetic_mid_credit_scoring_engine.json",
+      "scenario_id": "prob-motor-scoring-crediticio",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.5,
+        4.5
+      ],
+      "benchmark_score": 4.0,
+      "expected_rec": "hire",
+      "predicted_score": 3.0,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.0,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_09_mid_credit_scoring_engine",
+        "scenario_id": "prob-motor-scoring-crediticio",
+        "predicted_score": 3.0,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 3,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Definiré un árbol de ponderaciones: 40% historial de pagos, 30% uso de cupo, 20% antigüedad y 10% consultas.",
+            "turn_id": "turn-2",
+            "reasoning": "Comprende que el puntaje debe combinarse por factores, pero el modelo verbal no se alinea del todo con mora, endeudamiento y consultas, e introduce antigüedad no pedida. El código posterior no materializa esas ponderaciones, así que la solución queda parcial y con lagunas."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "base = 500\n    if profile.get('has_default'): base -= 150\n    base += min(200, profile.get('ontime_payments_months', 0) * 5)\n    return {'score': max(300, min(950, base)), 'tier': 'approved' if base >= 650 else 'rejected'}",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa aritmética lineal, un tope y un umbral; es funcional (4/4 tests) pero básico y subóptimo frente a un motor ponderado. No hay tests fallidos que evaluar; la solidez algorítmica es correcta y limitada, no conceptualmente rota."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 69939.74,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3002,
+          "completion_tokens": 916,
+          "total_tokens": 8105,
+          "cost_usd": 0.02875
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_10_mid_dian_electronic_invoice_xml",
+      "file": "10_synthetic_mid_dian_electronic_invoice_xml.json",
+      "scenario_id": "prob-dian-cufe-generator",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.3,
+        4.3
+      ],
+      "benchmark_score": 3.8,
+      "expected_rec": "hire",
+      "predicted_score": 3.6,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 3.8,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_10_mid_dian_electronic_invoice_xml",
+        "scenario_id": "prob-dian-cufe-generator",
+        "predicted_score": 3.6,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Concatenaré NumFac + FecFac + HorFac + ValFac + CodImp1 + ValImp1 + NitOFE + NumAdq + ClaveTecnica.",
+            "turn_id": "turn-2",
+            "reasoning": "Identifica el esquema de concatenación DIAN, pero el código final omite HorFac, CodImp1 y ValImp1 que el propio candidato enumeró, así que la solución queda incompleta respecto a su propio desglose."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "return hashlib.sha384(raw.encode('utf-8')).hexdigest()",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa SHA-384 con UTF-8 y hexdigest de forma correcta; las pruebas 4/4 pasaron y no hubo fallos que depurar."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 173032.65,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2986,
+          "completion_tokens": 772,
+          "total_tokens": 9203,
+          "cost_usd": 0.02651
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_11_mid_fx_currency_arbitrage",
+      "file": "11_synthetic_mid_fx_currency_arbitrage.json",
+      "scenario_id": "prob-conversion-divisas-trm",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.3,
+        4.3
+      ],
+      "benchmark_score": 3.8,
+      "expected_rec": "hire",
+      "predicted_score": 3.4,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.4,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 3.8,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_11_mid_fx_currency_arbitrage",
+        "scenario_id": "prob-conversion-divisas-trm",
+        "predicted_score": 3.4,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Definiré rangos: 0-1k USD 1.5% spread, 1k-10k 1.0%, >10k 0.6%.",
+            "turn_id": "turn-2",
+            "reasoning": "Descompone el problema de comisión escalonada en tres tramos de volumen y propone una solución correcta para el cálculo del spread; las pruebas del snapshot final pasan 4/4. El razonamiento es básico y no aclara supuestos de negocio (p. ej. lado de la cotización)."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "spread_pct = 0.015 if usd_amount < 1000 else (0.010 if usd_amount <= 10000 else 0.006)",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa ramificación por umbrales adecuada al problema; 1000 cae en 1.0% y 10000 permanece en 1.0%, coherente con los tramos declarados. Código correcto y suficiente; no hubo tests fallidos que diagnosticar y no se requiere una estructura más sofisticada."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 64165.66,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2986,
+          "completion_tokens": 885,
+          "total_tokens": 7556,
+          "cost_usd": 0.028205
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_12_mid_nequi_qr_parser",
+      "file": "12_synthetic_mid_nequi_qr_parser.json",
+      "scenario_id": "prob-nequi-qr-interoperable",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.5,
+        4.5
+      ],
+      "benchmark_score": 4.0,
+      "expected_rec": "hire",
+      "predicted_score": 3.2,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.8,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_12_mid_nequi_qr_parser",
+        "scenario_id": "prob-nequi-qr-interoperable",
+        "predicted_score": 3.2,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 3,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": true,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Entendido. El estándar EMVCo utiliza campos TLV (Tag-Length-Value). Implementaré un parser iterativo O(N).",
+            "turn_id": "turn-2",
+            "reasoning": "Identifica correctamente el modelo TLV de EMVCo, pero el entregable no extrae llave, banco y monto ni desempaqueta plantillas anidadas; la solución queda con lagunas frente al enunciado."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "while idx < len(payload):\n        tag = payload[idx:idx+2]\n        length = int(payload[idx+2:idx+4])\n        val = payload[idx+4:idx+4+length]\n        data[tag] = val\n        idx += 4 + length",
+            "turn_id": "snap-final-1",
+            "reasoning": "El barrido lineal es adecuado para TLV plano y las pruebas pasaron 5/5, pero no hay algoritmo de segundo nivel para sub-tags 26/62 pese a haberlo planteado."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 69433.48,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2979,
+          "completion_tokens": 775,
+          "total_tokens": 7884,
+          "cost_usd": 0.02652
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_13_mid_rate_limiter_token_bucket",
+      "file": "13_synthetic_mid_rate_limiter_token_bucket.json",
+      "scenario_id": "prob-token-bucket-rate-limiter",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.5,
+        4.5
+      ],
+      "benchmark_score": 4.0,
+      "expected_rec": "hire",
+      "predicted_score": 3.8,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_13_mid_rate_limiter_token_bucket",
+        "scenario_id": "prob-token-bucket-rate-limiter",
+        "predicted_score": 3.8,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Calcularé la reposición perezosa (lazy replenishment) basada en el delta de tiempo transcurrido desde la última llamada.",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato identifica el enfoque correcto de Token Bucket (reposición perezosa por delta temporal) y el snapshot final implementa capacity=20 y fill_rate=10, alineado con 10 req/s y ráfagas de 20; 4/4 pruebas en success."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "self.tokens = min(self.capacity, self.tokens + delta * self.fill_rate)\n        if self.tokens >= 1.0:\n            self.tokens -= 1.0\n            return True",
+            "turn_id": "snap-final-1",
+            "reasoning": "Aplica el algoritmo clásico de refill perezoso con tope de capacidad y consumo unitario; es correcto y O(1). No hay tests fallidos que depurar (4/4 al primer snapshot), y el razonamiento es sólido aunque no muestra diagnóstico ante fallos."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 51827.75,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3009,
+          "completion_tokens": 822,
+          "total_tokens": 6745,
+          "cost_usd": 0.027375
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_14_senior_circuit_breaker_payment_gateway",
+      "file": "14_synthetic_senior_circuit_breaker_payment_gateway.json",
+      "scenario_id": "prob-circuit-breaker-pasarela",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.1,
+        5.0
+      ],
+      "benchmark_score": 4.6,
+      "expected_rec": "hire",
+      "predicted_score": 2.8,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.8,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_14_senior_circuit_breaker_payment_gateway",
+        "scenario_id": "prob-circuit-breaker-pasarela",
+        "predicted_score": 2.8,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 3,
+          "code_quality": 2,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": true,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Registraré fallos consecutivos con umbral de 5 para abrir el circuito. En HALF_OPEN permitiré 1 solicitud de prueba.",
+            "turn_id": "turn-2",
+            "reasoning": "Identifica correctamente el umbral de fallos consecutivos y el probe único en HALF_OPEN, pero no descompone transiciones CLOSED/OPEN/HALF_OPEN ni entrega la máquina de estados completa."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "Uso atomic CAS (Compare-And-Swap) o Redis SETNX con expiración para seleccionar deterministamente el canary call.",
+            "turn_id": "turn-4",
+            "reasoning": "Propone un primitivo de exclusión adecuado para el canary, pero el snapshot no implementa transiciones, contadores ni CAS; el razonamiento queda a nivel conceptual."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 54247.75,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2947,
+          "completion_tokens": 771,
+          "total_tokens": 6783,
+          "cost_usd": 0.0263
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_15_senior_distributed_lock_transfer",
+      "file": "15_synthetic_senior_distributed_lock_transfer.json",
+      "scenario_id": "prob-transferencia-concurrente-bloqueos",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.4,
+        5.0
+      ],
+      "benchmark_score": 5.0,
+      "expected_rec": "hire",
+      "predicted_score": 3.2,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.8,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 5.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_15_senior_distributed_lock_transfer",
+        "scenario_id": "prob-transferencia-concurrente-bloqueos",
+        "predicted_score": 3.2,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 4,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Para evitar deadlocks, ordenaré siempre los IDs de las cuentas alfabéticamente antes de solicitar los locks (lock ordering protocol).",
+            "turn_id": "turn-2",
+            "reasoning": "Identifica el protocolo correcto de lock ordering para transferencias cruzadas, pero la solución queda incompleta: no descompone validaciones de saldo/monto ni el débito-crédito real de la transferencia."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "first_id, second_id = sorted([account_a_id, account_b_id])",
+            "turn_id": "snap-final-1",
+            "reasoning": "Aplica el algoritmo adecuado de ordenación de locks y SELECT FOR UPDATE; las pruebas pasan 6/6. El razonamiento de interbloqueo es sólido, sin evidencia de fallos reiterados ni estructuras inadecuadas."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 70748.66,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3007,
+          "completion_tokens": 783,
+          "total_tokens": 7756,
+          "cost_usd": 0.02678
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_16_senior_dwh_idempotent_event_ingest",
+      "file": "16_synthetic_senior_dwh_idempotent_event_ingest.json",
+      "scenario_id": "prob-ingesta-idempotente-eventos",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.2,
+        5.0
+      ],
+      "benchmark_score": 4.8,
+      "expected_rec": "hire",
+      "predicted_score": 3.4,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.4,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.8,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_16_senior_dwh_idempotent_event_ingest",
+        "scenario_id": "prob-ingesta-idempotente-eventos",
+        "predicted_score": 3.4,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Utilizaré una clave de idempotencia hash(uuid, timestamp) almacenada en Redis con TTL de 10 minutos más confirmación atómica en DB.",
+            "turn_id": "turn-2",
+            "reasoning": "Comprende el enunciado de ingesta con ventana de 10 minutos y exactly-once: propone clave de idempotencia en Redis con TTL y escritura atómica en DB. El razonamiento es correcto a alto nivel pero básico (hash con timestamp puede romper la deduplicación del mismo evento; no descompone un pipeline completo de reintentos/outbox)."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "Uso SETNX con valor de locking y control de versión optimista (OCC) en la tabla relacional con restricción UNIQUE compuesta.",
+            "turn_id": "turn-4",
+            "reasoning": "Elige primitivas adecuadas (SET NX/SETNX + UNIQUE) para la carrera concurrente. El snapshot final implementa cache.set(..., ex=600, nx=True) e insert_once con UniqueViolation; 6/6 tests en success. OCC se menciona pero no aparece versionado en el código, sin penalizar por ausencia de fallos de test."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 75882.39,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2985,
+          "completion_tokens": 1019,
+          "total_tokens": 8288,
+          "cost_usd": 0.03021
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_17_senior_fraud_detection_anomaly",
+      "file": "17_synthetic_senior_fraud_detection_anomaly.json",
+      "scenario_id": "prob-deteccion-fraude-zscore",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.1,
+        5.0
+      ],
+      "benchmark_score": 4.6,
+      "expected_rec": "hire",
+      "predicted_score": 3.4,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.2,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_17_senior_fraud_detection_anomaly",
+        "scenario_id": "prob-deteccion-fraude-zscore",
+        "predicted_score": 3.4,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 4,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Si count >= 30 y Z-Score = (monto - mean) / std_dev > 3.5, se activa alerta de fraude inmediata.",
+            "turn_id": "turn-4",
+            "reasoning": "Comprende el enfoque correcto (Welford + Z-Score con calentamiento), pero la solución queda con lagunas: el snapshot final no implementa std_dev ni la decisión de bloqueo descrita."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "delta = x - self.mean\n        self.mean += delta / self.count\n        self.M2 += delta * (x - self.mean)",
+            "turn_id": "snap-final-1",
+            "reasoning": "Implementa Welford de forma correcta (media incremental y M2) con varianza muestral M2/(n-1); tests 5/5. No llega a 5 porque falta el pipeline de Z-Score sobre esa estadística."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 160716.18,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3023,
+          "completion_tokens": 770,
+          "total_tokens": 7908,
+          "cost_usd": 0.026665
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_18_senior_p2p_lightning_settlement",
+      "file": "18_synthetic_senior_p2p_lightning_settlement.json",
+      "scenario_id": "prob-liquidacion-bre-b-inmediata",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.1,
+        5.0
+      ],
+      "benchmark_score": 4.6,
+      "expected_rec": "hire",
+      "predicted_score": 3.0,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.6,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_18_senior_p2p_lightning_settlement",
+        "scenario_id": "prob-liquidacion-bre-b-inmediata",
+        "predicted_score": 3.0,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 3,
+          "code_quality": 4,
+          "technical_communication": 2,
+          "complexity_management": 3
+        },
+        "needs_human_review": true,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Modelaré las obligaciones como una matriz de adyacencia dirigida y aplicaré el algoritmo de cancelación de ciclos para reducir el flujo bruto requerido.",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato plantea un modelo de grafo y cancelación de ciclos, pero no descompone la compensación neta multilateral en tiempo real (posiciones netas por entidad, liquidación contra un agente, restricción de 5 entidades). La implementación final es solo agregación de saldos, con lagunas respecto al diseño pedido."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "Reducción por componentes conexas y algoritmo simplex de redes / push-relabel para obtener la liquidación neta mínima.",
+            "turn_id": "turn-4",
+            "reasoning": "Cita simplex de redes y push-relabel, mezcla de min-cost/max-flow inadecuada o excesiva para netting multilateral. El código de snap-final-1 usa un diccionario de saldos, estructura básica correcta y suficiente; tests 5/5 sin fallos que diagnosticar."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 77808.7,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2947,
+          "completion_tokens": 750,
+          "total_tokens": 8384,
+          "cost_usd": 0.025985
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_19_senior_pse_reconciliation",
+      "file": "19_synthetic_senior_pse_reconciliation.json",
+      "scenario_id": "prob-pse-conciliacion",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.0,
+        5.0
+      ],
+      "benchmark_score": 4.6,
+      "expected_rec": "hire",
+      "predicted_score": 4.0,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.6,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_19_senior_pse_reconciliation",
+        "scenario_id": "prob-pse-conciliacion",
+        "predicted_score": 4.0,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 4,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "¿Los montos pueden contener decimales flotantes y cuál es la precisión exigida? Además, ¿cómo manejamos las transacciones en estado PENDIENTE al corte del lote?",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato identifica de entrada las ambigüedades críticas del dominio (precisión monetaria y corte de lote) y, tras la aclaración, implementa una conciliación correcta que omite PENDIENTE y compara por referencia y monto. La solución cubre el problema planteado (4/4 tests) aunque no explora matching bidireccional ni duplicados ACH."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "Diseñaré una indexación por hash O(N+M) agrupando por (referencia, valor) y usando el módulo Decimal para evitar imprecisiones de coma flotante de IEEE 754.",
+            "turn_id": "turn-4",
+            "reasoning": "Elige un índice hash por (referencia, monto) coherente con O(N+M) y lo implementa en snap-final-1 con un dict y un único pase. Los 4/4 tests pasaron a la primera. El dict sobrescribe claves ACH duplicadas (no agrupa realmente), por lo que no llega a dominio algorítmico de 5."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 50568.11,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3148,
+          "completion_tokens": 919,
+          "total_tokens": 6505,
+          "cost_usd": 0.029525
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_20_senior_saga_compensating_transactions",
+      "file": "20_synthetic_senior_saga_compensating_transactions.json",
+      "scenario_id": "prob-orquestador-saga-compensacion",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        3.9,
+        4.9
+      ],
+      "benchmark_score": 4.4,
+      "expected_rec": "hire",
+      "predicted_score": 3.2,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 1.2,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.4,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_20_senior_saga_compensating_transactions",
+        "scenario_id": "prob-orquestador-saga-compensacion",
+        "predicted_score": 3.2,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 3,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Estructuraré cada paso con una acción `execute` y una acción `compensate`. Si el paso N falla, ejecutaré en reversa (LIFO) de N-1 a 1.",
+            "turn_id": "turn-2",
+            "reasoning": "El candidato comprende el patrón Saga y lo descompone correctamente en execute/compensate con rollback LIFO. La solución cubre el núcleo del orquestador, aunque el razonamiento es básico y no aborda la dispersión masiva más allá de ese esquema."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "executed = []\n        for exe, comp in self.steps:\n            try:\n                await exe()\n                executed.append(comp)\n            except Exception:\n                for c in reversed(executed): await c()\n                raise",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa una lista de pasos y reversión LIFO, estructura adecuada y funcional (5/5 tests en primer intento). El algoritmo es básico y subóptimo: no hay estado persistido, ni aislamiento de fallos en compensaciones, ni estructuras para orquestación a escala."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 79300.97,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2997,
+          "completion_tokens": 884,
+          "total_tokens": 8086,
+          "cost_usd": 0.028245
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_21_pubref-pse-payment-reconciliation-optimal",
+      "file": "21_pubref_pse_reconciliation_optimal.json",
+      "scenario_id": "pubref-pse-payment-reconciliation-optimal",
+      "provenance": "public_reference_solution",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.2,
+        5.0
+      ],
+      "benchmark_score": 4.8,
+      "expected_rec": "hire",
+      "predicted_score": 4.6,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.8,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_21_pubref-pse-payment-reconciliation-optimal",
+        "scenario_id": "pubref-pse-payment-reconciliation-optimal",
+        "predicted_score": 4.6,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 5,
+          "algorithmic_reasoning": 5,
+          "code_quality": 4,
+          "technical_communication": 5,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 5,
+            "evidence_quote": "Indexaré ambos lados en diccionarios reference -> (amount_cents, status) en O(N+M), calcularé la unión de claves con set(gw) | set(ld) y filtraré aquellas donde gw.get(ref) != ld.get(ref), ordenando lexicográficamente al final.",
+            "turn_id": "t-pub-21-2",
+            "reasoning": "Descompone el problema en indexación por referencia, unión de claves y comparación de tuplas, cubriendo ausencias y discrepancias de amount_cents/status en una sola condición, con ordenación lexicográfica del resultado."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 5,
+            "evidence_quote": "gw = {tx['reference']: (tx['amount_cents'], tx['status']) for tx in payload.get('gateway', [])}\n    ld = {tx['reference']: (tx['amount_cents'], tx['status']) for tx in payload.get('ledger', [])}\n    mismatches = sorted(ref for ref in (set(gw) | set(ld)) if gw.get(ref) != ld.get(ref))",
+            "turn_id": "snap-final-1",
+            "reasoning": "Emplea mapas hash y unión de conjuntos de forma correcta y óptima; el sandbox reporta success con 3/3 pruebas y no hay errores conceptuales ni necesidad de depuración."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 71650.43,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3103,
+          "completion_tokens": 919,
+          "total_tokens": 8941,
+          "cost_usd": 0.0293
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_22_pubref-pse-payment-reconciliation-failed",
+      "file": "22_pubref_pse_reconciliation_failed_quadratic.json",
+      "scenario_id": "pubref-pse-payment-reconciliation-failed",
+      "provenance": "public_reference_solution",
+      "expected_level": "junior",
+      "expected_score_range": [
+        1.0,
+        2.3
+      ],
+      "benchmark_score": 1.6,
+      "expected_rec": "reject",
+      "predicted_score": 1.8,
+      "predicted_rec": "reject",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 1.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_22_pubref-pse-payment-reconciliation-failed",
+        "scenario_id": "pubref-pse-payment-reconciliation-failed",
+        "predicted_score": 1.8,
+        "predicted_rec": "reject",
+        "predicted_competencies": {
+          "problem_solving": 2,
+          "algorithmic_reasoning": 2,
+          "code_quality": 2,
+          "technical_communication": 2,
+          "complexity_management": 1
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 2,
+            "evidence_quote": "Voy a recorrer la lista de gateway y buscar si el monto está en ledger, sin revisar las que están solo en ledger ni ordenar la salida.",
+            "turn_id": "t-pub-22-2",
+            "reasoning": "El candidato entiende parcialmente que hay que cruzar gateway con ledger, pero declara omitir exclusivas de ledger y el orden, y no aborda status; la solución queda incompleta e incorrecta respecto al enunciado."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 2,
+            "evidence_quote": "for g in data.get('gateway', []):\n    if g not in data.get('ledger', []):\n        res.append(g['reference'])",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa un bucle básico y compara dicts enteros con pertenencia a lista, sin emparejar por referencia ni status; con tests 1/3 en test_failure y sin adaptación sistemática tras el fallo."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 30895.37,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2954,
+          "completion_tokens": 713,
+          "total_tokens": 5309,
+          "cost_usd": 0.025465
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_23_pubref-webhook-idempotency-dedup-optimal",
+      "file": "23_pubref_webhook_idempotency_optimal.json",
+      "scenario_id": "pubref-webhook-idempotency-dedup-optimal",
+      "provenance": "public_reference_solution",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.0,
+        5.0
+      ],
+      "benchmark_score": 4.6,
+      "expected_rec": "hire",
+      "predicted_score": 4.4,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_23_pubref-webhook-idempotency-dedup-optimal",
+        "scenario_id": "pubref-webhook-idempotency-dedup-optimal",
+        "predicted_score": 4.4,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 5,
+          "algorithmic_reasoning": 5,
+          "code_quality": 4,
+          "technical_communication": 4,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 5,
+            "evidence_quote": "Mantendré un diccionario last_accepted_ts por event_id. Si el evento no existe o timestamp - last_accepted_ts >= ttl_seconds, se acepta y actualiza la marca temporal; de lo contrario se ignora como duplicado dentro de la ventana TTL.",
+            "turn_id": "t-pub-23-2",
+            "reasoning": "El candidato comprende el problema de idempotencia con TTL, lo descompone en estado por event_id y regla de aceptación/rechazo, y propone de inmediato la solución correcta y óptima."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 5,
+            "evidence_quote": "Cada consulta y actualización en el hash map es O(1) amortizado. Cuando timestamp - prev_ts >= ttl_seconds, la ventana expiró y el evento vuelve a aceptarse actualizando su timestamp.",
+            "turn_id": "t-pub-23-4",
+            "reasoning": "Usa la estructura adecuada (hash map) con complejidad óptima por evento y razona correctamente el reintento fuera de ventana. Las pruebas 3/3 pasaron en sandbox (snap-final-1) sin fallos que depurar."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 43000.92,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3123,
+          "completion_tokens": 941,
+          "total_tokens": 6269,
+          "cost_usd": 0.02973
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_24_pubref-token-bucket-rate-limiter-partial",
+      "file": "24_pubref_token_bucket_borderline.json",
+      "scenario_id": "pubref-token-bucket-rate-limiter-partial",
+      "provenance": "public_reference_solution",
+      "expected_level": "mid",
+      "expected_score_range": [
+        2.5,
+        3.6
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 2.8,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_24_pubref-token-bucket-rate-limiter-partial",
+        "scenario_id": "pubref-token-bucket-rate-limiter-partial",
+        "predicted_score": 2.8,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 2,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 3
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Voy a guardar los tokens actuales y el último timestamp de cada cliente. Al llegar un request calculo elapsed * refill_rate y lo sumo hasta capacity.",
+            "turn_id": "t-pub-24-2",
+            "reasoning": "Comprende el token bucket a alto nivel (estado por cliente, recarga por elapsed, tope en capacity) pero la solución queda incompleta: no cubre recarga fraccionaria y el snapshot final sigue fallando."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 2,
+            "evidence_quote": "Tienes razón, usé división entera // en vez de flotante para los segundos transcurridos, por eso pasaron 2 de 3 pruebas.",
+            "turn_id": "t-pub-24-4",
+            "reasoning": "El dict por cliente es adecuado, pero tras admitir el truncado entero el código de snap-final-1 conserva int(timestamp) y ((ts - last_ts) // 1) * rate; no adaptó la solución y el sandbox queda en 2/3."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 81760.88,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3098,
+          "completion_tokens": 769,
+          "total_tokens": 8705,
+          "cost_usd": 0.027025
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_25_pubref-ledger-double-entry-balance-optimal",
+      "file": "25_pubref_ledger_double_entry_optimal.json",
+      "scenario_id": "pubref-ledger-double-entry-balance-optimal",
+      "provenance": "public_reference_solution",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.0,
+        5.0
+      ],
+      "benchmark_score": 4.4,
+      "expected_rec": "hire",
+      "predicted_score": 4.0,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.4,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.4,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_25_pubref-ledger-double-entry-balance-optimal",
+        "scenario_id": "pubref-ledger-double-entry-balance-optimal",
+        "predicted_score": 4.0,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 4,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Validaré que en cada asiento la suma de débitos sea exactamente igual a la suma de créditos en centavos enteros y que tenga al menos dos líneas. Solo los asientos balanceados actualizan el libro mayor.",
+            "turn_id": "t-pub-25-2",
+            "reasoning": "Identifica correctamente el invariante de partida doble, la aritmética en centavos enteros, el mínimo de dos líneas y que solo los asientos válidos mutan el mayor. La solución del snapshot es correcta (3/3), con razonamiento sólido aunque no una descomposición exhaustiva de casos."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "balances: dict[str, int] = defaultdict(int)\nunbalanced: list[str] = []\nfor entry in data.get('entries', []):\n    lines = entry.get('lines', [])\n    debits = sum(l['amount_cents'] for l in lines if l['type'] == 'DEBIT')\n    credits = sum(l['amount_cents'] for l in lines if l['type'] == 'CREDIT')\n    if len(lines) < 2 or debits != credits:\n        unbalanced.append(entry['entry_id'])\n        continue",
+            "turn_id": "snap-final-1",
+            "reasoning": "Recorrido lineal con estructuras adecuadas (defaultdict, acumuladores enteros). Tests 3/3 en el primer snapshot disponible; no hay fallos que penalizar. Algoritmo correcto y eficiente para el problema, sin evidenciar un dominio algorítmico excepcional."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 75481.67,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3125,
+          "completion_tokens": 999,
+          "total_tokens": 8531,
+          "cost_usd": 0.03061
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_26_pubref-circuit-breaker-state-machine-reject",
+      "file": "26_pubref_circuit_breaker_reject.json",
+      "scenario_id": "pubref-circuit-breaker-state-machine-reject",
+      "provenance": "public_reference_solution",
+      "expected_level": "junior",
+      "expected_score_range": [
+        1.0,
+        2.2
+      ],
+      "benchmark_score": 1.6,
+      "expected_rec": "reject",
+      "predicted_score": 2.2,
+      "predicted_rec": "reject",
+      "score_discrepancy": 0.6,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 1.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_26_pubref-circuit-breaker-state-machine-reject",
+        "scenario_id": "pubref-circuit-breaker-state-machine-reject",
+        "predicted_score": 2.2,
+        "predicted_rec": "reject",
+        "predicted_competencies": {
+          "problem_solving": 2,
+          "algorithmic_reasoning": 2,
+          "code_quality": 3,
+          "technical_communication": 2,
+          "complexity_management": 2
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 2,
+            "evidence_quote": "Solo puse un contador de errores que cambia a OPEN cuando llega al límite, pero no implementé el cooldown_seconds ni el estado HALF_OPEN.",
+            "turn_id": "t-pub-26-2",
+            "reasoning": "El candidato reconoce una solución incompleta: solo modela el umbral de fallos CLOSED→OPEN y omite transiciones esenciales del enunciado. No descompone la máquina de estados ni propone cómo completar HALF_OPEN o el cooldown."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 2,
+            "evidence_quote": "def run_breaker(data):\n    fails = 0\n    state = 'CLOSED'\n    for ev in data.get('events', []):\n        if not ev.get('success'):\n            fails += 1\n            if fails >= data.get('failure_threshold', 3):\n                state = 'OPEN'\n    return {'final_state': state}",
+            "turn_id": "snap-final-1",
+            "reasoning": "No hay máquina de estados: un contador acumulativo ignora éxitos, tiempo y HALF_OPEN. Las pruebas quedan en 1/3 (test_failure) y no hay evidencia de diagnóstico ni adaptación sistemática."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 32460.73,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2964,
+          "completion_tokens": 821,
+          "total_tokens": 5692,
+          "cost_usd": 0.027135
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_27_pubref-event-log-window-aggregation-optimal",
+      "file": "27_pubref_event_log_window_optimal.json",
+      "scenario_id": "pubref-event-log-window-aggregation-optimal",
+      "provenance": "public_reference_solution",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.0,
+        5.0
+      ],
+      "benchmark_score": 4.6,
+      "expected_rec": "hire",
+      "predicted_score": 4.6,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.0,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.6,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_27_pubref-event-log-window-aggregation-optimal",
+        "scenario_id": "pubref-event-log-window-aggregation-optimal",
+        "predicted_score": 4.6,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 5,
+          "algorithmic_reasoning": 5,
+          "code_quality": 4,
+          "technical_communication": 4,
+          "complexity_management": 5
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 5,
+            "evidence_quote": "Ordenaré los eventos por timestamp y usaré una cola doble (collections.deque) por servicio para mantener solo los eventos dentro de [t - window_seconds + 1, t] en tiempo lineal O(N log N).",
+            "turn_id": "t-pub-27-2",
+            "reasoning": "El candidato comprende el problema en profundidad: lo descompone en ordenamiento global y una ventana deslizante independiente por servicio, que es la formulación correcta y óptima para el pico de eventos."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 5,
+            "evidence_quote": "Porque cada evento entra a la derecha de la deque exactamente una vez y sale por la izquierda con popleft() a lo sumo una vez, logrando O(N) tras el ordenamiento inicial.",
+            "turn_id": "t-pub-27-4",
+            "reasoning": "Domina el análisis amortizado de la deque y elige las estructuras adecuadas (sort + deque por servicio). El snapshot final ejecuta con success y 3/3 pruebas, sin errores conceptuales."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 53255.79,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3113,
+          "completion_tokens": 819,
+          "total_tokens": 7026,
+          "cost_usd": 0.02785
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_28_pubref-sql-merchant-daily-settlement-optimal",
+      "file": "28_pubref_sql_merchant_settlement_optimal.json",
+      "scenario_id": "pubref-sql-merchant-daily-settlement-optimal",
+      "provenance": "public_reference_solution",
+      "expected_level": "mid",
+      "expected_score_range": [
+        3.8,
+        4.8
+      ],
+      "benchmark_score": 4.0,
+      "expected_rec": "hire",
+      "predicted_score": 3.8,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_28_pubref-sql-merchant-daily-settlement-optimal",
+        "scenario_id": "pubref-sql-merchant-daily-settlement-optimal",
+        "predicted_score": 3.8,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Agruparé por (merchant_id, settlement_date) sumando ventas aprobadas menos reembolsos y restando la comisión entera por transacción cobrada, ordenando por merchant_id y fecha.",
+            "turn_id": "t-pub-28-2",
+            "reasoning": "El candidato descompone el problema en agrupación por comercio y fecha, neteo de ventas menos reembolsos, descuento de comisión y ordenamiento. La solución del snapshot final es correcta (3/3 pruebas)."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "SUM(CASE WHEN tx_type = 'SALE' THEN amount_cents - fee_cents WHEN tx_type = 'REFUND' THEN -amount_cents ELSE 0 END) AS net_settlement_cents",
+            "turn_id": "snap-final-1",
+            "reasoning": "Aplica el patrón SQL adecuado: filtro de estado, CASE dentro de SUM y GROUP BY. El código es correcto y eficiente; las 3 pruebas pasaron y no hay fallos previos que penalizar."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 65179.24,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2995,
+          "completion_tokens": 681,
+          "total_tokens": 7927,
+          "cost_usd": 0.02519
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_29_pubref-frontend-debounced-search-borderline",
+      "file": "29_pubref_frontend_debounced_search_borderline.json",
+      "scenario_id": "pubref-frontend-debounced-search-borderline",
+      "provenance": "public_reference_solution",
+      "expected_level": "mid",
+      "expected_score_range": [
+        2.6,
+        3.6
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 2.6,
+      "predicted_rec": "borderline",
+      "score_discrepancy": 0.4,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_29_pubref-frontend-debounced-search-borderline",
+        "scenario_id": "pubref-frontend-debounced-search-borderline",
+        "predicted_score": 2.6,
+        "predicted_rec": "borderline",
+        "predicted_competencies": {
+          "problem_solving": 3,
+          "algorithmic_reasoning": 2,
+          "code_quality": 3,
+          "technical_communication": 3,
+          "complexity_management": 2
+        },
+        "needs_human_review": true,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 3,
+            "evidence_quote": "Implementé el debounce limpiando la consulta pendiente cuando el usuario teclea antes del delay, pero aún debo validar el request_id para respuestas fuera de orden.",
+            "turn_id": "t-pub-29-2",
+            "reasoning": "Identifica las dos partes del problema (debounce y descarte out-of-order) y un enfoque de debounce, pero la solución entregada no las implementa: el snapshot final solo toma el último RESPONSE_SUCCESS."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 2,
+            "evidence_quote": "Actualmente sobrescribe los resultados porque no comparé req_id < latest_dispatched_id, por eso falla el tercer test.",
+            "turn_id": "t-pub-29-4",
+            "reasoning": "Diagnostica el fallo, pero no adapta el algoritmo: el código de snap-final-1 sigue un bucle que pisa results en cada RESPONSE_SUCCESS, sin latest_dispatched_id ni filtro de respuestas obsoletas (2/3 tests)."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 87143.42,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2967,
+          "completion_tokens": 823,
+          "total_tokens": 8830,
+          "cost_usd": 0.02718
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_30_pubref-frontend-optimistic-cart-optimal",
+      "file": "30_pubref_frontend_optimistic_cart_optimal.json",
+      "scenario_id": "pubref-frontend-optimistic-cart-optimal",
+      "provenance": "public_reference_solution",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.0,
+        5.0
+      ],
+      "benchmark_score": 4.4,
+      "expected_rec": "hire",
+      "predicted_score": 4.2,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.2,
+      "in_range": true,
+      "human_reference": {
+        "e1_score": 4.4,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_30_pubref-frontend-optimistic-cart-optimal",
+        "scenario_id": "pubref-frontend-optimistic-cart-optimal",
+        "predicted_score": 4.2,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 5,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 4,
+          "complexity_management": 4
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 5,
+            "evidence_quote": "Guardaré cada mutación optimista pendiente en un mapa pendingMutations[mutation_id] = delta. Si llega MUTATION_CONFIRMED se retira del mapa; si llega MUTATION_FAILED se revierte únicamente el delta de ese mutation_id sin afectar mutaciones posteriores.",
+            "turn_id": "t-pub-30-2",
+            "reasoning": "El candidato descompone el problema en estado optimista, mapa de mutaciones pendientes y rollback selectivo por mutation_id, que es exactamente el modelo correcto y evita interferir con mutaciones posteriores."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "pending[act.mutation_id] = { sku: act.sku, delta: act.delta }; ... const p = pending[act.mutation_id]; qty[p.sku] = Math.max(0, (qty[p.sku] || 0) - p.delta); delete pending[act.mutation_id];",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa un mapa indexado por mutation_id y un replay lineal de acciones, estructuras adecuadas y correctas; las 3/3 pruebas pasan. El enfoque es sólido y eficiente para un reductor, sin demostrar un dominio algorítmico excepcional más allá de esa solución."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 57945.24,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3154,
+          "completion_tokens": 857,
+          "total_tokens": 7297,
+          "cost_usd": 0.028625
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_31_real-anon-s1-pse-design-session",
+      "file": "31_real_anon_s1_pse_design_session.json",
+      "scenario_id": "real-anon-s1-pse-design-session",
+      "provenance": "synthetic",
+      "expected_level": "mid",
+      "expected_score_range": [
+        2.5,
+        3.6
+      ],
+      "benchmark_score": 3.0,
+      "expected_rec": "borderline",
+      "predicted_score": 2.4,
+      "predicted_rec": "reject",
+      "score_discrepancy": 0.6,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 3.0,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_31_real-anon-s1-pse-design-session",
+        "scenario_id": "real-anon-s1-pse-design-session",
+        "predicted_score": 2.4,
+        "predicted_rec": "reject",
+        "predicted_competencies": {
+          "problem_solving": 2,
+          "algorithmic_reasoning": 3,
+          "code_quality": 3,
+          "technical_communication": 2,
+          "complexity_management": 2
+        },
+        "needs_human_review": false,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 2,
+            "evidence_quote": "En mi diseño quiero asumir que procesamos un lote nocturno de exactamente 420,000 registros y usamos una clave compuesta encabezada por el prefijo 'CUS-ALPHA-99'.",
+            "turn_id": "t-real-31-1",
+            "reasoning": "El candidato impone un volumen y una clave compuesta que el enunciado no define; tras la corrección sigue sin alinear el diseño a reference, amount_cents y status, y el código final no concilia montos ni estados."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 3,
+            "evidence_quote": "gw_map = {item['reference']: item for item in gateway}\n    ld_map = {item['reference']: item for item in ledger}\n    return sorted(set(gw_map.keys()) ^ set(ld_map.keys()))",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa mapas hash y diferencia simétrica, estructuras básicas adecuadas para referencias no emparejadas, pero omite amount_cents y status; 2/3 tests y no hay diagnóstico del fallo restante."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 83184.96,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 3089,
+          "completion_tokens": 870,
+          "total_tokens": 8496,
+          "cost_usd": 0.028495
+        }
+      }
+    },
+    {
+      "case_id": "s3_case_32_real-anon-s2-pse-passing-session",
+      "file": "32_real_anon_s2_pse_passing_session.json",
+      "scenario_id": "real-anon-s2-pse-passing-session",
+      "provenance": "synthetic",
+      "expected_level": "senior",
+      "expected_score_range": [
+        4.0,
+        5.0
+      ],
+      "benchmark_score": 4.2,
+      "expected_rec": "hire",
+      "predicted_score": 3.8,
+      "predicted_rec": "hire",
+      "score_discrepancy": 0.4,
+      "in_range": false,
+      "human_reference": {
+        "e1_score": 4.2,
+        "e2_score": null,
+        "discrepancy_resolution": "Panel doble ciego pendiente: Evaluador 2 independiente aún no ha emitido calificaciones. Se adopta la rúbrica de Evaluador 1 como estándar de referencia hasta completar la doble ciega."
+      },
+      "llm_evaluation": {
+        "case_id": "s3_case_32_real-anon-s2-pse-passing-session",
+        "scenario_id": "real-anon-s2-pse-passing-session",
+        "predicted_score": 3.8,
+        "predicted_rec": "hire",
+        "predicted_competencies": {
+          "problem_solving": 4,
+          "algorithmic_reasoning": 4,
+          "code_quality": 4,
+          "technical_communication": 3,
+          "complexity_management": 4
+        },
+        "needs_human_review": true,
+        "evidence_count": 5,
+        "evidence_sample": [
+          {
+            "competency": "problem_solving",
+            "score": 4,
+            "evidence_quote": "Ya tengo mi solución en Python para conciliación PSE indexando reference -> (amount_cents, status) en ambos lados y ordenando la unión de claves con discrepancia.",
+            "turn_id": "t-real-32-1",
+            "reasoning": "El candidato comprende el problema de conciliación y lo descompone en indexación por reference, comparación de (amount_cents, status) y unión ordenada de claves discrepantes. La solución es correcta y coherente con el enunciado, con razonamiento básico más que una descomposición profunda de casos."
+          },
+          {
+            "competency": "algorithmic_reasoning",
+            "score": 4,
+            "evidence_quote": "gw = {item['reference']: (item['amount_cents'], item['status']) for item in data.get('gateway', [])}\nld = {item['reference']: (item['amount_cents'], item['status']) for item in data.get('ledger', [])}\nmismatches = sorted(ref for ref in (set(gw) | set(ld)) if gw.get(ref) != ld.get(ref))",
+            "turn_id": "snap-final-1",
+            "reasoning": "Usa mapas hash y unión de conjuntos, estructuras adecuadas y eficientes. La comparación de tuplas y el sort de mismatches son correctos. Los 3/3 tests pasaron de entrada; no hay trayectoria de depuración que evaluar, y el razonamiento algorítmico es sólido sin ser de dominio excepcional."
+          }
+        ],
+        "model_error": false,
+        "error": null,
+        "duration_ms": 68052.05,
+        "usage": {
+          "model": "grok-4.6",
+          "prompt_tokens": 2960,
+          "completion_tokens": 1026,
+          "total_tokens": 7521,
+          "cost_usd": 0.03019
+        }
+      }
+    }
+  ]
+}
