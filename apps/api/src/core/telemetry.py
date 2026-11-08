@@ -189,6 +189,8 @@ class TokenCostRecord:
     provider: str = "openai-compatible"
     turn_id: str | None = None
     measurement_status: str = "measured"  # "measured" | "estimated" | "unavailable"
+    s4_task_execution_id: str | None = None
+    gateway_request_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -251,6 +253,8 @@ class InterviewCostTracker:
         provider: str = "openai-compatible",
         turn_id: Any = None,
         measurement_status: str = "measured",
+        s4_task_execution_id: Any = None,
+        gateway_request_id: str | None = None,
     ) -> TokenCostRecord:
         """Registra una llamada LLM, calcula su costo mediante pricing y emite telemetría.
 
@@ -308,6 +312,8 @@ class InterviewCostTracker:
             provider=clean_provider,
             turn_id=clean_turn_id,
             measurement_status=clean_status,
+            s4_task_execution_id=str(s4_task_execution_id) if s4_task_execution_id is not None else None,
+            gateway_request_id=str(gateway_request_id).strip() if gateway_request_id else None,
         )
 
         if clean_iid not in self._records:
@@ -477,8 +483,10 @@ def record_interview_cost(
     provider: str = "openai-compatible",
     turn_id: Any = None,
     measurement_status: str = "measured",
+    s4_task_execution_id: Any = None,
+    gateway_request_id: str | None = None,
 ) -> TokenCostRecord:
-    """Helper global sincrónico para registrar el costo y consumo de tokens de una entrevista en memoria."""
+    """Helper global sincrónico para registrar el costo y consumo de tokens de una entrevista o tarea S4 en memoria."""
     return interview_cost_tracker.record_call(
         interview_id=interview_id,
         model=model,
@@ -489,6 +497,8 @@ def record_interview_cost(
         provider=provider,
         turn_id=turn_id,
         measurement_status=measurement_status,
+        s4_task_execution_id=s4_task_execution_id,
+        gateway_request_id=gateway_request_id,
     )
 
 
@@ -503,6 +513,8 @@ async def record_persisted_interview_cost(
     turn_id: Any = None,
     measurement_status: str = "measured",
     session: Any = None,
+    s4_task_execution_id: Any = None,
+    gateway_request_id: str | None = None,
 ) -> TokenCostRecord:
     """Registra en memoria y persiste duraderamente en la tabla llm_usage_records de PostgreSQL.
     
@@ -520,6 +532,8 @@ async def record_persisted_interview_cost(
         provider=provider,
         turn_id=turn_id,
         measurement_status=measurement_status,
+        s4_task_execution_id=s4_task_execution_id,
+        gateway_request_id=gateway_request_id,
     )
 
     try:
@@ -527,14 +541,17 @@ async def record_persisted_interview_cost(
 
         from src.db.models.interview import LLMUsageRecord
 
-        valid_iid = _uuid.UUID(str(interview_id)) if interview_id else None
+        valid_iid = _uuid.UUID(str(interview_id)) if interview_id and str(interview_id) != "unknown" else None
         valid_tid = _uuid.UUID(str(turn_id)) if turn_id else None
-        if valid_iid is None:
+        valid_s4_id = _uuid.UUID(str(s4_task_execution_id)) if s4_task_execution_id else None
+        if valid_iid is None and valid_s4_id is None:
             return record
 
         db_record = LLMUsageRecord(
             interview_id=valid_iid,
             turn_id=valid_tid,
+            s4_task_execution_id=valid_s4_id,
+            gateway_request_id=str(gateway_request_id).strip() if gateway_request_id else None,
             stage=record.stage,
             provider=record.provider,
             model=record.model,

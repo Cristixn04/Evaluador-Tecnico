@@ -34,7 +34,7 @@ class Settings(BaseSettings):
         description="URL base del proveedor compatible con OpenAI",
     )
     LLM_MODEL: str = Field(default="grok-4.6", description="Modelo LLM a utilizar")
-    LLM_TIMEOUT_SECONDS: float = Field(default=30.0, description="Timeout de llamadas al LLM")
+    LLM_TIMEOUT_SECONDS: float = Field(default=90.0, description="Timeout de llamadas al LLM")
     LLM_MAX_RETRIES: int = Field(
         default=2,
         description="Reintentos ante errores transitorios del LLM",

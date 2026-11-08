@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import UTC, datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     Enum,
@@ -27,6 +28,7 @@ from src.db.enums import InterviewPhase, InterviewStatus, TurnSpeaker
 if TYPE_CHECKING:
     from src.db.models.invitation import Invitation
     from src.db.models.problem import Problem
+    from src.db.models.s4 import S4TaskExecution
     from src.db.models.vacancy import Vacancy
 
 
@@ -395,6 +397,9 @@ class LLMUsageRecord(Base):
     """
 
     __tablename__ = "llm_usage_records"
+    __table_args__ = (
+        UniqueConstraint("s4_task_execution_id", "call_sequence", name="uq_llm_usage_task_call_seq"),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         Uuid(as_uuid=True),
@@ -402,10 +407,10 @@ class LLMUsageRecord(Base):
         default=uuid.uuid4,
         server_default=text("gen_random_uuid()"),
     )
-    interview_id: Mapped[uuid.UUID] = mapped_column(
+    interview_id: Mapped[uuid.UUID | None] = mapped_column(
         Uuid(as_uuid=True),
         ForeignKey("interviews.id", ondelete="CASCADE"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     turn_id: Mapped[uuid.UUID | None] = mapped_column(
@@ -413,6 +418,29 @@ class LLMUsageRecord(Base):
         ForeignKey("turns.id", ondelete="SET NULL"),
         nullable=True,
         index=True,
+    )
+    s4_task_execution_id: Mapped[uuid.UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("s4_task_executions.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    call_sequence: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        server_default=text("1"),
+    )
+    gateway_request_id: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+        index=True,
+    )
+    gateway_metadata: Mapped[dict[str, Any]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=dict,
+        server_default=text("'{}'"),
     )
     stage: Mapped[str] = mapped_column(
         String(50),
@@ -458,8 +486,12 @@ class LLMUsageRecord(Base):
         index=True,
     )
 
-    interview: Mapped[Interview] = relationship("Interview", back_populates="llm_usage_records")
+    interview: Mapped[Interview | None] = relationship("Interview", back_populates="llm_usage_records")
     turn: Mapped[Turn | None] = relationship("Turn")
+    s4_task_execution: Mapped[S4TaskExecution | None] = relationship(
+        "S4TaskExecution",
+        back_populates="llm_usage_records",
+    )
 
     def __repr__(self) -> str:
         return (
