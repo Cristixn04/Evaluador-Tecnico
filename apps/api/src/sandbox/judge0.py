@@ -1,4 +1,5 @@
 import asyncio
+import base64
 from collections.abc import Mapping
 from typing import Any
 
@@ -59,6 +60,7 @@ class Judge0Adapter:
         max_polls: int = 50,
         max_processes_and_or_threads: int = 10,
         client: httpx.AsyncClient | None = None,
+        base64_encoded: bool = True,
     ) -> None:
         if not base_url:
             raise SandboxConfigurationError("Judge0 base URL is not configured")
@@ -73,6 +75,7 @@ class Judge0Adapter:
         self._poll_interval = poll_interval_seconds
         self._max_polls = max_polls
         self._max_processes_and_or_threads = max_processes_and_or_threads
+        self._base64_encoded = base64_encoded
         self._owns_client = client is None
         self._client = client or httpx.AsyncClient(timeout=timeout_seconds)
 
@@ -111,10 +114,21 @@ class Judge0Adapter:
         effective_timeout_ms = min(max(request.timeout_ms, MIN_TIMEOUT_MS), MAX_TIMEOUT_MS)
         effective_memory_mb = min(max(request.memory_mb, MIN_MEMORY_MB), MAX_MEMORY_MB)
 
+        source_val = request.source
+        stdin_val = request.stdin
+        expected_output_val = request.expected_output
+
+        if self._base64_encoded:
+            source_val = base64.b64encode(request.source.encode("utf-8")).decode("ascii")
+            if request.stdin is not None:
+                stdin_val = base64.b64encode(request.stdin.encode("utf-8")).decode("ascii")
+            if request.expected_output is not None:
+                expected_output_val = base64.b64encode(request.expected_output.encode("utf-8")).decode("ascii")
+
         payload: dict[str, Any] = {
-            "source_code": request.source,
+            "source_code": source_val,
             "language_id": language_id,
-            "stdin": request.stdin,
+            "stdin": stdin_val,
             "cpu_time_limit": max(effective_timeout_ms / 1000.0, 0.1),
             "wall_time_limit": max(effective_timeout_ms / 1000.0, 0.1) + 1.0,
             "memory_limit": effective_memory_mb * 1000,
@@ -123,13 +137,14 @@ class Judge0Adapter:
             "enable_per_process_and_thread_time_limit": True,
             "enable_per_process_and_thread_memory_limit": True,
         }
-        if request.expected_output is not None:
-            payload["expected_output"] = request.expected_output
+        if expected_output_val is not None:
+            payload["expected_output"] = expected_output_val
 
+        b64_param = "true" if self._base64_encoded else "false"
         try:
             response = await self._client.post(
                 f"{self._base_url}/submissions",
-                params={"base64_encoded": "false", "wait": "false"},
+                params={"base64_encoded": b64_param, "wait": "false"},
                 json=payload,
                 headers=self._headers(),
             )
@@ -149,11 +164,12 @@ class Judge0Adapter:
 
     async def _poll(self, token: str) -> Mapping[str, Any]:
         url = f"{self._base_url}/submissions/{token}"
+        b64_param = "true" if self._base64_encoded else "false"
         for _ in range(self._max_polls):
             try:
                 response = await self._client.get(
                     url,
-                    params={"base64_encoded": "false"},
+                    params={"base64_encoded": b64_param},
                     headers=self._headers(),
                 )
             except httpx.TimeoutException as exc:
@@ -172,6 +188,20 @@ class Judge0Adapter:
 
         raise SandboxTimeoutError("Judge0 polling exhausted")
 
+    def _decode_output_field(self, value: Any) -> str:
+        if not isinstance(value, str) or not value:
+            return ""
+        if not self._base64_encoded:
+            return value
+        clean = value.strip()
+        try:
+            if len(clean) % 4 == 0 and all(c in "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=\n\r" for c in clean):
+                decoded = base64.b64decode(clean.encode("ascii"))
+                return decoded.decode("utf-8", errors="replace")
+        except (ValueError, UnicodeError):
+            pass
+        return value
+
     def _parse_result(self, body: Mapping[str, Any]) -> RunResult:
         status_id = _status_id(body)
         status = _STATUS_MAP.get(status_id, ExecutionStatus.INTERNAL_ERROR)
@@ -180,9 +210,9 @@ class Judge0Adapter:
         exit_raw = body.get("exit_code")
         return RunResult(
             status=status,
-            stdout=_as_text(body.get("stdout")),
-            stderr=_as_text(body.get("stderr")),
-            compile_output=_as_text(body.get("compile_output")),
+            stdout=self._decode_output_field(body.get("stdout")),
+            stderr=self._decode_output_field(body.get("stderr")),
+            compile_output=self._decode_output_field(body.get("compile_output")),
             exit_code=_as_optional_int(exit_raw),
             time_seconds=_as_optional_float(time_raw),
             memory_kb=_as_optional_int(memory_raw),

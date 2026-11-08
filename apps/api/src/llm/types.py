@@ -35,6 +35,8 @@ class ChatCompletion:
     usage: TokenUsage
     tool_calls: list[ToolCall] | None = None
     finish_reason: str | None = None
+    request_id: str | None = None
+    gateway_metadata: dict[str, str] | None = None
 
 
 class LLMClient(Protocol):
@@ -45,6 +47,7 @@ class LLMClient(Protocol):
         model: str | None = None,
         tools: list[dict[str, Any]] | None = None,
         tool_choice: str | dict[str, Any] | None = None,
+        max_tokens: int | None = None,
     ) -> ChatCompletion: ...
 
     async def aclose(self) -> None: ...
